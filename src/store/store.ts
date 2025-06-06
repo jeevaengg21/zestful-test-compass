@@ -6,6 +6,7 @@ import userReducer from './slices/userSlice';
 import testReducer from './slices/testSlice';
 import testPlanReducer from './slices/testPlanSlice';
 import testRunReducer from './slices/testRunSlice';
+import testDataReducer from './slices/testDataSlice';
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +16,7 @@ export const store = configureStore({
     tests: testReducer,
     testPlans: testPlanReducer,
     testRuns: testRunReducer,
+    testData: testDataReducer,
   },
 });
 

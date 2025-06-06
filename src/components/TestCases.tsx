@@ -9,16 +9,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addTestCase, updateTestCase, TestCase } from "@/store/slices/testSlice";
-import { selectAllProducts } from "@/store/selectors";
-import { selectModulesByProduct } from "@/store/selectors";
-import { selectAllTestCases } from "@/store/selectors";
+import { selectAllProducts, selectModulesByProduct, selectAllTestCases } from "@/store/selectors";
+import { TestDataMapper } from "./TestDataMapper";
 import { 
   Plus, 
   Search, 
   Filter, 
-  Edit
+  Edit,
+  Database
 } from "lucide-react";
 
 export const TestCases = () => {
@@ -179,114 +180,133 @@ export const TestCases = () => {
               <DialogHeader>
                 <DialogTitle>Create New Test Case</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-                <div className="grid gap-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    placeholder="Enter test case title"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="Enter test case description"
-                    rows={3}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="details">Test Case Details</TabsTrigger>
+                  <TabsTrigger value="testdata" disabled={!formData.title}>
+                    <Database className="h-4 w-4 mr-2" />
+                    Test Data
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="details" className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
                   <div className="grid gap-2">
-                    <Label htmlFor="product">Product</Label>
-                    <Select value={formData.productId} onValueChange={(value) => handleInputChange("productId", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="module">Module</Label>
-                    <Select value={formData.moduleId} onValueChange={(value) => handleInputChange("moduleId", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select module" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {modules.map((module) => (
-                          <SelectItem key={module.id} value={module.id}>
-                            {module.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Critical">Critical</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="assignee">Assignee</Label>
+                    <Label htmlFor="title">Title</Label>
                     <Input
-                      id="assignee"
-                      value={formData.assignee}
-                      onChange={(e) => handleInputChange("assignee", e.target.value)}
-                      placeholder="Enter assignee name"
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleInputChange("title", e.target.value)}
+                      placeholder="Enter test case title"
                     />
                   </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="steps">Test Steps (one per line)</Label>
-                  <Textarea
-                    id="steps"
-                    value={formData.steps}
-                    onChange={(e) => handleInputChange("steps", e.target.value)}
-                    placeholder="Enter test steps, one per line"
-                    rows={4}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="expectedResult">Expected Result</Label>
-                  <Textarea
-                    id="expectedResult"
-                    value={formData.expectedResult}
-                    onChange={(e) => handleInputChange("expectedResult", e.target.value)}
-                    placeholder="Enter expected result"
-                    rows={3}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="estimatedTime">Estimated Time (minutes)</Label>
-                  <Input
-                    id="estimatedTime"
-                    type="number"
-                    value={formData.estimatedTime}
-                    onChange={(e) => handleInputChange("estimatedTime", parseInt(e.target.value) || 5)}
-                    placeholder="Enter estimated time in minutes"
-                  />
-                </div>
-              </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      placeholder="Enter test case description"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="product">Product</Label>
+                      <Select value={formData.productId} onValueChange={(value) => handleInputChange("productId", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="module">Module</Label>
+                      <Select value={formData.moduleId} onValueChange={(value) => handleInputChange("moduleId", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select module" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {modules.map((module) => (
+                            <SelectItem key={module.id} value={module.id}>
+                              {module.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="priority">Priority</Label>
+                      <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Critical">Critical</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="Low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="assignee">Assignee</Label>
+                      <Input
+                        id="assignee"
+                        value={formData.assignee}
+                        onChange={(e) => handleInputChange("assignee", e.target.value)}
+                        placeholder="Enter assignee name"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="steps">Test Steps (one per line)</Label>
+                    <Textarea
+                      id="steps"
+                      value={formData.steps}
+                      onChange={(e) => handleInputChange("steps", e.target.value)}
+                      placeholder="Enter test steps, one per line"
+                      rows={4}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="expectedResult">Expected Result</Label>
+                    <Textarea
+                      id="expectedResult"
+                      value={formData.expectedResult}
+                      onChange={(e) => handleInputChange("expectedResult", e.target.value)}
+                      placeholder="Enter expected result"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="estimatedTime">Estimated Time (minutes)</Label>
+                    <Input
+                      id="estimatedTime"
+                      type="number"
+                      value={formData.estimatedTime}
+                      onChange={(e) => handleInputChange("estimatedTime", parseInt(e.target.value) || 5)}
+                      placeholder="Enter estimated time in minutes"
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="testdata" className="py-4">
+                  <div className="text-center py-8 text-gray-500">
+                    <Database className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>Test data mapping will be available after creating the test case.</p>
+                    <p className="text-sm">You can map test data sets to this test case after saving it.</p>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => {
                   setIsCreateDialogOpen(false);
@@ -312,114 +332,134 @@ export const TestCases = () => {
           <DialogHeader>
             <DialogTitle>Edit Test Case</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-            <div className="grid gap-2">
-              <Label htmlFor="editTitle">Title</Label>
-              <Input
-                id="editTitle"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                placeholder="Enter test case title"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editDescription">Description</Label>
-              <Textarea
-                id="editDescription"
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="Enter test case description"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">Test Case Details</TabsTrigger>
+              <TabsTrigger value="testdata">
+                <Database className="h-4 w-4 mr-2" />
+                Test Data
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
               <div className="grid gap-2">
-                <Label htmlFor="editProduct">Product</Label>
-                <Select value={formData.productId} onValueChange={(value) => handleInputChange("productId", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="editModule">Module</Label>
-                <Select value={formData.moduleId} onValueChange={(value) => handleInputChange("moduleId", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select module" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {modules.map((module) => (
-                      <SelectItem key={module.id} value={module.id}>
-                        {module.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="editPriority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Critical">Critical</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="Low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="editAssignee">Assignee</Label>
+                <Label htmlFor="editTitle">Title</Label>
                 <Input
-                  id="editAssignee"
-                  value={formData.assignee}
-                  onChange={(e) => handleInputChange("assignee", e.target.value)}
-                  placeholder="Enter assignee name"
+                  id="editTitle"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="Enter test case title"
                 />
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editSteps">Test Steps (one per line)</Label>
-              <Textarea
-                id="editSteps"
-                value={formData.steps}
-                onChange={(e) => handleInputChange("steps", e.target.value)}
-                placeholder="Enter test steps, one per line"
-                rows={4}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editExpectedResult">Expected Result</Label>
-              <Textarea
-                id="editExpectedResult"
-                value={formData.expectedResult}
-                onChange={(e) => handleInputChange("expectedResult", e.target.value)}
-                placeholder="Enter expected result"
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="editEstimatedTime">Estimated Time (minutes)</Label>
-              <Input
-                id="editEstimatedTime"
-                type="number"
-                value={formData.estimatedTime}
-                onChange={(e) => handleInputChange("estimatedTime", parseInt(e.target.value) || 5)}
-                placeholder="Enter estimated time in minutes"
-              />
-            </div>
-          </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  placeholder="Enter test case description"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editProduct">Product</Label>
+                  <Select value={formData.productId} onValueChange={(value) => handleInputChange("productId", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editModule">Module</Label>
+                  <Select value={formData.moduleId} onValueChange={(value) => handleInputChange("moduleId", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select module" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modules.map((module) => (
+                        <SelectItem key={module.id} value={module.id}>
+                          {module.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editPriority">Priority</Label>
+                  <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Critical">Critical</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="editAssignee">Assignee</Label>
+                  <Input
+                    id="editAssignee"
+                    value={formData.assignee}
+                    onChange={(e) => handleInputChange("assignee", e.target.value)}
+                    placeholder="Enter assignee name"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editSteps">Test Steps (one per line)</Label>
+                <Textarea
+                  id="editSteps"
+                  value={formData.steps}
+                  onChange={(e) => handleInputChange("steps", e.target.value)}
+                  placeholder="Enter test steps, one per line"
+                  rows={4}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editExpectedResult">Expected Result</Label>
+                <Textarea
+                  id="editExpectedResult"
+                  value={formData.expectedResult}
+                  onChange={(e) => handleInputChange("expectedResult", e.target.value)}
+                  placeholder="Enter expected result"
+                  rows={3}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editEstimatedTime">Estimated Time (minutes)</Label>
+                <Input
+                  id="editEstimatedTime"
+                  type="number"
+                  value={formData.estimatedTime}
+                  onChange={(e) => handleInputChange("estimatedTime", parseInt(e.target.value) || 5)}
+                  placeholder="Enter estimated time in minutes"
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="testdata" className="py-4">
+              {editingTestCase && (
+                <TestDataMapper 
+                  testCaseId={editingTestCase.id} 
+                  testCaseTitle={editingTestCase.title}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+          
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => {
               setEditingTestCase(null);
