@@ -26,7 +26,11 @@ import { startTestRun, pauseTestRun, completeTestRun } from "@/store/slices/test
 import { TestRunForm } from "./TestRunForm";
 import { TestRunEditForm } from "./TestRunEditForm";
 
-export const TestRuns = () => {
+interface TestRunsProps {
+  onExecuteTestRun?: (testRunId: string) => void;
+}
+
+export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const testRuns = useAppSelector(selectAllTestRuns);
@@ -106,7 +110,9 @@ export const TestRuns = () => {
   };
 
   const handleExecuteRun = (runId: string) => {
-    navigate(`/test-run-execution?id=${runId}`);
+    if (onExecuteTestRun) {
+      onExecuteTestRun(runId);
+    }
   };
 
   const handleEditRun = (runId: string) => {
