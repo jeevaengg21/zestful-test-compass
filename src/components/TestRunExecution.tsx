@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { 
   CheckCircle, 
   XCircle, 
@@ -39,9 +49,20 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     reproductionSteps: ""
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   if (!testRun) {
     return <div>Test run not found</div>;
   }
+
+  // Calculate pagination
+  const totalItems = executions.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedExecutions = executions.slice(startIndex, endIndex);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -115,6 +136,47 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     });
   };
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
@@ -141,7 +203,12 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       {/* Test Case Executions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Test Case Executions</CardTitle>
+          <CardTitle className="flex justify-between items-center">
+            <span>Test Case Executions</span>
+            <span className="text-sm font-normal text-gray-500">
+              Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} test cases
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -155,7 +222,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {executions.map((execution) => {
+              {paginatedExecutions.map((execution) => {
                 const testCase = getTestCaseDetails(execution.testCaseId);
                 return (
                   <TableRow key={execution.id}>
@@ -210,6 +277,45 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               })}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePageNumbers().map((page, index) => (
+                    <PaginationItem key={index}>
+                      {page === 'ellipsis' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => handlePageChange(page as number)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
