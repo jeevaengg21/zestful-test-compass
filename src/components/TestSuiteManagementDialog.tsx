@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { TestPlan, updateTestPlan } from "@/store/slices/testPlanSlice";
 import { selectAllTestSuites } from "@/store/selectors";
@@ -34,7 +35,11 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   // Get mapped test suites using the current state from Redux
   const mappedTestSuites = allTestSuites.filter(suite => 
     currentTestPlan.testSuiteIds.includes(suite.id)
-  );
+  ).sort((a, b) => {
+    const indexA = currentTestPlan.testSuiteIds.indexOf(a.id);
+    const indexB = currentTestPlan.testSuiteIds.indexOf(b.id);
+    return indexA - indexB;
+  });
   
   // Get available test suites (not mapped and matching search)
   const availableTestSuites = allTestSuites.filter(suite => 
@@ -59,13 +64,26 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     }));
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(currentTestPlan.testSuiteIds);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    dispatch(updateTestPlan({ 
+      id: currentTestPlan.id, 
+      updates: { testSuiteIds: items } 
+    }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Test Suites - {currentTestPlan.name}</DialogTitle>
           <DialogDescription>
-            Map and unmap test suites for this test plan
+            Map and unmap test suites for this test plan. Drag to reorder.
           </DialogDescription>
         </DialogHeader>
 
@@ -74,28 +92,57 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           <div>
             <h3 className="text-lg font-semibold mb-3">Mapped Test Suites ({mappedTestSuites.length})</h3>
             {mappedTestSuites.length > 0 ? (
-              <div className="space-y-2">
-                {mappedTestSuites.map((suite) => (
-                  <div key={suite.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium">{suite.name}</div>
-                      <div className="text-sm text-muted-foreground">{suite.description}</div>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="secondary">{suite.status}</Badge>
-                        <Badge variant="outline">{suite.testCaseIds.length} test cases</Badge>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveTestSuite(suite.id)}
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="mapped-test-suites">
+                  {(provided) => (
+                    <div 
+                      {...provided.droppableProps} 
+                      ref={provided.innerRef}
+                      className="space-y-2"
                     >
-                      <X className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                      {mappedTestSuites.map((suite, index) => (
+                        <Draggable key={suite.id} draggableId={suite.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`flex items-center justify-between p-3 border rounded-lg ${
+                                snapshot.isDragging ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                <div 
+                                  {...provided.dragHandleProps}
+                                  className="cursor-grab hover:cursor-grabbing"
+                                >
+                                  <GripVertical className="h-4 w-4 text-gray-400" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium">{suite.name}</div>
+                                  <div className="text-sm text-muted-foreground">{suite.description}</div>
+                                  <div className="flex gap-2 mt-1">
+                                    <Badge variant="secondary">{suite.status}</Badge>
+                                    <Badge variant="outline">{suite.testCaseIds.length} test cases</Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveTestSuite(suite.id)}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 No test suites mapped to this plan yet
