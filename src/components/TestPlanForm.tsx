@@ -5,12 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Plus, X } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
-import { selectAllProducts, selectAllTestSuites, selectAllUsers } from "@/store/selectors";
+import { selectAllProducts } from "@/store/selectors";
 import { TestPlan } from "@/store/slices/testPlanSlice";
 
 interface TestPlanFormProps {
@@ -20,8 +18,6 @@ interface TestPlanFormProps {
 
 export function TestPlanForm({ onSubmit, initialData }: TestPlanFormProps) {
   const products = useAppSelector(selectAllProducts);
-  const testSuites = useAppSelector(selectAllTestSuites);
-  const users = useAppSelector(selectAllUsers);
 
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
@@ -67,24 +63,6 @@ export function TestPlanForm({ onSubmit, initialData }: TestPlanFormProps) {
     }));
   };
 
-  const handleTestSuiteToggle = (suiteId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      testSuiteIds: prev.testSuiteIds.includes(suiteId)
-        ? prev.testSuiteIds.filter(id => id !== suiteId)
-        : [...prev.testSuiteIds, suiteId]
-    }));
-  };
-
-  const handleTeamMemberToggle = (userId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      assignedTeamMembers: prev.assignedTeamMembers.includes(userId)
-        ? prev.assignedTeamMembers.filter(id => id !== userId)
-        : [...prev.assignedTeamMembers, userId]
-    }));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -101,20 +79,6 @@ export function TestPlanForm({ onSubmit, initialData }: TestPlanFormProps) {
 
     onSubmit(testPlanData as Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>);
   };
-
-  const getTestSuiteName = (suiteId: string) => {
-    const suite = testSuites.find(s => s.id === suiteId);
-    return suite?.name || "Unknown Suite";
-  };
-
-  const getUserName = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    return user?.fullName || "Unknown User";
-  };
-
-  const availableTestSuites = testSuites.filter(suite => 
-    formData.productId === "" || suite.productId === formData.productId
-  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -423,84 +387,6 @@ export function TestPlanForm({ onSubmit, initialData }: TestPlanFormProps) {
             <Plus className="h-4 w-4 mr-2" />
             Add Risk
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Test Suite Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Test Suites</CardTitle>
-          <CardDescription>Select test suites to include in this plan</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {availableTestSuites.map((suite) => (
-              <div key={suite.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`suite-${suite.id}`}
-                  checked={formData.testSuiteIds.includes(suite.id)}
-                  onCheckedChange={() => handleTestSuiteToggle(suite.id)}
-                />
-                <Label htmlFor={`suite-${suite.id}`} className="flex-1">
-                  <div>
-                    <div className="font-medium">{suite.name}</div>
-                    <div className="text-sm text-muted-foreground">{suite.description}</div>
-                  </div>
-                </Label>
-              </div>
-            ))}
-          </div>
-          {formData.testSuiteIds.length > 0 && (
-            <div className="mt-4">
-              <Label className="text-sm font-medium">Selected Test Suites:</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.testSuiteIds.map((suiteId) => (
-                  <Badge key={suiteId} variant="secondary">
-                    {getTestSuiteName(suiteId)}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Team Member Assignment */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Team Members</CardTitle>
-          <CardDescription>Assign team members to this test plan</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {users.map((user) => (
-              <div key={user.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`user-${user.id}`}
-                  checked={formData.assignedTeamMembers.includes(user.id)}
-                  onCheckedChange={() => handleTeamMemberToggle(user.id)}
-                />
-                <Label htmlFor={`user-${user.id}`} className="flex-1">
-                  <div>
-                    <div className="font-medium">{user.fullName}</div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                  </div>
-                </Label>
-              </div>
-            ))}
-          </div>
-          {formData.assignedTeamMembers.length > 0 && (
-            <div className="mt-4">
-              <Label className="text-sm font-medium">Assigned Team Members:</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.assignedTeamMembers.map((userId) => (
-                  <Badge key={userId} variant="secondary">
-                    {getUserName(userId)}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

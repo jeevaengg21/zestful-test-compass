@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Pause } from "lucide-react";
+import { Plus, Search, Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Pause, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { TestPlan, addTestPlan, updateTestPlan, deleteTestPlan } from "@/store/slices/testPlanSlice";
 import { selectAllProducts, selectAllTestSuites } from "@/store/selectors";
@@ -81,6 +81,16 @@ export function TestPlanManager() {
   const handleViewDetails = (testPlan: TestPlan) => {
     setSelectedTestPlan(testPlan);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handleManageTestSuites = (testPlan: TestPlan) => {
+    // TODO: Implement test suite management dialog
+    console.log("Managing test suites for:", testPlan.name);
+  };
+
+  const handleManageTeam = (testPlan: TestPlan) => {
+    // TODO: Implement team management dialog
+    console.log("Managing team for:", testPlan.name);
   };
 
   return (
@@ -213,7 +223,6 @@ export function TestPlanManager() {
                 <TableHead>Priority</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Schedule</TableHead>
-                <TableHead>Team Size</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -260,19 +269,31 @@ export function TestPlanManager() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      {plan.assignedTeamMembers.length}
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewDetails(plan)}
+                      >
+                        View Details
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleManageTestSuites(plan)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Test Suites
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleManageTeam(plan)}
+                      >
+                        <Users className="h-4 w-4 mr-1" />
+                        Team
+                      </Button>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewDetails(plan)}
-                    >
-                      View Details
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
