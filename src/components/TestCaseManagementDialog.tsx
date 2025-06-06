@@ -23,6 +23,8 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
   ) || testSuite;
   const [searchTerm, setSearchTerm] = useState("");
 
+  console.log("TestCaseManagementDialog - Managing test cases for suite:", currentTestSuite.id, "Current test case IDs:", currentTestSuite.testCaseIds);
+
   // Reset search when dialog opens/closes
   useEffect(() => {
     if (!open) {
@@ -50,6 +52,7 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
 
   const handleAddTestCase = (testCaseId: string) => {
     const updatedTestCaseIds = [...currentTestSuite.testCaseIds, testCaseId];
+    console.log("Adding test case:", testCaseId, "Updated IDs:", updatedTestCaseIds);
     dispatch(updateTestSuite({ 
       id: currentTestSuite.id, 
       updates: { testCaseIds: updatedTestCaseIds } 
@@ -58,6 +61,7 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
 
   const handleRemoveTestCase = (testCaseId: string) => {
     const updatedTestCaseIds = currentTestSuite.testCaseIds.filter(id => id !== testCaseId);
+    console.log("Removing test case:", testCaseId, "Updated IDs:", updatedTestCaseIds);
     dispatch(updateTestSuite({ 
       id: currentTestSuite.id, 
       updates: { testCaseIds: updatedTestCaseIds } 
