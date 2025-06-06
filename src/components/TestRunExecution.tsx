@@ -36,10 +36,15 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   const [autoNavigationEnabled, setAutoNavigationEnabled] = useState(true);
   const [countdownActive, setCountdownActive] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  const [defectData, setDefectData] = useState({
+  const [defectData, setDefectData] = useState<{
+    title: string;
+    description: string;
+    severity: "Critical" | "High" | "Medium" | "Low";
+    reproductionSteps: string;
+  }>({
     title: "",
     description: "",
-    severity: "Medium" as const,
+    severity: "Medium",
     reproductionSteps: ""
   });
 
