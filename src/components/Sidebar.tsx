@@ -8,6 +8,7 @@ import {
   TestTube
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "./UserMenu";
 
 interface SidebarProps {
   activeView: string;
@@ -26,9 +27,12 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
   return (
     <div className="w-64 bg-slate-900 text-white flex flex-col">
       <div className="p-6 border-b border-slate-700">
-        <div className="flex items-center space-x-2">
-          <TestTube className="h-8 w-8 text-blue-400" />
-          <h1 className="text-xl font-bold">TestManager</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <TestTube className="h-8 w-8 text-blue-400" />
+            <h1 className="text-xl font-bold">TestManager</h1>
+          </div>
+          <UserMenu />
         </div>
       </div>
       
