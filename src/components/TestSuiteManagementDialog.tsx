@@ -91,7 +91,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Test Suites - {testPlan.name}</DialogTitle>
           <DialogDescription>
@@ -99,7 +99,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Available Test Suites */}
           <div className="space-y-4">
             <div>
@@ -115,53 +115,55 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
               </div>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Test Cases</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {availableTestSuites.map((suite) => (
-                  <TableRow key={suite.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{suite.name}</div>
-                        <div className="text-sm text-muted-foreground truncate max-w-xs">
-                          {suite.description}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={getStatusBadgeClass(suite.status)}>
-                        {suite.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{suite.testCaseIds.length}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAddTestSuite(suite.id)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {availableTestSuites.length === 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      No available test suites found
-                    </TableCell>
+                    <TableHead className="min-w-[200px]">Name</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[100px]">Test Cases</TableHead>
+                    <TableHead className="min-w-[100px]">Action</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {availableTestSuites.map((suite) => (
+                    <TableRow key={suite.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{suite.name}</div>
+                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            {suite.description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={getStatusBadgeClass(suite.status)}>
+                          {suite.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{suite.testCaseIds.length}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAddTestSuite(suite.id)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {availableTestSuites.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        No available test suites found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {/* Mapped Test Suites */}
@@ -170,70 +172,72 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
               <h3 className="text-lg font-semibold">Mapped Test Suites ({testPlan.testSuiteIds.length})</h3>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Test Cases</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mappedTestSuites.map((suite, index) => (
-                  <TableRow key={suite.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{suite.name}</div>
-                        <div className="text-sm text-muted-foreground truncate max-w-xs">
-                          {suite.description}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={getStatusBadgeClass(suite.status)}>
-                        {suite.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{suite.testCaseIds.length}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMoveUp(index)}
-                          disabled={index === 0}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMoveDown(index)}
-                          disabled={index === mappedTestSuites.length - 1}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRemoveTestSuite(suite.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {mappedTestSuites.length === 0 && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      No test suites mapped to this plan
-                    </TableCell>
+                    <TableHead className="min-w-[200px]">Name</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[100px]">Test Cases</TableHead>
+                    <TableHead className="min-w-[120px]">Actions</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mappedTestSuites.map((suite, index) => (
+                    <TableRow key={suite.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{suite.name}</div>
+                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            {suite.description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={getStatusBadgeClass(suite.status)}>
+                          {suite.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{suite.testCaseIds.length}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMoveUp(index)}
+                            disabled={index === 0}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMoveDown(index)}
+                            disabled={index === mappedTestSuites.length - 1}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveTestSuite(suite.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {mappedTestSuites.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        No test suites mapped to this plan
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
 
