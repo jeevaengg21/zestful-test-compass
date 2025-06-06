@@ -2,44 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { 
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { toast } from "@/components/ui/sonner";
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Clock, 
-  Play,
-  Bug,
-  User,
-  Calendar,
-  Timer,
-  ChevronLeft,
-  ChevronRight,
-  Settings
-} from "lucide-react";
+import { Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { 
   selectTestRunById, 
@@ -49,6 +13,9 @@ import {
   selectTestCasesInSuite
 } from "@/store/selectors";
 import { updateTestCaseExecution, addDefect, TestCaseExecution } from "@/store/slices/testRunSlice";
+import { TestCaseExecutionTable } from "./TestCaseExecutionTable";
+import { TestExecutionDrawer } from "./TestExecutionDrawer";
+import { DefectCreationDialog } from "./DefectCreationDialog";
 
 interface TestRunExecutionProps {
   testRunId: string;
@@ -163,6 +130,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   // Auto-scroll to current test case in table
   useEffect(() => {
     if (selectedExecutionIndex !== null && tableRef.current) {
+      const startIndex = (currentPage - 1) * itemsPerPage;
       const currentRowIndex = selectedExecutionIndex - startIndex;
       if (currentRowIndex >= 0 && currentRowIndex < itemsPerPage) {
         const tableRows = tableRef.current.querySelectorAll('tbody tr');
@@ -177,43 +145,6 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   if (!testRun) {
     return <div>Test run not found</div>;
   }
-
-  // Calculate pagination
-  const totalItems = executions.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedExecutions = executions.slice(startIndex, endIndex);
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Passed": return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "Failed": return <XCircle className="h-4 w-4 text-red-600" />;
-      case "Blocked": return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case "Skipped": return <Clock className="h-4 w-4 text-gray-600" />;
-      default: return <Play className="h-4 w-4 text-blue-600" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Passed": return "bg-green-100 text-green-800";
-      case "Failed": return "bg-red-100 text-red-800";
-      case "Blocked": return "bg-yellow-100 text-yellow-800";
-      case "Skipped": return "bg-gray-100 text-gray-800";
-      default: return "bg-blue-100 text-blue-800";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "Critical": return "bg-red-100 text-red-800";
-      case "High": return "bg-orange-100 text-orange-800";
-      case "Medium": return "bg-yellow-100 text-yellow-800";
-      case "Low": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
 
   // Improved function to get test case details by checking both direct ID lookup and suite mappings
   const getTestCaseDetails = (testCaseId: string) => {
@@ -312,11 +243,10 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     }
   };
 
-  const handleCreateDefect = (executionId: string) => {
-    const execution = executions.find(e => e.id === executionId);
-    if (!execution) return;
+  const handleCreateDefect = () => {
+    if (!selectedExecution) return;
 
-    const testCase = getTestCaseDetails(execution.testCaseId);
+    const testCase = getTestCaseDetails(selectedExecution.testCaseId);
 
     const defect = {
       title: defectData.title,
@@ -325,7 +255,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       priority: "P2" as const,
       status: "Open" as const,
       testRunId,
-      testCaseExecutionId: executionId,
+      testCaseExecutionId: selectedExecution.id,
       reportedBy: "USR001", // Should be current user
       reportedDate: new Date().toISOString().split('T')[0],
       reproductionSteps: defectData.reproductionSteps.split('\n').filter(step => step.trim()),
@@ -336,7 +266,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     dispatch(addDefect(defect));
     
     // Also update the execution to failed status
-    handleExecutionUpdate(executionId, "Failed");
+    handleExecutionUpdate(selectedExecution.id, "Failed");
     
     setIsDefectDialogOpen(false);
     setDefectData({
@@ -348,12 +278,14 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   };
 
   const handlePageChange = (page: number) => {
+    const totalPages = Math.ceil(executions.length / itemsPerPage);
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
   const openExecutionDrawer = (index: number) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
     const globalIndex = startIndex + index;
     setSelectedExecutionIndex(globalIndex);
     
@@ -414,39 +346,9 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     return Math.round((currentNumber / executions.length) * 100);
   };
 
-  const generatePageNumbers = () => {
-    const pages = [];
-    const maxPagesToShow = 5;
-    
-    if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push('ellipsis');
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push('ellipsis');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis');
-        pages.push(totalPages);
-      }
-    }
-    
-    return pages;
+  const handleDefectClick = (index: number) => {
+    openExecutionDrawer(index);
+    setIsDefectDialogOpen(true);
   };
 
   return (
@@ -484,378 +386,52 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       </div>
 
       {/* Test Case Executions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            <span>Test Case Executions</span>
-            <div className="flex items-center gap-4">
-              {selectedExecutionIndex !== null && (
-                <div className="text-sm text-gray-500">
-                  Currently executing: Test {getCurrentExecutionNumber()} of {executions.length}
-                </div>
-              )}
-              <span className="text-sm font-normal text-gray-500">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} test cases
-              </span>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div ref={tableRef}>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Test Case</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Executed By</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedExecutions.map((execution, index) => {
-                  const globalIndex = startIndex + index;
-                  const isCurrentExecution = selectedExecutionIndex === globalIndex;
-                  const testCase = getTestCaseDetails(execution.testCaseId);
-                  
-                  return (
-                    <TableRow 
-                      key={execution.id}
-                      className={isCurrentExecution ? "bg-blue-50 border-blue-200 border-2" : ""}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {isCurrentExecution && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                          )}
-                          <div>
-                            <div className="font-medium">{testCase?.title || "Unknown Test Case"}</div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {testCase?.description}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(execution.status)}>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(execution.status)}
-                            {execution.status}
-                          </div>
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{testCase?.priority || "Unknown"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {execution.executedBy ? "User" : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant={isCurrentExecution ? "default" : "outline"}
-                            onClick={() => openExecutionDrawer(index)}
-                          >
-                            {isCurrentExecution ? "Continue" : "Execute"}
-                          </Button>
-                          {execution.status === "Failed" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                openExecutionDrawer(index);
-                                setIsDefectDialogOpen(true);
-                              }}
-                            >
-                              <Bug className="h-4 w-4 mr-1" />
-                              Log Defect
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                  
-                  {generatePageNumbers().map((page, index) => (
-                    <PaginationItem key={index}>
-                      {page === 'ellipsis' ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          onClick={() => handlePageChange(page as number)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                        >
-                          {page}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <TestCaseExecutionTable
+        executions={executions}
+        selectedExecutionIndex={selectedExecutionIndex}
+        currentPage={currentPage}
+        itemsPerPage={itemsPerPage}
+        getTestCaseDetails={getTestCaseDetails}
+        onExecutionClick={openExecutionDrawer}
+        onDefectClick={handleDefectClick}
+        onPageChange={handlePageChange}
+        tableRef={tableRef}
+      />
 
       {/* Execution Drawer */}
-      <Drawer open={selectedExecutionIndex !== null} onOpenChange={() => {
-        cancelAutoNavigation();
-        setSelectedExecutionIndex(null);
-      }}>
-        <DrawerContent className="h-[80vh]">
-          <DrawerHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-2">
-                  <DrawerTitle>Execute Test Case</DrawerTitle>
-                  {countdownActive && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="animate-pulse text-blue-600">
-                        Auto-navigating in {countdown}s
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={cancelAutoNavigation}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <DrawerDescription>
-                  Test case {getCurrentExecutionNumber()} of {executions.length} ({getCompletionPercentage()}% complete)
-                </DrawerDescription>
-                {/* Progress bar */}
-                <div className="mt-2 w-full max-w-md">
-                  <Progress value={getCompletionPercentage()} className="h-2" />
-                </div>
-                {/* Keyboard shortcuts hint */}
-                <div className="text-xs text-gray-500 mt-2">
-                  Use ← → arrows to navigate, Ctrl+1-4 for quick actions, Esc to cancel/close
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={navigateToPrevious}
-                  disabled={selectedExecutionIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={navigateToNext}
-                  disabled={selectedExecutionIndex === executions.length - 1}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          </DrawerHeader>
-          
-          {selectedTestCase && selectedExecution && (
-            <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-                {/* Test Case Details */}
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold">{selectedTestCase.title}</h3>
-                      <Badge className={getPriorityColor(selectedTestCase.priority)}>
-                        {selectedTestCase.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">{selectedTestCase.description}</p>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-500" />
-                        <span>Assignee: {selectedTestCase.assignee}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Timer className="h-4 w-4 text-gray-500" />
-                        <span>Est. Time: {selectedTestCase.estimatedTime}m</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span>Created: {selectedTestCase.createdDate}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Play className="h-4 w-4 text-gray-500" />
-                        <span>Last Run: {selectedTestCase.lastRun}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2">Test Steps:</h4>
-                    <ol className="space-y-2">
-                      {selectedTestCase.steps.map((step, index) => (
-                        <li key={index} className="flex gap-2">
-                          <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                            {index + 1}
-                          </span>
-                          <span className="text-sm">{step}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2">Expected Result:</h4>
-                    <p className="text-sm bg-green-50 p-3 rounded-md border border-green-200">
-                      {selectedTestCase.expectedResult}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Execution Form */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium block mb-2">Actual Result</label>
-                    <Textarea
-                      value={actualResult}
-                      onChange={(e) => setActualResult(e.target.value)}
-                      placeholder="Describe what actually happened during execution"
-                      className="min-h-[120px]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium block mb-2">Notes</label>
-                    <Textarea
-                      value={executionNotes}
-                      onChange={(e) => setExecutionNotes(e.target.value)}
-                      placeholder="Any additional notes or observations"
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DrawerFooter className="border-t">
-            <div className="flex gap-2 justify-center">
-              <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Passed")}
-                className="bg-green-600 hover:bg-green-700"
-                title="Ctrl+1"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Pass
-              </Button>
-              <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Failed")}
-                className="bg-red-600 hover:bg-red-700"
-                title="Ctrl+2"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Fail
-              </Button>
-              <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Blocked")}
-                className="bg-yellow-600 hover:bg-yellow-700"
-                title="Ctrl+3"
-              >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Block
-              </Button>
-              <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Skipped")}
-                variant="outline"
-                title="Ctrl+4"
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                Skip
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
-            </div>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      <TestExecutionDrawer
+        isOpen={selectedExecutionIndex !== null}
+        onClose={() => {
+          cancelAutoNavigation();
+          setSelectedExecutionIndex(null);
+        }}
+        selectedExecution={selectedExecution}
+        selectedTestCase={selectedTestCase}
+        executionNotes={executionNotes}
+        actualResult={actualResult}
+        countdownActive={countdownActive}
+        countdown={countdown}
+        currentExecutionNumber={getCurrentExecutionNumber()}
+        totalExecutions={executions.length}
+        completionPercentage={getCompletionPercentage()}
+        canNavigatePrevious={selectedExecutionIndex !== null && selectedExecutionIndex > 0}
+        canNavigateNext={selectedExecutionIndex !== null && selectedExecutionIndex < executions.length - 1}
+        onExecutionNotesChange={setExecutionNotes}
+        onActualResultChange={setActualResult}
+        onExecutionUpdate={handleExecutionUpdate}
+        onNavigatePrevious={navigateToPrevious}
+        onNavigateNext={navigateToNext}
+        onCancelAutoNavigation={cancelAutoNavigation}
+      />
 
       {/* Defect Creation Dialog */}
-      <Dialog open={isDefectDialogOpen} onOpenChange={setIsDefectDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Log Defect</DialogTitle>
-            <DialogDescription>
-              Create a defect report for the failed test case
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Title *</label>
-              <input
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-                value={defectData.title}
-                onChange={(e) => setDefectData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Brief description of the defect"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Description *</label>
-              <Textarea
-                value={defectData.description}
-                onChange={(e) => setDefectData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed description of the defect"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Reproduction Steps</label>
-              <Textarea
-                value={defectData.reproductionSteps}
-                onChange={(e) => setDefectData(prev => ({ ...prev, reproductionSteps: e.target.value }))}
-                placeholder="Step-by-step instructions to reproduce the defect (one step per line)"
-              />
-            </div>
-            <div className="flex gap-4">
-              <Button
-                onClick={() => selectedExecution && handleCreateDefect(selectedExecution.id)}
-                disabled={!defectData.title || !defectData.description}
-              >
-                Create Defect
-              </Button>
-              <Button variant="outline" onClick={() => setIsDefectDialogOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DefectCreationDialog
+        isOpen={isDefectDialogOpen}
+        onClose={() => setIsDefectDialogOpen(false)}
+        defectData={defectData}
+        onDefectDataChange={setDefectData}
+        onCreateDefect={handleCreateDefect}
+      />
     </div>
   );
 }
