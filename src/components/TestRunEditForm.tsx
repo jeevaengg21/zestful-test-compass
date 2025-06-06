@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +36,12 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
   });
 
   const selectedTestPlan = testPlans.find(plan => plan.id === formData.testPlanId);
+  
+  // Fix: Preserve the order from test plan by mapping over testSuiteIds instead of filtering
   const availableTestSuites = selectedTestPlan 
-    ? testSuites.filter(suite => selectedTestPlan.testSuiteIds.includes(suite.id))
+    ? selectedTestPlan.testSuiteIds.map(suiteId => 
+        testSuites.find(suite => suite.id === suiteId)
+      ).filter(Boolean)
     : [];
 
   const handleTestSuiteChange = (suiteId: string, checked: boolean) => {
