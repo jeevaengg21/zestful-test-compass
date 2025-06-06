@@ -1,3 +1,4 @@
+
 import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from './store';
 
@@ -62,3 +63,30 @@ export const selectTestExecutionsByPlan = (state: RootState, testPlanId: string)
   state.testPlans.testExecutions.filter(execution => execution.testPlanId === testPlanId);
 export const selectTestExecutionsByUser = (state: RootState, userId: string) =>
   state.testPlans.testExecutions.filter(execution => execution.assignedTo === userId);
+
+// Test Run selectors
+export const selectAllTestRuns = (state: RootState) => state.testRuns.testRuns;
+export const selectTestRunById = (state: RootState, id: string) =>
+  state.testRuns.testRuns.find(run => run.id === id);
+export const selectTestRunsByStatus = (state: RootState, status: string) =>
+  state.testRuns.testRuns.filter(run => run.status === status);
+export const selectTestRunsByAssignee = (state: RootState, userId: string) =>
+  state.testRuns.testRuns.filter(run => run.assignedTo === userId);
+export const selectTestRunsByPlan = (state: RootState, testPlanId: string) =>
+  state.testRuns.testRuns.filter(run => run.testPlanId === testPlanId);
+
+// Test Case Execution selectors
+export const selectAllTestCaseExecutions = (state: RootState) => state.testRuns.testCaseExecutions;
+export const selectTestCaseExecutionsByRun = (state: RootState, testRunId: string) =>
+  state.testRuns.testCaseExecutions.filter(execution => execution.testRunId === testRunId);
+export const selectTestCaseExecutionsByUser = (state: RootState, userId: string) =>
+  state.testRuns.testCaseExecutions.filter(execution => execution.executedBy === userId);
+
+// Defect selectors
+export const selectAllDefects = (state: RootState) => state.testRuns.defects;
+export const selectDefectsByTestRun = (state: RootState, testRunId: string) =>
+  state.testRuns.defects.filter(defect => defect.testRunId === testRunId);
+export const selectDefectsByStatus = (state: RootState, status: string) =>
+  state.testRuns.defects.filter(defect => defect.status === status);
+export const selectDefectsByAssignee = (state: RootState, userId: string) =>
+  state.testRuns.defects.filter(defect => defect.assignedTo === userId);
