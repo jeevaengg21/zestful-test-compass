@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -553,7 +554,6 @@ export const TestSuiteManager = () => {
                     <TableHead className="w-[200px]">Description</TableHead>
                     <TableHead className="w-[100px]">Priority</TableHead>
                     <TableHead className="w-[100px]">Status</TableHead>
-                    <TableHead className="w-[120px]">Assignee</TableHead>
                     <TableHead className="w-[100px]">Est. Time</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -592,7 +592,6 @@ export const TestSuiteManager = () => {
                             {testCase.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm">{testCase.assignee}</TableCell>
                         <TableCell className="text-sm">{testCase.estimatedTime}m</TableCell>
                       </TableRow>
                     );

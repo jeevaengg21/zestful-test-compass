@@ -19,7 +19,6 @@ import {
   AlertTriangle, 
   Clock, 
   Play,
-  User,
   Calendar,
   Timer,
   ChevronLeft,
@@ -179,11 +178,6 @@ export function TestExecutionDrawer({
                   <p className="text-sm text-gray-700 mb-6 leading-relaxed">{selectedTestCase.description}</p>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-600" />
-                      <span className="text-gray-900 font-medium">Assignee:</span>
-                      <span className="text-gray-700">{selectedTestCase.assignee}</span>
-                    </div>
                     <div className="flex items-center gap-2">
                       <Timer className="h-4 w-4 text-gray-600" />
                       <span className="text-gray-900 font-medium">Est. Time:</span>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,6 @@ export const TestCases = () => {
     priority: "Medium" as TestCase['priority'],
     productId: "",
     moduleId: "",
-    assignee: "",
     steps: "",
     expectedResult: "",
     estimatedTime: 5
@@ -78,7 +78,6 @@ export const TestCases = () => {
       priority: "Medium",
       productId: "",
       moduleId: "",
-      assignee: "",
       steps: "",
       expectedResult: "",
       estimatedTime: 5
@@ -95,7 +94,7 @@ export const TestCases = () => {
         status: "Not Run",
         steps: formData.steps ? formData.steps.split('\n').filter(s => s.trim()) : [],
         expectedResult: formData.expectedResult,
-        assignee: formData.assignee,
+        assignee: "Unassigned", // Default value for backward compatibility
         productId: formData.productId,
         moduleId: formData.moduleId,
         estimatedTime: formData.estimatedTime
@@ -113,7 +112,6 @@ export const TestCases = () => {
       priority: testCase.priority,
       productId: testCase.productId,
       moduleId: testCase.moduleId,
-      assignee: testCase.assignee,
       steps: testCase.steps.join('\n'),
       expectedResult: testCase.expectedResult,
       estimatedTime: testCase.estimatedTime
@@ -131,7 +129,6 @@ export const TestCases = () => {
           priority: formData.priority,
           steps: formData.steps ? formData.steps.split('\n').filter(s => s.trim()) : [],
           expectedResult: formData.expectedResult,
-          assignee: formData.assignee,
           productId: formData.productId,
           moduleId: formData.moduleId,
           estimatedTime: formData.estimatedTime
@@ -241,30 +238,19 @@ export const TestCases = () => {
                       </Select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="priority">Priority</Label>
-                      <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Critical">Critical</SelectItem>
-                          <SelectItem value="High">High</SelectItem>
-                          <SelectItem value="Medium">Medium</SelectItem>
-                          <SelectItem value="Low">Low</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="assignee">Assignee</Label>
-                      <Input
-                        id="assignee"
-                        value={formData.assignee}
-                        onChange={(e) => handleInputChange("assignee", e.target.value)}
-                        placeholder="Enter assignee name"
-                      />
-                    </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="priority">Priority</Label>
+                    <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Critical">Critical</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="steps">Test Steps (one per line)</Label>
@@ -393,30 +379,19 @@ export const TestCases = () => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="editPriority">Priority</Label>
-                  <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Critical">Critical</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="editAssignee">Assignee</Label>
-                  <Input
-                    id="editAssignee"
-                    value={formData.assignee}
-                    onChange={(e) => handleInputChange("assignee", e.target.value)}
-                    placeholder="Enter assignee name"
-                  />
-                </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editPriority">Priority</Label>
+                <Select value={formData.priority} onValueChange={(value) => handleInputChange("priority", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Critical">Critical</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editSteps">Test Steps (one per line)</Label>
@@ -506,7 +481,6 @@ export const TestCases = () => {
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Run</TableHead>
-                  <TableHead>Assignee</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -531,9 +505,6 @@ export const TestCases = () => {
                     </TableCell>
                     <TableCell className="text-gray-500">
                       {testCase.lastRun}
-                    </TableCell>
-                    <TableCell className="text-gray-900">
-                      {testCase.assignee}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => handleEditTestCase(testCase)}>
