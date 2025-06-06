@@ -23,9 +23,12 @@ import {
   Calendar,
   Timer,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database
 } from "lucide-react";
 import { TestCaseExecution } from "@/store/slices/testRunSlice";
+import { useAppSelector } from "@/store/hooks";
+import { selectTestDataSetsForTestCase } from "@/store/selectors";
 
 interface TestExecutionDrawerProps {
   isOpen: boolean;
@@ -70,6 +73,11 @@ export function TestExecutionDrawer({
   onNavigateNext,
   onCancelAutoNavigation
 }: TestExecutionDrawerProps) {
+  // Get test data for the selected test case
+  const testDataSets = useAppSelector(state => 
+    selectedTestCase ? selectTestDataSetsForTestCase(state, selectedTestCase.id) : []
+  );
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "Critical": return "bg-red-100 text-red-800";
@@ -192,6 +200,38 @@ export function TestExecutionDrawer({
                     {selectedTestCase.expectedResult}
                   </p>
                 </div>
+
+                {/* Test Data Section */}
+                {testDataSets.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Database className="h-4 w-4 text-blue-600" />
+                      <h4 className="font-medium">Test Data:</h4>
+                    </div>
+                    <div className="space-y-3">
+                      {testDataSets.map((dataSet) => (
+                        <div key={dataSet.id} className="bg-blue-50 p-3 rounded-md border border-blue-200">
+                          <div className="font-medium text-sm text-blue-900 mb-2">{dataSet.name}</div>
+                          <div className="space-y-1">
+                            {dataSet.items.map((item) => (
+                              <div key={item.id} className="flex justify-between text-xs">
+                                <span className="font-medium text-gray-700">{item.key}:</span>
+                                <span className="text-gray-600 ml-2">
+                                  {item.type === 'password' ? '••••••••' : item.value}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          {dataSet.description && (
+                            <div className="text-xs text-gray-500 mt-1 italic">
+                              {dataSet.description}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Execution Form */}
