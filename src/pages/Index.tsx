@@ -5,6 +5,7 @@ import { TestCases } from "@/components/TestCases";
 import { TestRuns } from "@/components/TestRuns";
 import { Products } from "@/components/Products";
 import { Reports } from "@/components/Reports";
+import { Users } from "@/components/Users";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -24,6 +25,8 @@ const Index = () => {
         return <Products />;
       case "reports":
         return <Reports />;
+      case "users":
+        return <Users />;
       default:
         return <Dashboard />;
     }
