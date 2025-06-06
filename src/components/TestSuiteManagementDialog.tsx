@@ -93,7 +93,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Test Suites - {currentTestPlan.name}</DialogTitle>
           <DialogDescription>
@@ -101,8 +101,67 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-6">
-          {/* Mapped Test Suites */}
+        <div className="grid grid-cols-2 gap-8">
+          {/* Available Test Suites - Left Side */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Available Test Suites</h3>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search test suites..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+
+            {availableTestSuites.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Test Cases</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {availableTestSuites.map((suite) => (
+                    <TableRow key={suite.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{suite.name}</div>
+                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            {suite.description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{suite.status}</Badge>
+                      </TableCell>
+                      <TableCell>{suite.testCaseIds.length}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddTestSuite(suite.id)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                {searchTerm ? "No test suites found matching your search" : "No additional test suites available"}
+              </div>
+            )}
+          </div>
+
+          {/* Mapped Test Suites - Right Side */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Mapped Test Suites ({mappedTestSuites.length})</h3>
             {mappedTestSuites.length > 0 ? (
@@ -167,65 +226,6 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
             ) : (
               <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 No test suites mapped to this plan yet
-              </div>
-            )}
-          </div>
-
-          {/* Available Test Suites */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Available Test Suites</h3>
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search test suites..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-
-            {availableTestSuites.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Test Cases</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {availableTestSuites.map((suite) => (
-                    <TableRow key={suite.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{suite.name}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
-                            {suite.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{suite.status}</Badge>
-                      </TableCell>
-                      <TableCell>{suite.testCaseIds.length}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddTestSuite(suite.id)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                {searchTerm ? "No test suites found matching your search" : "No additional test suites available"}
               </div>
             )}
           </div>
