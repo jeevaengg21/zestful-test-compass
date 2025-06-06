@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { 
   Drawer,
   DrawerClose,
@@ -35,7 +36,8 @@ import {
   Calendar,
   Timer,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Settings
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectTestRunById, selectTestCaseExecutionsByRun, selectAllTestCases } from "@/store/selectors";
@@ -56,6 +58,9 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   const [executionNotes, setExecutionNotes] = useState("");
   const [actualResult, setActualResult] = useState("");
   const [isDefectDialogOpen, setIsDefectDialogOpen] = useState(false);
+  const [autoNavigationEnabled, setAutoNavigationEnabled] = useState(true);
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const [defectData, setDefectData] = useState({
     title: "",
     description: "",
@@ -66,6 +71,76 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const tableRef = useRef<HTMLDivElement>(null);
+  const countdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (selectedExecutionIndex === null) return;
+      
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          navigateToPrevious();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          navigateToNext();
+          break;
+        case 'Escape':
+          event.preventDefault();
+          if (countdownActive) {
+            cancelAutoNavigation();
+          } else {
+            setSelectedExecutionIndex(null);
+          }
+          break;
+        case '1':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            selectedExecution && handleExecutionUpdate(selectedExecution.id, "Passed");
+          }
+          break;
+        case '2':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            selectedExecution && handleExecutionUpdate(selectedExecution.id, "Failed");
+          }
+          break;
+        case '3':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            selectedExecution && handleExecutionUpdate(selectedExecution.id, "Blocked");
+          }
+          break;
+        case '4':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            selectedExecution && handleExecutionUpdate(selectedExecution.id, "Skipped");
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedExecutionIndex, countdownActive]);
+
+  // Auto-scroll to current test case in table
+  useEffect(() => {
+    if (selectedExecutionIndex !== null && tableRef.current) {
+      const currentRowIndex = selectedExecutionIndex - startIndex;
+      if (currentRowIndex >= 0 && currentRowIndex < itemsPerPage) {
+        const tableRows = tableRef.current.querySelectorAll('tbody tr');
+        const currentRow = tableRows[currentRowIndex] as HTMLElement;
+        if (currentRow) {
+          currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }, [selectedExecutionIndex, currentPage]);
 
   if (!testRun) {
     return <div>Test run not found</div>;
@@ -115,7 +190,51 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   const selectedExecution = selectedExecutionIndex !== null ? executions[selectedExecutionIndex] : null;
   const selectedTestCase = selectedExecution ? getTestCaseDetails(selectedExecution.testCaseId) : null;
 
+  const cancelAutoNavigation = () => {
+    if (countdownTimeoutRef.current) {
+      clearTimeout(countdownTimeoutRef.current);
+      countdownTimeoutRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setCountdownActive(false);
+    setCountdown(3);
+  };
+
+  const startAutoNavigation = () => {
+    if (!autoNavigationEnabled) return;
+    
+    setCountdownActive(true);
+    setCountdown(3);
+    
+    // Countdown interval
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Auto-navigation timeout
+    countdownTimeoutRef.current = setTimeout(() => {
+      setCountdownActive(false);
+      setCountdown(3);
+      navigateToNext();
+    }, 3000);
+  };
+
   const handleExecutionUpdate = (executionId: string, status: TestCaseExecution['status']) => {
+    const execution = executions.find(e => e.id === executionId);
+    if (!execution) return;
+
     const updates = {
       status,
       executedBy: "USR001", // Should be current user
@@ -126,24 +245,32 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     
     dispatch(updateTestCaseExecution({ id: executionId, updates }));
     
-    // Show feedback toast based on status
+    // Enhanced toast notification with progress info
+    const currentNumber = selectedExecutionIndex !== null ? selectedExecutionIndex + 1 : 0;
+    const progress = Math.round((currentNumber / executions.length) * 100);
+    const remainingTests = executions.length - currentNumber;
+    
     const statusMessages = {
-      'Passed': 'Test case marked as passed ✅',
-      'Failed': 'Test case marked as failed ❌',
-      'Blocked': 'Test case marked as blocked ⚠️',
-      'Skipped': 'Test case marked as skipped ⏭️'
+      'Passed': `✅ Test ${currentNumber}/${executions.length} passed! (${progress}% complete)`,
+      'Failed': `❌ Test ${currentNumber}/${executions.length} failed! (${progress}% complete)`,
+      'Blocked': `⚠️ Test ${currentNumber}/${executions.length} blocked! (${progress}% complete)`,
+      'Skipped': `⏭️ Test ${currentNumber}/${executions.length} skipped! (${progress}% complete)`
     };
     
-    toast.success(statusMessages[status] || 'Test case updated');
+    const nextTestInfo = remainingTests > 0 ? ` | ${remainingTests} tests remaining` : ' | All tests completed!';
+    
+    toast.success(statusMessages[status] + nextTestInfo, {
+      duration: autoNavigationEnabled ? 3000 : 5000,
+    });
     
     // Clear form data
     setExecutionNotes("");
     setActualResult("");
     
-    // Auto-navigate to next test case after a short delay
-    setTimeout(() => {
-      navigateToNext();
-    }, 1000);
+    // Start auto-navigation if enabled and there are more tests
+    if (autoNavigationEnabled && remainingTests > 0) {
+      startAutoNavigation();
+    }
   };
 
   const handleCreateDefect = (executionId: string) => {
@@ -193,6 +320,9 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     const execution = executions[globalIndex];
     setActualResult(execution.actualResult || "");
     setExecutionNotes(execution.notes || "");
+    
+    // Cancel any ongoing auto-navigation
+    cancelAutoNavigation();
   };
 
   const navigateToPrevious = () => {
@@ -210,6 +340,9 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       if (newPage !== currentPage) {
         setCurrentPage(newPage);
       }
+      
+      // Cancel auto-navigation when manually navigating
+      cancelAutoNavigation();
     }
   };
 
@@ -233,6 +366,11 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
 
   const getCurrentExecutionNumber = () => {
     return selectedExecutionIndex !== null ? selectedExecutionIndex + 1 : 0;
+  };
+
+  const getCompletionPercentage = () => {
+    const currentNumber = getCurrentExecutionNumber();
+    return Math.round((currentNumber / executions.length) * 100);
   };
 
   const generatePageNumbers = () => {
@@ -288,9 +426,20 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
             </Badge>
           </div>
         </div>
-        <Button variant="outline" onClick={onClose}>
-          Close
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAutoNavigationEnabled(!autoNavigationEnabled)}
+            className="flex items-center gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Auto-nav: {autoNavigationEnabled ? "ON" : "OFF"}
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </div>
 
       {/* Test Case Executions Table */}
@@ -298,78 +447,98 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
             <span>Test Case Executions</span>
-            <span className="text-sm font-normal text-gray-500">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} test cases
-            </span>
+            <div className="flex items-center gap-4">
+              {selectedExecutionIndex !== null && (
+                <div className="text-sm text-gray-500">
+                  Currently executing: Test {getCurrentExecutionNumber()} of {executions.length}
+                </div>
+              )}
+              <span className="text-sm font-normal text-gray-500">
+                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} test cases
+              </span>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Test Case</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Executed By</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedExecutions.map((execution, index) => {
-                const testCase = getTestCaseDetails(execution.testCaseId);
-                return (
-                  <TableRow key={execution.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{testCase?.title || "Unknown Test Case"}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {testCase?.description}
+          <div ref={tableRef}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Test Case</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Executed By</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedExecutions.map((execution, index) => {
+                  const globalIndex = startIndex + index;
+                  const isCurrentExecution = selectedExecutionIndex === globalIndex;
+                  const testCase = getTestCaseDetails(execution.testCaseId);
+                  
+                  return (
+                    <TableRow 
+                      key={execution.id}
+                      className={isCurrentExecution ? "bg-blue-50 border-blue-200 border-2" : ""}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {isCurrentExecution && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          )}
+                          <div>
+                            <div className="font-medium">{testCase?.title || "Unknown Test Case"}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {testCase?.description}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(execution.status)}>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(execution.status)}
-                          {execution.status}
-                        </div>
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{testCase?.priority}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {execution.executedBy ? "User" : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openExecutionDrawer(index)}
-                        >
-                          Execute
-                        </Button>
-                        {execution.status === "Failed" && (
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(execution.status)}>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon(execution.status)}
+                            {execution.status}
+                          </div>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{testCase?.priority}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {execution.executedBy ? "User" : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              openExecutionDrawer(index);
-                              setIsDefectDialogOpen(true);
-                            }}
+                            variant={isCurrentExecution ? "default" : "outline"}
+                            onClick={() => openExecutionDrawer(index)}
                           >
-                            <Bug className="h-4 w-4 mr-1" />
-                            Log Defect
+                            {isCurrentExecution ? "Continue" : "Execute"}
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                          {execution.status === "Failed" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                openExecutionDrawer(index);
+                                setIsDefectDialogOpen(true);
+                              }}
+                            >
+                              <Bug className="h-4 w-4 mr-1" />
+                              Log Defect
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -413,15 +582,42 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       </Card>
 
       {/* Execution Drawer */}
-      <Drawer open={selectedExecutionIndex !== null} onOpenChange={() => setSelectedExecutionIndex(null)}>
+      <Drawer open={selectedExecutionIndex !== null} onOpenChange={() => {
+        cancelAutoNavigation();
+        setSelectedExecutionIndex(null);
+      }}>
         <DrawerContent className="h-[80vh]">
           <DrawerHeader className="border-b">
             <div className="flex items-center justify-between">
-              <div>
-                <DrawerTitle>Execute Test Case</DrawerTitle>
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-2">
+                  <DrawerTitle>Execute Test Case</DrawerTitle>
+                  {countdownActive && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="animate-pulse text-blue-600">
+                        Auto-navigating in {countdown}s
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={cancelAutoNavigation}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <DrawerDescription>
-                  Test case {getCurrentExecutionNumber()} of {executions.length} - Review details and record execution results
+                  Test case {getCurrentExecutionNumber()} of {executions.length} ({getCompletionPercentage()}% complete)
                 </DrawerDescription>
+                {/* Progress bar */}
+                <div className="mt-2 w-full max-w-md">
+                  <Progress value={getCompletionPercentage()} className="h-2" />
+                </div>
+                {/* Keyboard shortcuts hint */}
+                <div className="text-xs text-gray-500 mt-2">
+                  Use ← → arrows to navigate, Ctrl+1-4 for quick actions, Esc to cancel/close
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -533,6 +729,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               <Button
                 onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Passed")}
                 className="bg-green-600 hover:bg-green-700"
+                title="Ctrl+1"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Pass
@@ -540,6 +737,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               <Button
                 onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Failed")}
                 className="bg-red-600 hover:bg-red-700"
+                title="Ctrl+2"
               >
                 <XCircle className="h-4 w-4 mr-2" />
                 Fail
@@ -547,6 +745,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               <Button
                 onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Blocked")}
                 className="bg-yellow-600 hover:bg-yellow-700"
+                title="Ctrl+3"
               >
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Block
@@ -554,6 +753,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               <Button
                 onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Skipped")}
                 variant="outline"
+                title="Ctrl+4"
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Skip
