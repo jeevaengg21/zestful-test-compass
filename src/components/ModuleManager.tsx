@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Plus, 
   Users, 
@@ -187,85 +188,89 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
         </Dialog>
       </div>
 
-      {/* Modules Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {modules.map((module) => (
-          <Card key={module.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-lg mb-2">{module.name}</CardTitle>
-                  <p className="text-sm text-gray-600 mb-3">{module.description}</p>
-                </div>
-                <Badge className={getStatusColor(module.status)}>
-                  {module.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Team Information */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">Owner:</span>
-                  </div>
-                  <span className="text-gray-600">{module.moduleOwner}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <UserCheck className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">Manager:</span>
-                  </div>
-                  <span className="text-gray-600">{module.manager}</span>
-                </div>
-              </div>
-
-              {/* Team Members */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Code className="h-4 w-4 text-purple-600" />
-                    <span className="font-medium">Developers:</span>
-                  </div>
-                  <span className="text-gray-600">{module.developers.length}</span>
-                </div>
-                <div className="text-xs text-gray-500 ml-6">
-                  {module.developers.join(", ")}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Bug className="h-4 w-4 text-orange-600" />
-                    <span className="font-medium">Testers:</span>
-                  </div>
-                  <span className="text-gray-600">{module.testers.length}</span>
-                </div>
-                <div className="text-xs text-gray-500 ml-6">
-                  {module.testers.join(", ")}
-                </div>
-              </div>
-
-              {/* Meta Information */}
-              <div className="pt-3 border-t">
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>Created: {module.createdDate}</span>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {modules.length === 0 && (
+      {/* Modules Table */}
+      {modules.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Module List</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Module ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Manager</TableHead>
+                  <TableHead>Developers</TableHead>
+                  <TableHead>Testers</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {modules.map((module) => (
+                  <TableRow key={module.id}>
+                    <TableCell className="font-medium">{module.id}</TableCell>
+                    <TableCell className="font-medium">{module.name}</TableCell>
+                    <TableCell className="max-w-xs truncate" title={module.description}>
+                      {module.description}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <User className="h-3 w-3 text-blue-600" />
+                        <span className="text-sm">{module.moduleOwner}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <UserCheck className="h-3 w-3 text-green-600" />
+                        <span className="text-sm">{module.manager}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Code className="h-3 w-3 text-purple-600" />
+                        <span className="text-sm">{module.developers.length}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 max-w-32 truncate" title={module.developers.join(", ")}>
+                        {module.developers.join(", ")}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Bug className="h-3 w-3 text-orange-600" />
+                        <span className="text-sm">{module.testers.length}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 max-w-32 truncate" title={module.testers.join(", ")}>
+                        {module.testers.join(", ")}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(module.status)}>
+                        {module.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        <span className="text-sm">{module.createdDate}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ) : (
         <Card>
           <CardContent className="p-12 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
