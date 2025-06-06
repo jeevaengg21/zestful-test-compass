@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ModuleManager } from "./ModuleManager";
-import { useProductStore } from "@/store/productStore";
+import { useProductStore, Product } from "@/store/productStore";
 import { 
   Plus, 
   FolderOpen, 
@@ -21,22 +23,27 @@ import {
   CheckCircle,
   Clock,
   ArrowLeft,
-  Layers
+  Layers,
+  Edit,
+  MoreVertical
 } from "lucide-react";
 
 export const Products = () => {
-  const { products, addProduct } = useProductStore();
+  const { products, addProduct, updateProduct } = useProductStore();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     productName: "",
     productOwner: "",
-    description: ""
+    description: "",
+    status: "Active" as Product['status']
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Active": return "bg-green-100 text-green-800";
+      case "Inactive": return "bg-gray-100 text-gray-800";
       case "On Hold": return "bg-yellow-100 text-yellow-800";
       case "Completed": return "bg-blue-100 text-blue-800";
       default: return "bg-gray-100 text-gray-800";
@@ -62,7 +69,31 @@ export const Products = () => {
         description: formData.description
       });
       setIsCreateDialogOpen(false);
-      setFormData({ productName: "", productOwner: "", description: "" });
+      setFormData({ productName: "", productOwner: "", description: "", status: "Active" });
+    }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      productName: product.name,
+      productOwner: product.owner,
+      description: product.description,
+      status: product.status
+    });
+  };
+
+  const handleUpdateProduct = () => {
+    if (editingProduct && formData.productName && formData.productOwner) {
+      console.log("Updating product:", formData);
+      updateProduct(editingProduct.id, {
+        name: formData.productName,
+        owner: formData.productOwner,
+        description: formData.description,
+        status: formData.status
+      });
+      setEditingProduct(null);
+      setFormData({ productName: "", productOwner: "", description: "", status: "Active" });
     }
   };
 
@@ -155,6 +186,67 @@ export const Products = () => {
         </Dialog>
       </div>
 
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="editProductName">Product Name</Label>
+              <Input
+                id="editProductName"
+                value={formData.productName}
+                onChange={(e) => handleInputChange("productName", e.target.value)}
+                placeholder="Enter product name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editProductOwner">Product Owner</Label>
+              <Input
+                id="editProductOwner"
+                value={formData.productOwner}
+                onChange={(e) => handleInputChange("productOwner", e.target.value)}
+                placeholder="Enter product owner"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editStatus">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="On Hold">On Hold</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editDescription">Description</Label>
+              <Textarea
+                id="editDescription"
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                placeholder="Enter product description"
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setEditingProduct(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateProduct}>
+              Update Product
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
@@ -228,9 +320,24 @@ export const Products = () => {
                         <CardTitle className="text-xl mb-2">{product.name}</CardTitle>
                         <p className="text-sm text-gray-600 mb-3">{product.description}</p>
                       </div>
-                      <Badge className={getStatusColor(product.status)}>
-                        {product.status}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getStatusColor(product.status)}>
+                          {product.status}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditProduct(product)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Product
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">

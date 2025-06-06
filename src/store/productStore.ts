@@ -5,7 +5,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  status: 'Active' | 'On Hold' | 'Completed';
+  status: 'Active' | 'Inactive' | 'On Hold' | 'Completed';
   testCases: number;
   testRuns: number;
   teamMembers: number;
@@ -97,7 +97,13 @@ export const useProductStore = create<ProductStore>((set) => ({
   updateProduct: (id, updates) =>
     set((state) => ({
       products: state.products.map((product) =>
-        product.id === id ? { ...product, ...updates } : product
+        product.id === id 
+          ? { 
+              ...product, 
+              ...updates, 
+              lastActivity: updates.status || updates.name || updates.description || updates.owner ? "Just now" : product.lastActivity 
+            } 
+          : product
       )
     })),
   deleteProduct: (id) =>
