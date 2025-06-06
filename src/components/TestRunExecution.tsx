@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,13 @@ import {
   Settings
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectTestRunById, selectTestCaseExecutionsByRun, selectAllTestCases } from "@/store/selectors";
+import { 
+  selectTestRunById, 
+  selectTestCaseExecutionsByRun, 
+  selectAllTestCases, 
+  selectAllTestSuites,
+  selectTestCasesInSuite
+} from "@/store/selectors";
 import { updateTestCaseExecution, addDefect, TestCaseExecution } from "@/store/slices/testRunSlice";
 
 interface TestRunExecutionProps {
@@ -53,6 +60,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   const testRun = useAppSelector(state => selectTestRunById(state, testRunId));
   const executions = useAppSelector(state => selectTestCaseExecutionsByRun(state, testRunId));
   const allTestCases = useAppSelector(selectAllTestCases);
+  const allTestSuites = useAppSelector(selectAllTestSuites);
   
   const [selectedExecutionIndex, setSelectedExecutionIndex] = useState<number | null>(null);
   const [executionNotes, setExecutionNotes] = useState("");
@@ -74,6 +82,30 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   const tableRef = useRef<HTMLDivElement>(null);
   const countdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get all test cases from the test suites assigned to this test run
+  const testSuiteTestCases = useAppSelector(state => {
+    if (!testRun) return [];
+    
+    // Flatten all test cases from all test suites in this test run
+    let allTestCasesFromSuites: any[] = [];
+    testRun.testSuiteIds.forEach(suiteId => {
+      const testCasesInSuite = selectTestCasesInSuite(state, suiteId);
+      allTestCasesFromSuites = [...allTestCasesFromSuites, ...testCasesInSuite];
+    });
+    
+    return allTestCasesFromSuites;
+  });
+  
+  // Console logging for debugging
+  useEffect(() => {
+    if (testRun) {
+      console.log('Test Run:', testRun);
+      console.log('Test Suite IDs:', testRun.testSuiteIds);
+      console.log('Test Cases from Test Suites:', testSuiteTestCases);
+      console.log('Executions:', executions);
+    }
+  }, [testRun, testSuiteTestCases, executions]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -183,8 +215,15 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     }
   };
 
+  // Improved function to get test case details by checking both direct ID lookup and suite mappings
   const getTestCaseDetails = (testCaseId: string) => {
-    return allTestCases.find(tc => tc.id === testCaseId);
+    // First try direct lookup from all test cases
+    const directMatch = allTestCases.find(tc => tc.id === testCaseId);
+    if (directMatch) return directMatch;
+    
+    // If not found directly, check if it's in any of the test suites for this run
+    const testCaseInSuites = testSuiteTestCases.find(tc => tc.id === testCaseId);
+    return testCaseInSuites || null;
   };
 
   const selectedExecution = selectedExecutionIndex !== null ? executions[selectedExecutionIndex] : null;
@@ -277,6 +316,8 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     const execution = executions.find(e => e.id === executionId);
     if (!execution) return;
 
+    const testCase = getTestCaseDetails(execution.testCaseId);
+
     const defect = {
       title: defectData.title,
       description: defectData.description,
@@ -288,7 +329,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       reportedBy: "USR001", // Should be current user
       reportedDate: new Date().toISOString().split('T')[0],
       reproductionSteps: defectData.reproductionSteps.split('\n').filter(step => step.trim()),
-      expectedResult: getTestCaseDetails(execution.testCaseId)?.expectedResult || "",
+      expectedResult: testCase?.expectedResult || "",
       actualResult: actualResult
     };
 
@@ -504,7 +545,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{testCase?.priority}</Badge>
+                        <Badge variant="outline">{testCase?.priority || "Unknown"}</Badge>
                       </TableCell>
                       <TableCell>
                         {execution.executedBy ? "User" : "-"}
