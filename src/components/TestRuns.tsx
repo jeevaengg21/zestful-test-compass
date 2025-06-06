@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Plus, 
@@ -15,12 +17,14 @@ import {
   Users,
   Calendar,
   Settings,
-  Bug
+  Bug,
+  Edit
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAllTestRuns, selectAllUsers, selectAllTestPlans } from "@/store/selectors";
 import { startTestRun, pauseTestRun, completeTestRun } from "@/store/slices/testRunSlice";
 import { TestRunForm } from "./TestRunForm";
+import { TestRunEditForm } from "./TestRunEditForm";
 import { TestRunExecution } from "./TestRunExecution";
 
 export const TestRuns = () => {
@@ -31,6 +35,7 @@ export const TestRuns = () => {
   
   const [activeTab, setActiveTab] = useState("active");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isExecutionDialogOpen, setIsExecutionDialogOpen] = useState(false);
   const [selectedTestRun, setSelectedTestRun] = useState<string | null>(null);
 
@@ -53,6 +58,16 @@ export const TestRuns = () => {
       case "Not Started": return <Clock className="h-4 w-4 text-gray-600" />;
       case "Cancelled": return <XCircle className="h-4 w-4 text-red-600" />;
       default: return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "Critical": return "bg-red-100 text-red-800";
+      case "High": return "bg-orange-100 text-orange-800";
+      case "Medium": return "bg-yellow-100 text-yellow-800";
+      case "Low": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -95,6 +110,13 @@ export const TestRuns = () => {
     setSelectedTestRun(runId);
     setIsExecutionDialogOpen(true);
   };
+
+  const handleEditRun = (runId: string) => {
+    setSelectedTestRun(runId);
+    setIsEditDialogOpen(true);
+  };
+
+  const selectedTestRunData = selectedTestRun ? testRuns.find(run => run.id === selectedTestRun) : null;
 
   return (
     <div className="p-6 space-y-6">
@@ -202,118 +224,135 @@ export const TestRuns = () => {
         </nav>
       </div>
 
-      {/* Test Runs Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredRuns.map((run) => (
-          <Card key={run.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{run.name}</CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">{getTestPlanName(run.testPlanId)}</p>
-                  <p className="text-xs text-gray-500 mt-1">{run.description}</p>
-                </div>
-                <Badge className={getStatusColor(run.status)}>
-                  <div className="flex items-center space-x-1">
-                    {getStatusIcon(run.status)}
-                    <span>{run.status}</span>
-                  </div>
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Progress */}
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Progress</span>
-                  <span>{run.progress}% ({run.executedTestCases}/{run.totalTestCases})</span>
-                </div>
-                <Progress value={run.progress} className="h-2" />
-              </div>
+      {/* Test Runs Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Test Runs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Test Plan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Assignee</TableHead>
+                <TableHead>Progress</TableHead>
+                <TableHead>Results</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRuns.map((run) => (
+                <TableRow key={run.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{run.name}</div>
+                      <div className="text-sm text-gray-500">{run.description}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{getTestPlanName(run.testPlanId)}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(run.status)}>
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(run.status)}
+                        <span>{run.status}</span>
+                      </div>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className={getPriorityColor(run.priority)}>
+                      {run.priority}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{getUserName(run.assignedTo)}</TableCell>
+                  <TableCell>
+                    <div className="w-full">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{run.progress}%</span>
+                        <span>{run.executedTestCases}/{run.totalTestCases}</span>
+                      </div>
+                      <Progress value={run.progress} className="h-2" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2 text-xs">
+                      <span className="text-green-600">{run.passedTestCases}P</span>
+                      <span className="text-red-600">{run.failedTestCases}F</span>
+                      <span className="text-yellow-600">{run.blockedTestCases}B</span>
+                      <span className="text-gray-600">{run.skippedTestCases}S</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{run.endDate}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleExecuteRun(run.id)}
+                      >
+                        Execute
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditRun(run.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      {run.status === "In Progress" ? (
+                        <>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handlePauseRun(run.id)}
+                          >
+                            <Pause className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleCompleteRun(run.id)}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : run.status === "Not Started" || run.status === "On Hold" ? (
+                        <Button 
+                          size="sm"
+                          onClick={() => handleStartRun(run.id)}
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-              {/* Test Results */}
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div>
-                  <div className="text-lg font-bold text-green-600">{run.passedTestCases}</div>
-                  <div className="text-xs text-gray-500">Passed</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-red-600">{run.failedTestCases}</div>
-                  <div className="text-xs text-gray-500">Failed</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-yellow-600">{run.blockedTestCases}</div>
-                  <div className="text-xs text-gray-500">Blocked</div>
-                </div>
-                <div>
-                  <div className="text-lg font-bold text-gray-600">{run.skippedTestCases}</div>
-                  <div className="text-xs text-gray-500">Skipped</div>
-                </div>
-              </div>
-
-              {/* Meta Information */}
-              <div className="flex justify-between items-center text-sm text-gray-500 pt-3 border-t">
-                <div className="flex items-center space-x-1">
-                  <Users className="h-4 w-4" />
-                  <span>{getUserName(run.assignedTo)}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>Due: {run.endDate}</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex space-x-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleExecuteRun(run.id)}
-                >
-                  Execute Tests
-                </Button>
-                {run.status === "In Progress" ? (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handlePauseRun(run.id)}
-                    >
-                      <Pause className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleCompleteRun(run.id)}
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                    </Button>
-                  </>
-                ) : run.status === "Not Started" ? (
-                  <Button 
-                    size="sm"
-                    onClick={() => handleStartRun(run.id)}
-                  >
-                    <Play className="h-4 w-4" />
-                  </Button>
-                ) : run.status === "On Hold" ? (
-                  <Button 
-                    size="sm"
-                    onClick={() => handleStartRun(run.id)}
-                  >
-                    <Play className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Test Run Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Test Run</DialogTitle>
+            <DialogDescription>
+              Modify test run details, test suites, and assignee.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTestRunData && (
+            <TestRunEditForm 
+              testRun={selectedTestRunData}
+              onClose={() => setIsEditDialogOpen(false)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Test Run Execution Dialog */}
       <Dialog open={isExecutionDialogOpen} onOpenChange={setIsExecutionDialogOpen}>
