@@ -8,7 +8,8 @@ import {
   TestTube,
   Users,
   Layers,
-  Calendar
+  Calendar,
+  Database
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
     { id: "test-suites", label: "Test Suites", icon: Layers },
     { id: "test-plans", label: "Test Plans", icon: Calendar },
     { id: "test-runs", label: "Test Runs", icon: Play },
+    { id: "test-data", label: "Test Data", icon: Database },
     { id: "products", label: "Products", icon: FolderOpen },
     { id: "users", label: "Users", icon: Users },
     { id: "reports", label: "Reports", icon: PieChart },

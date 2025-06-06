@@ -9,6 +9,7 @@ import { Users } from "@/components/Users";
 import { TestSuiteManager } from "@/components/TestSuiteManager";
 import { TestPlanManager } from "@/components/TestPlanManager";
 import { TestRunExecution } from "@/components/TestRunExecution";
+import { TestDataManager } from "@/components/TestDataManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -84,6 +85,8 @@ const Index = () => {
             onClose={handleBackToTestRuns} 
           />
         ) : null;
+      case "test-data":
+        return <TestDataManager />;
       case "products":
         return <Products />;
       case "reports":
