@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,8 @@ import {
   selectTestCaseExecutionsByRun, 
   selectAllTestCases, 
   selectAllTestSuites,
-  selectTestCasesInSuite
+  selectTestCasesInSuite,
+  selectAllTestPlans
 } from "@/store/selectors";
 import { updateTestCaseExecution, addDefect, TestCaseExecution } from "@/store/slices/testRunSlice";
 import { TestCaseExecutionTable } from "./TestCaseExecutionTable";
@@ -25,9 +25,39 @@ interface TestRunExecutionProps {
 export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) {
   const dispatch = useAppDispatch();
   const testRun = useAppSelector(state => selectTestRunById(state, testRunId));
-  const executions = useAppSelector(state => selectTestCaseExecutionsByRun(state, testRunId));
+  const rawExecutions = useAppSelector(state => selectTestCaseExecutionsByRun(state, testRunId));
   const allTestCases = useAppSelector(selectAllTestCases);
   const allTestSuites = useAppSelector(selectAllTestSuites);
+  const allTestPlans = useAppSelector(selectAllTestPlans);
+  
+  // Order executions based on test suite order in test plan
+  const executions = (() => {
+    if (!testRun) return rawExecutions;
+    
+    const testPlan = allTestPlans.find(plan => plan.id === testRun.testPlanId);
+    if (!testPlan) return rawExecutions;
+    
+    // Create ordered executions based on test suite order in test plan
+    const orderedExecutions: TestCaseExecution[] = [];
+    
+    // Process each test suite in the order defined in the test plan
+    testPlan.testSuiteIds.forEach(suiteId => {
+      if (testRun.testSuiteIds.includes(suiteId)) {
+        const suite = allTestSuites.find(s => s.id === suiteId);
+        if (suite) {
+          // For each test case in the suite, find its execution
+          suite.testCaseIds.forEach(testCaseId => {
+            const execution = rawExecutions.find(exec => exec.testCaseId === testCaseId);
+            if (execution) {
+              orderedExecutions.push(execution);
+            }
+          });
+        }
+      }
+    });
+    
+    return orderedExecutions;
+  })();
   
   const [selectedExecutionIndex, setSelectedExecutionIndex] = useState<number | null>(null);
   const [executionNotes, setExecutionNotes] = useState("");
@@ -75,9 +105,10 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       console.log('Test Run:', testRun);
       console.log('Test Suite IDs:', testRun.testSuiteIds);
       console.log('Test Cases from Test Suites:', testSuiteTestCases);
-      console.log('Executions:', executions);
+      console.log('Raw Executions:', rawExecutions);
+      console.log('Ordered Executions:', executions);
     }
-  }, [testRun, testSuiteTestCases, executions]);
+  }, [testRun, testSuiteTestCases, rawExecutions, executions]);
 
   // Keyboard navigation
   useEffect(() => {
