@@ -37,6 +37,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   ).filter(Boolean);
 
   const handleAddTestSuite = (suiteId: string) => {
+    console.log("Adding test suite:", suiteId);
     const updatedSuiteIds = [...testPlan.testSuiteIds, suiteId];
     dispatch(updateTestPlan({
       id: testPlan.id,
@@ -45,6 +46,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   };
 
   const handleRemoveTestSuite = (suiteId: string) => {
+    console.log("Removing test suite:", suiteId);
     const updatedSuiteIds = testPlan.testSuiteIds.filter(id => id !== suiteId);
     dispatch(updateTestPlan({
       id: testPlan.id,
@@ -53,6 +55,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   };
 
   const handleMoveUp = (index: number) => {
+    console.log("Moving up index:", index);
     if (index > 0) {
       const updatedSuiteIds = [...testPlan.testSuiteIds];
       [updatedSuiteIds[index], updatedSuiteIds[index - 1]] = [updatedSuiteIds[index - 1], updatedSuiteIds[index]];
@@ -64,6 +67,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   };
 
   const handleMoveDown = (index: number) => {
+    console.log("Moving down index:", index);
     if (index < testPlan.testSuiteIds.length - 1) {
       const updatedSuiteIds = [...testPlan.testSuiteIds];
       [updatedSuiteIds[index], updatedSuiteIds[index + 1]] = [updatedSuiteIds[index + 1], updatedSuiteIds[index]];
@@ -146,7 +150,12 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleAddTestSuite(suite.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleAddTestSuite(suite.id);
+                          }}
+                          className="h-8 px-3"
                         >
                           <Plus className="h-4 w-4 mr-1" />
                           Add
@@ -204,23 +213,41 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleMoveUp(index)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleMoveUp(index);
+                            }}
                             disabled={index === 0}
+                            className="h-8 w-8 p-0"
+                            title="Move up"
                           >
                             <ChevronUp className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleMoveDown(index)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleMoveDown(index);
+                            }}
                             disabled={index === mappedTestSuites.length - 1}
+                            className="h-8 w-8 p-0"
+                            title="Move down"
                           >
                             <ChevronDown className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleRemoveTestSuite(suite.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleRemoveTestSuite(suite.id);
+                            }}
+                            className="h-8 w-8 p-0"
+                            title="Remove"
                           >
                             <X className="h-4 w-4" />
                           </Button>
