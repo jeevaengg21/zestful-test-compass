@@ -74,6 +74,21 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     }
   };
 
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-100 text-green-800';
+      case 'Draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'Inactive':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Archived':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -121,11 +136,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={
-                        suite.status === 'Active' ? 'bg-green-100 text-green-800' :
-                        suite.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }>
+                      <Badge variant="secondary" className={getStatusBadgeClass(suite.status)}>
                         {suite.status}
                       </Badge>
                     </TableCell>
@@ -180,11 +191,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={
-                        suite.status === 'Active' ? 'bg-green-100 text-green-800' :
-                        suite.status === 'Draft' ? 'bg-gray-100 text-gray-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }>
+                      <Badge variant="secondary" className={getStatusBadgeClass(suite.status)}>
                         {suite.status}
                       </Badge>
                     </TableCell>
