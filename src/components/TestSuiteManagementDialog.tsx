@@ -91,7 +91,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[98vw] w-full max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Test Suites - {testPlan.name}</DialogTitle>
           <DialogDescription>
@@ -99,7 +99,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-8">
           {/* Available Test Suites */}
           <div className="space-y-4">
             <div>
@@ -119,10 +119,10 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[200px]">Name</TableHead>
-                    <TableHead className="min-w-[100px]">Status</TableHead>
-                    <TableHead className="min-w-[100px]">Test Cases</TableHead>
-                    <TableHead className="min-w-[100px]">Action</TableHead>
+                    <TableHead className="min-w-[250px]">Name</TableHead>
+                    <TableHead className="min-w-[120px]">Status</TableHead>
+                    <TableHead className="min-w-[120px]">Test Cases</TableHead>
+                    <TableHead className="min-w-[120px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -131,7 +131,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                       <TableCell>
                         <div>
                           <div className="font-medium">{suite.name}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
                             {suite.description}
                           </div>
                         </div>
@@ -176,10 +176,10 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[200px]">Name</TableHead>
-                    <TableHead className="min-w-[100px]">Status</TableHead>
-                    <TableHead className="min-w-[100px]">Test Cases</TableHead>
-                    <TableHead className="min-w-[120px]">Actions</TableHead>
+                    <TableHead className="min-w-[250px]">Name</TableHead>
+                    <TableHead className="min-w-[120px]">Status</TableHead>
+                    <TableHead className="min-w-[120px]">Test Cases</TableHead>
+                    <TableHead className="min-w-[140px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -188,7 +188,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                       <TableCell>
                         <div>
                           <div className="font-medium">{suite.name}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
                             {suite.description}
                           </div>
                         </div>
