@@ -6,7 +6,8 @@ import {
   FolderOpen, 
   PieChart,
   TestTube,
-  Users
+  Users,
+  Layers
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,6 +30,7 @@ export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "test-cases", label: "Test Cases", icon: FileText },
+    { id: "test-suites", label: "Test Suites", icon: Layers },
     { id: "test-runs", label: "Test Runs", icon: Play },
     { id: "products", label: "Products", icon: FolderOpen },
     { id: "users", label: "Users", icon: Users },
