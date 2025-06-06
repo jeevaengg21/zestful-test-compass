@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ModuleManager } from "./ModuleManager";
 import { 
   Plus, 
   FolderOpen, 
@@ -16,11 +16,14 @@ import {
   BarChart3,
   Settings,
   CheckCircle,
-  Clock
+  Clock,
+  ArrowLeft,
+  Layers
 } from "lucide-react";
 
 export const Products = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     productName: "",
     productOwner: "",
@@ -107,6 +110,38 @@ export const Products = () => {
     setIsCreateDialogOpen(false);
     setFormData({ productName: "", productOwner: "", description: "" });
   };
+
+  const handleViewModules = (productId: string) => {
+    setSelectedProduct(productId);
+  };
+
+  const handleBackToProducts = () => {
+    setSelectedProduct(null);
+  };
+
+  const selectedProductData = products.find(p => p.id === selectedProduct);
+
+  // If a product is selected, show the module manager
+  if (selectedProduct && selectedProductData) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" onClick={handleBackToProducts}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Products
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{selectedProductData.name}</h1>
+            <p className="text-gray-600">{selectedProductData.description}</p>
+          </div>
+        </div>
+        <ModuleManager 
+          productId={selectedProduct} 
+          productName={selectedProductData.name}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -285,8 +320,14 @@ export const Products = () => {
 
               {/* Actions */}
               <div className="flex space-x-2 pt-3 border-t">
-                <Button variant="outline" size="sm" className="flex-1">
-                  View Details
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleViewModules(product.id)}
+                >
+                  <Layers className="h-4 w-4 mr-2" />
+                  View Modules
                 </Button>
                 <Button variant="outline" size="sm">
                   <Settings className="h-4 w-4" />
