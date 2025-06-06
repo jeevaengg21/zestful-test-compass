@@ -21,6 +21,8 @@ import {
   Bug
 } from "lucide-react";
 import { TestCaseExecution } from "@/store/slices/testRunSlice";
+import { useAppSelector } from "@/store/hooks";
+import { selectAllTestSuites } from "@/store/selectors";
 
 interface TestCaseExecutionTableProps {
   executions: TestCaseExecution[];
@@ -45,11 +47,19 @@ export function TestCaseExecutionTable({
   onPageChange,
   tableRef
 }: TestCaseExecutionTableProps) {
+  const allTestSuites = useAppSelector(selectAllTestSuites);
+  
   const totalItems = executions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedExecutions = executions.slice(startIndex, endIndex);
+
+  const getTestSuiteForTestCase = (testCaseId: string) => {
+    return allTestSuites.find(suite => 
+      suite.testCaseIds && suite.testCaseIds.includes(testCaseId)
+    );
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -133,6 +143,7 @@ export function TestCaseExecutionTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Test Case</TableHead>
+                <TableHead>Test Suite</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Executed By</TableHead>
@@ -144,6 +155,7 @@ export function TestCaseExecutionTable({
                 const globalIndex = startIndex + index;
                 const isCurrentExecution = selectedExecutionIndex === globalIndex;
                 const testCase = getTestCaseDetails(execution.testCaseId);
+                const testSuite = getTestSuiteForTestCase(execution.testCaseId);
                 
                 return (
                   <TableRow 
@@ -162,6 +174,16 @@ export function TestCaseExecutionTable({
                           </div>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {testSuite ? (
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">{testSuite.name}</span>
+                          <span className="text-xs text-gray-500">{testSuite.id}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No Suite</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(execution.status)}>
