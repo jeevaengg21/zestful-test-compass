@@ -43,7 +43,7 @@ export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
           </div>
           <div className="flex items-center space-x-2">
             <UserMenu />
-            <SidebarTrigger className="md:hidden" />
+            <SidebarTrigger />
           </div>
         </div>
       </SidebarHeader>
