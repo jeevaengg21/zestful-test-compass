@@ -7,6 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { 
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -21,7 +30,10 @@ import {
   AlertTriangle, 
   Clock, 
   Play,
-  Bug
+  Bug,
+  User,
+  Calendar,
+  Timer
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectTestRunById, selectTestCaseExecutionsByRun, selectAllTestCases } from "@/store/selectors";
@@ -84,9 +96,22 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     }
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "Critical": return "bg-red-100 text-red-800";
+      case "High": return "bg-orange-100 text-orange-800";
+      case "Medium": return "bg-yellow-100 text-yellow-800";
+      case "Low": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
   const getTestCaseDetails = (testCaseId: string) => {
     return allTestCases.find(tc => tc.id === testCaseId);
   };
+
+  const selectedExecutionData = selectedExecution ? executions.find(e => e.id === selectedExecution) : null;
+  const selectedTestCase = selectedExecutionData ? getTestCaseDetails(selectedExecutionData.testCaseId) : null;
 
   const handleExecutionUpdate = (executionId: string, status: TestCaseExecution['status']) => {
     const updates = {
@@ -319,67 +344,135 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
         </CardContent>
       </Card>
 
-      {/* Execution Dialog */}
-      {selectedExecution && (
-        <Dialog open={!!selectedExecution} onOpenChange={() => setSelectedExecution(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Execute Test Case</DialogTitle>
-              <DialogDescription>
-                Record the execution results for this test case
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Actual Result</label>
-                <Textarea
-                  value={actualResult}
-                  onChange={(e) => setActualResult(e.target.value)}
-                  placeholder="Describe what actually happened during execution"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Notes</label>
-                <Textarea
-                  value={executionNotes}
-                  onChange={(e) => setExecutionNotes(e.target.value)}
-                  placeholder="Any additional notes or observations"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => handleExecutionUpdate(selectedExecution, "Passed")}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Pass
-                </Button>
-                <Button
-                  onClick={() => handleExecutionUpdate(selectedExecution, "Failed")}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Fail
-                </Button>
-                <Button
-                  onClick={() => handleExecutionUpdate(selectedExecution, "Blocked")}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Block
-                </Button>
-                <Button
-                  onClick={() => handleExecutionUpdate(selectedExecution, "Skipped")}
-                  variant="outline"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Skip
-                </Button>
+      {/* Execution Drawer */}
+      <Drawer open={!!selectedExecution} onOpenChange={() => setSelectedExecution(null)}>
+        <DrawerContent className="h-[80vh]">
+          <DrawerHeader className="border-b">
+            <DrawerTitle>Execute Test Case</DrawerTitle>
+            <DrawerDescription>
+              Review test case details and record execution results
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          {selectedTestCase && (
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                {/* Test Case Details */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold">{selectedTestCase.title}</h3>
+                      <Badge className={getPriorityColor(selectedTestCase.priority)}>
+                        {selectedTestCase.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{selectedTestCase.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span>Assignee: {selectedTestCase.assignee}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Timer className="h-4 w-4 text-gray-500" />
+                        <span>Est. Time: {selectedTestCase.estimatedTime}m</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span>Created: {selectedTestCase.createdDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Play className="h-4 w-4 text-gray-500" />
+                        <span>Last Run: {selectedTestCase.lastRun}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Test Steps:</h4>
+                    <ol className="space-y-2">
+                      {selectedTestCase.steps.map((step, index) => (
+                        <li key={index} className="flex gap-2">
+                          <span className="bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
+                            {index + 1}
+                          </span>
+                          <span className="text-sm">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Expected Result:</h4>
+                    <p className="text-sm bg-green-50 p-3 rounded-md border border-green-200">
+                      {selectedTestCase.expectedResult}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Execution Form */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-2">Actual Result</label>
+                    <Textarea
+                      value={actualResult}
+                      onChange={(e) => setActualResult(e.target.value)}
+                      placeholder="Describe what actually happened during execution"
+                      className="min-h-[120px]"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium block mb-2">Notes</label>
+                    <Textarea
+                      value={executionNotes}
+                      onChange={(e) => setExecutionNotes(e.target.value)}
+                      placeholder="Any additional notes or observations"
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          )}
+          
+          <DrawerFooter className="border-t">
+            <div className="flex gap-2 justify-center">
+              <Button
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Passed")}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Pass
+              </Button>
+              <Button
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Failed")}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Fail
+              </Button>
+              <Button
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Blocked")}
+                className="bg-yellow-600 hover:bg-yellow-700"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Block
+              </Button>
+              <Button
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Skipped")}
+                variant="outline"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Skip
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DrawerClose>
+            </div>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {/* Defect Creation Dialog */}
       <Dialog open={isDefectDialogOpen} onOpenChange={setIsDefectDialogOpen}>
