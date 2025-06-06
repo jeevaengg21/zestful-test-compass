@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTestStore, TestCase } from "@/store/testStore";
-import { useProductStore } from "@/store/productStore";
-import { useModuleStore } from "@/store/moduleStore";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addTestCase, updateTestCase, TestCase } from "@/store/slices/testSlice";
+import { selectAllProducts } from "@/store/selectors";
+import { selectModulesByProduct } from "@/store/selectors";
+import { selectAllTestCases } from "@/store/selectors";
 import { 
   Plus, 
   Search, 
@@ -26,9 +29,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export const TestCases = () => {
-  const { testCases, addTestCase, updateTestCase, getTestCasesByProduct } = useTestStore();
-  const { products } = useProductStore();
-  const { modules } = useModuleStore();
+  const dispatch = useAppDispatch();
+  const testCases = useAppSelector(selectAllTestCases);
+  const products = useAppSelector(selectAllProducts);
+  const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFolder, setSelectedFolder] = useState("all");
@@ -112,7 +116,7 @@ export const TestCases = () => {
   const handleCreateTestCase = () => {
     if (formData.title && formData.productId && formData.moduleId) {
       console.log("Creating test case:", formData);
-      addTestCase({
+      dispatch(addTestCase({
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
@@ -123,7 +127,7 @@ export const TestCases = () => {
         productId: formData.productId,
         moduleId: formData.moduleId,
         estimatedTime: formData.estimatedTime
-      });
+      }));
       setIsCreateDialogOpen(false);
       resetForm();
     }
@@ -147,17 +151,20 @@ export const TestCases = () => {
   const handleUpdateTestCase = () => {
     if (editingTestCase && formData.title && formData.productId && formData.moduleId) {
       console.log("Updating test case:", formData);
-      updateTestCase(editingTestCase.id, {
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        steps: formData.steps ? formData.steps.split('\n').filter(s => s.trim()) : [],
-        expectedResult: formData.expectedResult,
-        assignee: formData.assignee,
-        productId: formData.productId,
-        moduleId: formData.moduleId,
-        estimatedTime: formData.estimatedTime
-      });
+      dispatch(updateTestCase({
+        id: editingTestCase.id,
+        updates: {
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          steps: formData.steps ? formData.steps.split('\n').filter(s => s.trim()) : [],
+          expectedResult: formData.expectedResult,
+          assignee: formData.assignee,
+          productId: formData.productId,
+          moduleId: formData.moduleId,
+          estimatedTime: formData.estimatedTime
+        }
+      }));
       setEditingTestCase(null);
       resetForm();
     }
@@ -231,9 +238,7 @@ export const TestCases = () => {
                         <SelectValue placeholder="Select module" />
                       </SelectTrigger>
                       <SelectContent>
-                        {modules
-                          .filter(module => !formData.productId || module.productId === formData.productId)
-                          .map((module) => (
+                        {modules.map((module) => (
                           <SelectItem key={module.id} value={module.id}>
                             {module.name}
                           </SelectItem>
