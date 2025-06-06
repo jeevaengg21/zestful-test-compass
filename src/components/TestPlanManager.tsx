@@ -13,6 +13,7 @@ import { selectAllProducts, selectAllTestSuites } from "@/store/selectors";
 import { TestPlanForm } from "./TestPlanForm";
 import { TestPlanDetails } from "./TestPlanDetails";
 import { TestSuiteManagementDialog } from "./TestSuiteManagementDialog";
+import { TeamManagementDialog } from "./TeamManagementDialog";
 
 export function TestPlanManager() {
   const dispatch = useAppDispatch();
@@ -27,6 +28,7 @@ export function TestPlanManager() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isTestSuiteDialogOpen, setIsTestSuiteDialogOpen] = useState(false);
+  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
 
   const filteredTestPlans = testPlans.filter(plan => {
     const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -90,8 +92,8 @@ export function TestPlanManager() {
   };
 
   const handleManageTeam = (testPlan: TestPlan) => {
-    // TODO: Implement team management dialog
-    console.log("Managing team for:", testPlan.name);
+    setSelectedTestPlan(testPlan);
+    setIsTeamDialogOpen(true);
   };
 
   return (
@@ -321,6 +323,15 @@ export function TestPlanManager() {
           testPlan={selectedTestPlan}
           open={isTestSuiteDialogOpen}
           onOpenChange={setIsTestSuiteDialogOpen}
+        />
+      )}
+
+      {/* Team Management Dialog */}
+      {selectedTestPlan && (
+        <TeamManagementDialog
+          testPlan={selectedTestPlan}
+          open={isTeamDialogOpen}
+          onOpenChange={setIsTeamDialogOpen}
         />
       )}
     </div>
