@@ -1,5 +1,5 @@
 
-import { create } from 'zustand';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface TestCase {
   id: string;
@@ -15,7 +15,7 @@ export interface TestCase {
   moduleId: string;
   createdDate: string;
   lastRun: string;
-  estimatedTime: number; // in minutes
+  estimatedTime: number;
 }
 
 export interface TestSuite {
@@ -24,32 +24,19 @@ export interface TestSuite {
   description: string;
   productId: string;
   moduleId: string;
-  testCaseIds: string[]; // References to test cases
+  testCaseIds: string[];
   status: 'Active' | 'Inactive' | 'Archived';
   createdDate: string;
   lastModified: string;
   owner: string;
 }
 
-interface TestStore {
+interface TestState {
   testCases: TestCase[];
   testSuites: TestSuite[];
-  addTestCase: (testCase: Omit<TestCase, 'id' | 'createdDate' | 'lastRun'>) => void;
-  updateTestCase: (id: string, updates: Partial<TestCase>) => void;
-  deleteTestCase: (id: string) => void;
-  addTestSuite: (testSuite: Omit<TestSuite, 'id' | 'createdDate' | 'lastModified'>) => void;
-  updateTestSuite: (id: string, updates: Partial<TestSuite>) => void;
-  deleteTestSuite: (id: string) => void;
-  getTestCasesByProduct: (productId: string) => TestCase[];
-  getTestCasesByModule: (moduleId: string) => TestCase[];
-  getTestSuitesByProduct: (productId: string) => TestSuite[];
-  getTestSuitesByModule: (moduleId: string) => TestSuite[];
-  getTestCasesInSuite: (suiteId: string) => TestCase[];
-  addTestCaseToSuite: (suiteId: string, testCaseId: string) => void;
-  removeTestCaseFromSuite: (suiteId: string, testCaseId: string) => void;
 }
 
-export const useTestStore = create<TestStore>((set, get) => ({
+const initialState: TestState = {
   testCases: [
     {
       id: "TC001",
@@ -169,100 +156,88 @@ export const useTestStore = create<TestStore>((set, get) => ({
       lastModified: "2024-01-11",
       owner: "Sarah Wilson"
     }
-  ],
-  addTestCase: (testCaseData) =>
-    set((state) => ({
-      testCases: [
-        ...state.testCases,
-        {
-          ...testCaseData,
-          id: `TC${String(state.testCases.length + 1).padStart(3, '0')}`,
-          createdDate: new Date().toISOString().split('T')[0],
-          lastRun: "Never"
-        }
-      ]
-    })),
-  updateTestCase: (id, updates) =>
-    set((state) => ({
-      testCases: state.testCases.map((testCase) =>
-        testCase.id === id ? { ...testCase, ...updates } : testCase
-      )
-    })),
-  deleteTestCase: (id) =>
-    set((state) => ({
-      testCases: state.testCases.filter((testCase) => testCase.id !== id),
-      testSuites: state.testSuites.map((suite) => ({
-        ...suite,
-        testCaseIds: suite.testCaseIds.filter((tcId) => tcId !== id)
-      }))
-    })),
-  addTestSuite: (testSuiteData) =>
-    set((state) => ({
-      testSuites: [
-        ...state.testSuites,
-        {
-          ...testSuiteData,
-          id: `TS${String(state.testSuites.length + 1).padStart(3, '0')}`,
-          createdDate: new Date().toISOString().split('T')[0],
+  ]
+};
+
+const testSlice = createSlice({
+  name: 'tests',
+  initialState,
+  reducers: {
+    addTestCase: (state, action: PayloadAction<Omit<TestCase, 'id' | 'createdDate' | 'lastRun'>>) => {
+      const newTestCase: TestCase = {
+        ...action.payload,
+        id: `TC${String(state.testCases.length + 1).padStart(3, '0')}`,
+        createdDate: new Date().toISOString().split('T')[0],
+        lastRun: "Never"
+      };
+      state.testCases.push(newTestCase);
+    },
+    updateTestCase: (state, action: PayloadAction<{ id: string; updates: Partial<TestCase> }>) => {
+      const { id, updates } = action.payload;
+      const index = state.testCases.findIndex(testCase => testCase.id === id);
+      if (index !== -1) {
+        state.testCases[index] = { ...state.testCases[index], ...updates };
+      }
+    },
+    deleteTestCase: (state, action: PayloadAction<string>) => {
+      const testCaseId = action.payload;
+      state.testCases = state.testCases.filter(testCase => testCase.id !== testCaseId);
+      // Remove from test suites
+      state.testSuites.forEach(suite => {
+        suite.testCaseIds = suite.testCaseIds.filter(id => id !== testCaseId);
+      });
+    },
+    addTestSuite: (state, action: PayloadAction<Omit<TestSuite, 'id' | 'createdDate' | 'lastModified'>>) => {
+      const newTestSuite: TestSuite = {
+        ...action.payload,
+        id: `TS${String(state.testSuites.length + 1).padStart(3, '0')}`,
+        createdDate: new Date().toISOString().split('T')[0],
+        lastModified: new Date().toISOString().split('T')[0]
+      };
+      state.testSuites.push(newTestSuite);
+    },
+    updateTestSuite: (state, action: PayloadAction<{ id: string; updates: Partial<TestSuite> }>) => {
+      const { id, updates } = action.payload;
+      const index = state.testSuites.findIndex(testSuite => testSuite.id === id);
+      if (index !== -1) {
+        state.testSuites[index] = {
+          ...state.testSuites[index],
+          ...updates,
           lastModified: new Date().toISOString().split('T')[0]
-        }
-      ]
-    })),
-  updateTestSuite: (id, updates) =>
-    set((state) => ({
-      testSuites: state.testSuites.map((testSuite) =>
-        testSuite.id === id 
-          ? { 
-              ...testSuite, 
-              ...updates, 
-              lastModified: new Date().toISOString().split('T')[0] 
-            } 
-          : testSuite
-      )
-    })),
-  deleteTestSuite: (id) =>
-    set((state) => ({
-      testSuites: state.testSuites.filter((testSuite) => testSuite.id !== id)
-    })),
-  getTestCasesByProduct: (productId) => {
-    return get().testCases.filter((testCase) => testCase.productId === productId);
-  },
-  getTestCasesByModule: (moduleId) => {
-    return get().testCases.filter((testCase) => testCase.moduleId === moduleId);
-  },
-  getTestSuitesByProduct: (productId) => {
-    return get().testSuites.filter((testSuite) => testSuite.productId === productId);
-  },
-  getTestSuitesByModule: (moduleId) => {
-    return get().testSuites.filter((testSuite) => testSuite.moduleId === moduleId);
-  },
-  getTestCasesInSuite: (suiteId) => {
-    const suite = get().testSuites.find((s) => s.id === suiteId);
-    if (!suite) return [];
-    return get().testCases.filter((tc) => suite.testCaseIds.includes(tc.id));
-  },
-  addTestCaseToSuite: (suiteId, testCaseId) =>
-    set((state) => ({
-      testSuites: state.testSuites.map((suite) =>
-        suite.id === suiteId
-          ? {
-              ...suite,
-              testCaseIds: [...new Set([...suite.testCaseIds, testCaseId])],
-              lastModified: new Date().toISOString().split('T')[0]
-            }
-          : suite
-      )
-    })),
-  removeTestCaseFromSuite: (suiteId, testCaseId) =>
-    set((state) => ({
-      testSuites: state.testSuites.map((suite) =>
-        suite.id === suiteId
-          ? {
-              ...suite,
-              testCaseIds: suite.testCaseIds.filter((id) => id !== testCaseId),
-              lastModified: new Date().toISOString().split('T')[0]
-            }
-          : suite
-      )
-    }))
-}));
+        };
+      }
+    },
+    deleteTestSuite: (state, action: PayloadAction<string>) => {
+      state.testSuites = state.testSuites.filter(testSuite => testSuite.id !== action.payload);
+    },
+    addTestCaseToSuite: (state, action: PayloadAction<{ suiteId: string; testCaseId: string }>) => {
+      const { suiteId, testCaseId } = action.payload;
+      const suite = state.testSuites.find(s => s.id === suiteId);
+      if (suite && !suite.testCaseIds.includes(testCaseId)) {
+        suite.testCaseIds.push(testCaseId);
+        suite.lastModified = new Date().toISOString().split('T')[0];
+      }
+    },
+    removeTestCaseFromSuite: (state, action: PayloadAction<{ suiteId: string; testCaseId: string }>) => {
+      const { suiteId, testCaseId } = action.payload;
+      const suite = state.testSuites.find(s => s.id === suiteId);
+      if (suite) {
+        suite.testCaseIds = suite.testCaseIds.filter(id => id !== testCaseId);
+        suite.lastModified = new Date().toISOString().split('T')[0];
+      }
+    }
+  }
+});
+
+export const {
+  addTestCase,
+  updateTestCase,
+  deleteTestCase,
+  addTestSuite,
+  updateTestSuite,
+  deleteTestSuite,
+  addTestCaseToSuite,
+  removeTestCaseFromSuite
+} = testSlice.actions;
+
+export default testSlice.reducer;

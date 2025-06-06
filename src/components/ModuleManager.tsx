@@ -1,5 +1,8 @@
-
 import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addModule, updateModule } from "@/store/slices/moduleSlice";
+import { selectModulesByProduct } from "@/store/selectors";
+import { Module } from "@/store/slices/moduleSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useModuleStore, Module } from "@/store/moduleStore";
 import { 
   Plus, 
   Users, 
@@ -30,8 +32,8 @@ interface ModuleManagerProps {
 }
 
 export const ModuleManager = ({ productId, productName }: ModuleManagerProps) => {
-  const { modules, addModule, updateModule, getModulesByProduct } = useModuleStore();
-  const productModules = getModulesByProduct(productId);
+  const dispatch = useAppDispatch();
+  const productModules = useAppSelector(state => selectModulesByProduct(state, productId));
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
@@ -75,7 +77,7 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
   const handleCreateModule = () => {
     if (formData.moduleName && formData.moduleOwner) {
       console.log("Creating module:", formData);
-      addModule({
+      dispatch(addModule({
         name: formData.moduleName,
         description: formData.description,
         moduleOwner: formData.moduleOwner,
@@ -83,7 +85,7 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
         developers: formData.developers ? formData.developers.split(',').map(d => d.trim()) : [],
         testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
         productId: productId
-      });
+      }));
       setIsCreateDialogOpen(false);
       resetForm();
     }
@@ -105,15 +107,18 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
   const handleUpdateModule = () => {
     if (editingModule && formData.moduleName && formData.moduleOwner) {
       console.log("Updating module:", formData);
-      updateModule(editingModule.id, {
-        name: formData.moduleName,
-        description: formData.description,
-        moduleOwner: formData.moduleOwner,
-        manager: formData.manager,
-        developers: formData.developers ? formData.developers.split(',').map(d => d.trim()) : [],
-        testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
-        status: formData.status
-      });
+      dispatch(updateModule({
+        id: editingModule.id,
+        updates: {
+          name: formData.moduleName,
+          description: formData.description,
+          moduleOwner: formData.moduleOwner,
+          manager: formData.manager,
+          developers: formData.developers ? formData.developers.split(',').map(d => d.trim()) : [],
+          testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
+          status: formData.status
+        }
+      }));
       setEditingModule(null);
       resetForm();
     }

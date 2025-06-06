@@ -1,5 +1,5 @@
 
-import { create } from 'zustand';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Module {
   id: string;
@@ -14,15 +14,11 @@ export interface Module {
   productId: string;
 }
 
-interface ModuleStore {
+interface ModuleState {
   modules: Module[];
-  addModule: (module: Omit<Module, 'id' | 'createdDate' | 'status'>) => void;
-  updateModule: (id: string, updates: Partial<Module>) => void;
-  deleteModule: (id: string) => void;
-  getModulesByProduct: (productId: string) => Module[];
 }
 
-export const useModuleStore = create<ModuleStore>((set, get) => ({
+const initialState: ModuleState = {
   modules: [
     {
       id: "MOD001",
@@ -60,30 +56,34 @@ export const useModuleStore = create<ModuleStore>((set, get) => ({
       status: "Testing",
       productId: "PROD003"
     }
-  ],
-  addModule: (moduleData) =>
-    set((state) => ({
-      modules: [
-        ...state.modules,
-        {
-          ...moduleData,
-          id: `MOD${String(state.modules.length + 1).padStart(3, '0')}`,
-          createdDate: new Date().toISOString().split('T')[0],
-          status: "Active" as const
-        }
-      ]
-    })),
-  updateModule: (id, updates) =>
-    set((state) => ({
-      modules: state.modules.map((module) =>
-        module.id === id ? { ...module, ...updates } : module
-      )
-    })),
-  deleteModule: (id) =>
-    set((state) => ({
-      modules: state.modules.filter((module) => module.id !== id)
-    })),
-  getModulesByProduct: (productId) => {
-    return get().modules.filter((module) => module.productId === productId);
+  ]
+};
+
+const moduleSlice = createSlice({
+  name: 'modules',
+  initialState,
+  reducers: {
+    addModule: (state, action: PayloadAction<Omit<Module, 'id' | 'createdDate' | 'status'>>) => {
+      const newModule: Module = {
+        ...action.payload,
+        id: `MOD${String(state.modules.length + 1).padStart(3, '0')}`,
+        createdDate: new Date().toISOString().split('T')[0],
+        status: "Active"
+      };
+      state.modules.push(newModule);
+    },
+    updateModule: (state, action: PayloadAction<{ id: string; updates: Partial<Module> }>) => {
+      const { id, updates } = action.payload;
+      const index = state.modules.findIndex(module => module.id === id);
+      if (index !== -1) {
+        state.modules[index] = { ...state.modules[index], ...updates };
+      }
+    },
+    deleteModule: (state, action: PayloadAction<string>) => {
+      state.modules = state.modules.filter(module => module.id !== action.payload);
+    }
   }
-}));
+});
+
+export const { addModule, updateModule, deleteModule } = moduleSlice.actions;
+export default moduleSlice.reducer;

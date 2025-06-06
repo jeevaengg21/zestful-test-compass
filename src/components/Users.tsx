@@ -1,5 +1,7 @@
-
 import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addUser } from "@/store/slices/userSlice";
+import { selectAllUsers } from "@/store/selectors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +21,6 @@ import {
   Bug,
   UserCheck
 } from "lucide-react";
-import { useUserStore } from "@/store/userStore";
 
 const availableRoles = [
   { id: "admin", label: "Admin", icon: Shield },
@@ -29,7 +30,9 @@ const availableRoles = [
 ];
 
 export const Users = () => {
-  const { users, addUser } = useUserStore();
+  const dispatch = useAppDispatch();
+  const users = useAppSelector(selectAllUsers);
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -65,11 +68,11 @@ export const Users = () => {
 
   const handleCreateUser = () => {
     if (formData.email && formData.fullName && formData.roles.length > 0) {
-      addUser({
+      dispatch(addUser({
         email: formData.email,
         fullName: formData.fullName,
         roles: formData.roles
-      });
+      }));
       
       setIsCreateDialogOpen(false);
       setFormData({

@@ -1,5 +1,8 @@
-
 import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addProduct, updateProduct } from "@/store/slices/productSlice";
+import { selectAllProducts } from "@/store/selectors";
+import { Product } from "@/store/slices/productSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +15,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ModuleManager } from "./ModuleManager";
-import { useProductStore, Product } from "@/store/productStore";
 import { 
   Plus, 
   FolderOpen, 
@@ -29,7 +31,9 @@ import {
 } from "lucide-react";
 
 export const Products = () => {
-  const { products, addProduct, updateProduct } = useProductStore();
+  const dispatch = useAppDispatch();
+  const products = useAppSelector(selectAllProducts);
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
@@ -63,11 +67,11 @@ export const Products = () => {
   const handleCreateProduct = () => {
     if (formData.productName && formData.productOwner) {
       console.log("Creating product:", formData);
-      addProduct({
+      dispatch(addProduct({
         name: formData.productName,
         owner: formData.productOwner,
         description: formData.description
-      });
+      }));
       setIsCreateDialogOpen(false);
       setFormData({ productName: "", productOwner: "", description: "", status: "Active" });
     }
@@ -86,12 +90,15 @@ export const Products = () => {
   const handleUpdateProduct = () => {
     if (editingProduct && formData.productName && formData.productOwner) {
       console.log("Updating product:", formData);
-      updateProduct(editingProduct.id, {
-        name: formData.productName,
-        owner: formData.productOwner,
-        description: formData.description,
-        status: formData.status
-      });
+      dispatch(updateProduct({
+        id: editingProduct.id,
+        updates: {
+          name: formData.productName,
+          owner: formData.productOwner,
+          description: formData.description,
+          status: formData.status
+        }
+      }));
       setEditingProduct(null);
       setFormData({ productName: "", productOwner: "", description: "", status: "Active" });
     }
