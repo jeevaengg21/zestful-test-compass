@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +23,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { toast } from "@/components/ui/sonner";
 import { 
   CheckCircle, 
   XCircle, 
@@ -126,12 +126,24 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     
     dispatch(updateTestCaseExecution({ id: executionId, updates }));
     
+    // Show feedback toast based on status
+    const statusMessages = {
+      'Passed': 'Test case marked as passed ✅',
+      'Failed': 'Test case marked as failed ❌',
+      'Blocked': 'Test case marked as blocked ⚠️',
+      'Skipped': 'Test case marked as skipped ⏭️'
+    };
+    
+    toast.success(statusMessages[status] || 'Test case updated');
+    
     // Clear form data
     setExecutionNotes("");
     setActualResult("");
     
-    // Auto-navigate to next test case
-    navigateToNext();
+    // Auto-navigate to next test case after a short delay
+    setTimeout(() => {
+      navigateToNext();
+    }, 1000);
   };
 
   const handleCreateDefect = (executionId: string) => {
