@@ -33,7 +33,9 @@ import {
   Bug,
   User,
   Calendar,
-  Timer
+  Timer,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectTestRunById, selectTestCaseExecutionsByRun, selectAllTestCases } from "@/store/selectors";
@@ -50,7 +52,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
   const executions = useAppSelector(state => selectTestCaseExecutionsByRun(state, testRunId));
   const allTestCases = useAppSelector(selectAllTestCases);
   
-  const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
+  const [selectedExecutionIndex, setSelectedExecutionIndex] = useState<number | null>(null);
   const [executionNotes, setExecutionNotes] = useState("");
   const [actualResult, setActualResult] = useState("");
   const [isDefectDialogOpen, setIsDefectDialogOpen] = useState(false);
@@ -110,8 +112,8 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     return allTestCases.find(tc => tc.id === testCaseId);
   };
 
-  const selectedExecutionData = selectedExecution ? executions.find(e => e.id === selectedExecution) : null;
-  const selectedTestCase = selectedExecutionData ? getTestCaseDetails(selectedExecutionData.testCaseId) : null;
+  const selectedExecution = selectedExecutionIndex !== null ? executions[selectedExecutionIndex] : null;
+  const selectedTestCase = selectedExecution ? getTestCaseDetails(selectedExecution.testCaseId) : null;
 
   const handleExecutionUpdate = (executionId: string, status: TestCaseExecution['status']) => {
     const updates = {
@@ -123,9 +125,13 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     };
     
     dispatch(updateTestCaseExecution({ id: executionId, updates }));
-    setSelectedExecution(null);
+    
+    // Clear form data
     setExecutionNotes("");
     setActualResult("");
+    
+    // Auto-navigate to next test case
+    navigateToNext();
   };
 
   const handleCreateDefect = (executionId: string) => {
@@ -165,6 +171,56 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  const openExecutionDrawer = (index: number) => {
+    const globalIndex = startIndex + index;
+    setSelectedExecutionIndex(globalIndex);
+    
+    // Pre-fill form data if execution has existing data
+    const execution = executions[globalIndex];
+    setActualResult(execution.actualResult || "");
+    setExecutionNotes(execution.notes || "");
+  };
+
+  const navigateToPrevious = () => {
+    if (selectedExecutionIndex !== null && selectedExecutionIndex > 0) {
+      const newIndex = selectedExecutionIndex - 1;
+      setSelectedExecutionIndex(newIndex);
+      
+      // Update form data for the new execution
+      const execution = executions[newIndex];
+      setActualResult(execution.actualResult || "");
+      setExecutionNotes(execution.notes || "");
+      
+      // Update pagination if needed
+      const newPage = Math.floor(newIndex / itemsPerPage) + 1;
+      if (newPage !== currentPage) {
+        setCurrentPage(newPage);
+      }
+    }
+  };
+
+  const navigateToNext = () => {
+    if (selectedExecutionIndex !== null && selectedExecutionIndex < executions.length - 1) {
+      const newIndex = selectedExecutionIndex + 1;
+      setSelectedExecutionIndex(newIndex);
+      
+      // Update form data for the new execution
+      const execution = executions[newIndex];
+      setActualResult(execution.actualResult || "");
+      setExecutionNotes(execution.notes || "");
+      
+      // Update pagination if needed
+      const newPage = Math.floor(newIndex / itemsPerPage) + 1;
+      if (newPage !== currentPage) {
+        setCurrentPage(newPage);
+      }
+    }
+  };
+
+  const getCurrentExecutionNumber = () => {
+    return selectedExecutionIndex !== null ? selectedExecutionIndex + 1 : 0;
   };
 
   const generatePageNumbers = () => {
@@ -247,7 +303,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedExecutions.map((execution) => {
+              {paginatedExecutions.map((execution, index) => {
                 const testCase = getTestCaseDetails(execution.testCaseId);
                 return (
                   <TableRow key={execution.id}>
@@ -278,7 +334,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedExecution(execution.id)}
+                          onClick={() => openExecutionDrawer(index)}
                         >
                           Execute
                         </Button>
@@ -287,7 +343,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              setSelectedExecution(execution.id);
+                              openExecutionDrawer(index);
                               setIsDefectDialogOpen(true);
                             }}
                           >
@@ -345,16 +401,40 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       </Card>
 
       {/* Execution Drawer */}
-      <Drawer open={!!selectedExecution} onOpenChange={() => setSelectedExecution(null)}>
+      <Drawer open={selectedExecutionIndex !== null} onOpenChange={() => setSelectedExecutionIndex(null)}>
         <DrawerContent className="h-[80vh]">
           <DrawerHeader className="border-b">
-            <DrawerTitle>Execute Test Case</DrawerTitle>
-            <DrawerDescription>
-              Review test case details and record execution results
-            </DrawerDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DrawerTitle>Execute Test Case</DrawerTitle>
+                <DrawerDescription>
+                  Test case {getCurrentExecutionNumber()} of {executions.length} - Review details and record execution results
+                </DrawerDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToPrevious}
+                  disabled={selectedExecutionIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToNext}
+                  disabled={selectedExecutionIndex === executions.length - 1}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           </DrawerHeader>
           
-          {selectedTestCase && (
+          {selectedTestCase && selectedExecution && (
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                 {/* Test Case Details */}
@@ -439,28 +519,28 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
           <DrawerFooter className="border-t">
             <div className="flex gap-2 justify-center">
               <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Passed")}
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Passed")}
                 className="bg-green-600 hover:bg-green-700"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Pass
               </Button>
               <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Failed")}
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Failed")}
                 className="bg-red-600 hover:bg-red-700"
               >
                 <XCircle className="h-4 w-4 mr-2" />
                 Fail
               </Button>
               <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Blocked")}
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Blocked")}
                 className="bg-yellow-600 hover:bg-yellow-700"
               >
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Block
               </Button>
               <Button
-                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution, "Skipped")}
+                onClick={() => selectedExecution && handleExecutionUpdate(selectedExecution.id, "Skipped")}
                 variant="outline"
               >
                 <Clock className="h-4 w-4 mr-2" />
@@ -511,7 +591,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
             </div>
             <div className="flex gap-4">
               <Button
-                onClick={() => selectedExecution && handleCreateDefect(selectedExecution)}
+                onClick={() => selectedExecution && handleCreateDefect(selectedExecution.id)}
                 disabled={!defectData.title || !defectData.description}
               >
                 Create Defect
