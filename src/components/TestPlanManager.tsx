@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Pause, Settings } from "lucide-react";
+import { Plus, Search, Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Pause } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { TestPlan, addTestPlan, updateTestPlan, deleteTestPlan } from "@/store/slices/testPlanSlice";
 import { selectAllProducts, selectAllTestSuites } from "@/store/selectors";
