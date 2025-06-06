@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addTestCase, updateTestCase, TestCase } from "@/store/slices/testSlice";
 import { selectAllProducts } from "@/store/selectors";
@@ -26,6 +27,8 @@ export const TestCases = () => {
   const products = useAppSelector(selectAllProducts);
   
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTestCase, setEditingTestCase] = useState<TestCase | null>(null);
   const [formData, setFormData] = useState({
@@ -142,6 +145,19 @@ export const TestCases = () => {
     testCase.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     testCase.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalItems = filteredTestCases.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTestCases = filteredTestCases.slice(startIndex, endIndex);
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -428,7 +444,7 @@ export const TestCases = () => {
                 <Input
                   placeholder="Search test cases..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -439,57 +455,106 @@ export const TestCases = () => {
         {/* Test cases table */}
         <Card>
           <CardHeader>
-            <CardTitle>Test Cases ({filteredTestCases.length})</CardTitle>
+            <CardTitle>Test Cases ({totalItems})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Run</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignee</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTestCases.map((testCase) => (
-                    <tr key={testCase.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                        {testCase.id}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {testCase.title}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={getPriorityColor(testCase.priority)}>
-                          {testCase.priority}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={getStatusColor(testCase.status)}>
-                          {testCase.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {testCase.lastRun}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {testCase.assignee}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditTestCase(testCase)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Run</TableHead>
+                  <TableHead>Assignee</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentTestCases.map((testCase) => (
+                  <TableRow key={testCase.id}>
+                    <TableCell className="font-medium text-blue-600">
+                      {testCase.id}
+                    </TableCell>
+                    <TableCell className="text-gray-900">
+                      {testCase.title}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getPriorityColor(testCase.priority)}>
+                        {testCase.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(testCase.status)}>
+                        {testCase.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-gray-500">
+                      {testCase.lastRun}
+                    </TableCell>
+                    <TableCell className="text-gray-900">
+                      {testCase.assignee}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditTestCase(testCase)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {currentTestCases.length === 0 && (
+              <div className="p-8 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Test Cases Found</h3>
+                <p className="text-gray-600">
+                  {searchTerm ? "Try adjusting your search criteria." : "Create your first test case to get started."}
+                </p>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="p-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} test cases
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const page = Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + i;
+                        if (page > totalPages) return null;
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
