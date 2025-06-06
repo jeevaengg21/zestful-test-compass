@@ -1,4 +1,3 @@
-
 import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from './store';
 
@@ -47,3 +46,19 @@ export const selectTestCasesInSuite = createSelector(
     return testCases.filter(tc => suite.testCaseIds.includes(tc.id));
   }
 );
+
+// Test Plan selectors
+export const selectAllTestPlans = (state: RootState) => state.testPlans.testPlans;
+export const selectTestPlanById = (state: RootState, id: string) => 
+  state.testPlans.testPlans.find(plan => plan.id === id);
+export const selectTestPlansByProduct = (state: RootState, productId: string) =>
+  state.testPlans.testPlans.filter(plan => plan.productId === productId);
+export const selectTestPlansByStatus = (state: RootState, status: string) =>
+  state.testPlans.testPlans.filter(plan => plan.status === status);
+
+// Test Execution selectors
+export const selectAllTestExecutions = (state: RootState) => state.testPlans.testExecutions;
+export const selectTestExecutionsByPlan = (state: RootState, testPlanId: string) =>
+  state.testPlans.testExecutions.filter(execution => execution.testPlanId === testPlanId);
+export const selectTestExecutionsByUser = (state: RootState, userId: string) =>
+  state.testPlans.testExecutions.filter(execution => execution.assignedTo === userId);

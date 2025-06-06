@@ -7,6 +7,7 @@ import { Products } from "@/components/Products";
 import { Reports } from "@/components/Reports";
 import { Users } from "@/components/Users";
 import { TestSuiteManager } from "@/components/TestSuiteManager";
+import { TestPlanManager } from "@/components/TestPlanManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -22,6 +23,8 @@ const Index = () => {
         return <TestCases />;
       case "test-suites":
         return <TestSuiteManager />;
+      case "test-plans":
+        return <TestPlanManager />;
       case "test-runs":
         return <TestRuns />;
       case "products":
