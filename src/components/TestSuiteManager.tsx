@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addTestSuite, updateTestSuite, TestSuite, addTestCaseToSuite, removeTestCaseFromSuite } from "@/store/slices/testSlice";
-import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectTestCasesInSuite } from "@/store/selectors";
+import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectTestCasesInSuite, selectAllModules } from "@/store/selectors";
 import { 
   Plus, 
   Search, 
@@ -35,6 +35,7 @@ export const TestSuiteManager = () => {
   const testSuites = useAppSelector(selectAllTestSuites);
   const testCases = useAppSelector(selectAllTestCases);
   const products = useAppSelector(selectAllProducts);
+  const allModules = useAppSelector(selectAllModules);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -292,7 +293,6 @@ export const TestSuiteManager = () => {
   };
 
   const getModuleName = (moduleId: string) => {
-    const allModules = products.flatMap(p => modules);
     const module = allModules.find(m => m.id === moduleId);
     return module?.name || "Unknown Module";
   };
