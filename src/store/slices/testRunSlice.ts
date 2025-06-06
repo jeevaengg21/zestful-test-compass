@@ -670,15 +670,52 @@ const testRunSlice = createSlice({
       };
       state.testRuns.push(newTestRun);
     },
-    updateTestRun: (state, action: PayloadAction<{ id: string; updates: Partial<TestRun> }>) => {
-      const { id, updates } = action.payload;
+    updateTestRun: (state, action: PayloadAction<{ id: string; updates: Partial<TestRun>; testCaseIds?: string[] }>) => {
+      const { id, updates, testCaseIds } = action.payload;
       const index = state.testRuns.findIndex(run => run.id === id);
       if (index !== -1) {
+        const currentTestRun = state.testRuns[index];
+        
+        // Check if test suites are being changed
+        const testSuitesChanged = updates.testSuiteIds && 
+          JSON.stringify([...updates.testSuiteIds].sort()) !== 
+          JSON.stringify([...currentTestRun.testSuiteIds].sort());
+        
+        // Update the test run
         state.testRuns[index] = {
-          ...state.testRuns[index],
+          ...currentTestRun,
           ...updates,
           lastModified: new Date().toISOString().split('T')[0]
         };
+        
+        // If test suites changed and we have the new test case IDs, regenerate executions
+        if (testSuitesChanged && testCaseIds) {
+          // Remove existing executions for this test run
+          state.testCaseExecutions = state.testCaseExecutions.filter(
+            execution => execution.testRunId !== id
+          );
+          
+          // Create new executions for the new test cases
+          testCaseIds.forEach((testCaseId, index) => {
+            const newExecution: TestCaseExecution = {
+              id: `TCE${String(state.testCaseExecutions.length + index + 1).padStart(3, '0')}`,
+              testRunId: id,
+              testCaseId,
+              status: 'Not Run',
+              defectIds: [],
+              screenshots: []
+            };
+            state.testCaseExecutions.push(newExecution);
+          });
+          
+          // Reset execution statistics
+          state.testRuns[index].executedTestCases = 0;
+          state.testRuns[index].passedTestCases = 0;
+          state.testRuns[index].failedTestCases = 0;
+          state.testRuns[index].blockedTestCases = 0;
+          state.testRuns[index].skippedTestCases = 0;
+          state.testRuns[index].progress = 0;
+        }
       }
     },
     deleteTestRun: (state, action: PayloadAction<string>) => {

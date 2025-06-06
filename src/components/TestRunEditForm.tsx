@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectAllTestPlans, selectAllUsers, selectAllTestSuites } from "@/store/selectors";
+import { selectAllTestPlans, selectAllUsers, selectAllTestSuites, selectAllTestCases } from "@/store/selectors";
 import { updateTestRun, TestRun } from "@/store/slices/testRunSlice";
 
 interface TestRunEditFormProps {
@@ -21,6 +21,7 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
   const testPlans = useAppSelector(selectAllTestPlans);
   const users = useAppSelector(selectAllUsers);
   const testSuites = useAppSelector(selectAllTestSuites);
+  const allTestCases = useAppSelector(selectAllTestCases);
 
   const [formData, setFormData] = useState({
     name: testRun.name,
@@ -61,6 +62,17 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
     }, 0);
   };
 
+  const getTestCaseIdsFromSuites = () => {
+    let testCaseIds: string[] = [];
+    formData.testSuiteIds.forEach(suiteId => {
+      const suite = testSuites.find(s => s.id === suiteId);
+      if (suite) {
+        testCaseIds = [...testCaseIds, ...suite.testCaseIds];
+      }
+    });
+    return testCaseIds;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -70,11 +82,13 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
     const currentSuiteIds = [...formData.testSuiteIds].sort();
     const originalSuiteIds = [...testRun.testSuiteIds].sort();
     
+    const testSuitesChanged = JSON.stringify(currentSuiteIds) !== JSON.stringify(originalSuiteIds);
+    
     const updates = {
       ...formData,
       totalTestCases,
       // Reset execution counts if test suites changed
-      ...(JSON.stringify(currentSuiteIds) !== JSON.stringify(originalSuiteIds) && {
+      ...(testSuitesChanged && {
         executedTestCases: 0,
         passedTestCases: 0,
         failedTestCases: 0,
@@ -84,7 +98,14 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
       })
     };
 
-    dispatch(updateTestRun({ id: testRun.id, updates }));
+    // Get test case IDs if test suites changed
+    const testCaseIds = testSuitesChanged ? getTestCaseIdsFromSuites() : undefined;
+
+    dispatch(updateTestRun({ 
+      id: testRun.id, 
+      updates,
+      testCaseIds 
+    }));
     onClose();
   };
 
