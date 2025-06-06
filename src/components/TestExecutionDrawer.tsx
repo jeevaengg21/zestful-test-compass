@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,7 @@ import {
 } from "lucide-react";
 import { TestCaseExecution } from "@/store/slices/testRunSlice";
 import { useAppSelector } from "@/store/hooks";
-import { selectTestDataSetsForTestCase } from "@/store/selectors";
+import { selectTestDataSetsForTestCase, selectAllTestCaseDataMappings, selectAllTestDataSets } from "@/store/selectors";
 
 interface TestExecutionDrawerProps {
   isOpen: boolean;
@@ -77,6 +76,21 @@ export function TestExecutionDrawer({
   const testDataSets = useAppSelector(state => 
     selectedTestCase ? selectTestDataSetsForTestCase(state, selectedTestCase.id) : []
   );
+
+  // Debug logging
+  const allMappings = useAppSelector(selectAllTestCaseDataMappings);
+  const allTestDataSets = useAppSelector(selectAllTestDataSets);
+  
+  console.log('TestExecutionDrawer Debug:');
+  console.log('Selected Test Case:', selectedTestCase);
+  console.log('All Test Data Sets:', allTestDataSets);
+  console.log('All Mappings:', allMappings);
+  console.log('Test Data Sets for this test case:', testDataSets);
+  if (selectedTestCase) {
+    console.log('Mappings for test case ID:', selectedTestCase.id);
+    const relevantMappings = allMappings.filter(m => m.testCaseId === selectedTestCase.id);
+    console.log('Relevant mappings:', relevantMappings);
+  }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -229,6 +243,21 @@ export function TestExecutionDrawer({
                           )}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Debug info when no test data */}
+                {testDataSets.length === 0 && selectedTestCase && (
+                  <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Database className="h-4 w-4 text-yellow-600" />
+                      <h4 className="font-medium text-yellow-800">No Test Data Found</h4>
+                    </div>
+                    <div className="text-xs text-yellow-700">
+                      <p>Test Case ID: {selectedTestCase.id}</p>
+                      <p>Available mappings: {allMappings.filter(m => m.testCaseId === selectedTestCase.id).length}</p>
+                      <p>To add test data, use the Test Data Mapper in the test case details.</p>
                     </div>
                   </div>
                 )}
