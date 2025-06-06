@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, ChevronUp, ChevronDown } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { TestPlan, updateTestPlan } from "@/store/slices/testPlanSlice";
 import { selectAllTestSuites } from "@/store/selectors";
@@ -63,9 +63,37 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     }));
   };
 
+  const handleMoveUp = (testSuiteId: string) => {
+    const currentIndex = currentTestPlan.testSuiteIds.indexOf(testSuiteId);
+    if (currentIndex > 0) {
+      const updatedTestSuiteIds = [...currentTestPlan.testSuiteIds];
+      [updatedTestSuiteIds[currentIndex - 1], updatedTestSuiteIds[currentIndex]] = 
+      [updatedTestSuiteIds[currentIndex], updatedTestSuiteIds[currentIndex - 1]];
+      
+      dispatch(updateTestPlan({ 
+        id: currentTestPlan.id, 
+        updates: { testSuiteIds: updatedTestSuiteIds } 
+      }));
+    }
+  };
+
+  const handleMoveDown = (testSuiteId: string) => {
+    const currentIndex = currentTestPlan.testSuiteIds.indexOf(testSuiteId);
+    if (currentIndex < currentTestPlan.testSuiteIds.length - 1) {
+      const updatedTestSuiteIds = [...currentTestPlan.testSuiteIds];
+      [updatedTestSuiteIds[currentIndex], updatedTestSuiteIds[currentIndex + 1]] = 
+      [updatedTestSuiteIds[currentIndex + 1], updatedTestSuiteIds[currentIndex]];
+      
+      dispatch(updateTestPlan({ 
+        id: currentTestPlan.id, 
+        updates: { testSuiteIds: updatedTestSuiteIds } 
+      }));
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Test Suites - {currentTestPlan.name}</DialogTitle>
           <DialogDescription>
@@ -73,58 +101,87 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
           {/* Mapped Test Suites */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Mapped Test Suites ({mappedTestSuites.length})</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Mapped Test Suites ({mappedTestSuites.length})</h3>
             {mappedTestSuites.length > 0 ? (
-              <div className="space-y-2">
-                {mappedTestSuites.map((suite) => (
-                  <div
-                    key={suite.id}
-                    className="flex items-center justify-between p-3 border rounded-lg bg-white"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="flex-1">
-                        <div className="font-medium">{suite.name}</div>
-                        <div className="text-sm text-muted-foreground">{suite.description}</div>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant="secondary">{suite.status}</Badge>
-                          <Badge variant="outline">{suite.testCaseIds.length} test cases</Badge>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Test Cases</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mappedTestSuites.map((suite, index) => (
+                    <TableRow key={suite.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{suite.name}</div>
+                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            {suite.description}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveTestSuite(suite.id)}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{suite.status}</Badge>
+                      </TableCell>
+                      <TableCell>{suite.testCaseIds.length}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMoveUp(suite.id)}
+                            disabled={index === 0}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMoveDown(suite.id)}
+                            disabled={index === mappedTestSuites.length - 1}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveTestSuite(suite.id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 No test suites mapped to this plan yet
               </div>
             )}
           </div>
 
-          {/* Search and Add Test Suites */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Available Test Suites</h3>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search test suites..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+          {/* Available Test Suites */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Available Test Suites</h3>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search test suites..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
 
             {availableTestSuites.length > 0 ? (
@@ -132,7 +189,6 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Test Cases</TableHead>
                     <TableHead>Action</TableHead>
@@ -141,8 +197,14 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                 <TableBody>
                   {availableTestSuites.map((suite) => (
                     <TableRow key={suite.id}>
-                      <TableCell className="font-medium">{suite.name}</TableCell>
-                      <TableCell className="max-w-xs truncate">{suite.description}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{suite.name}</div>
+                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            {suite.description}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{suite.status}</Badge>
                       </TableCell>
@@ -162,7 +224,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 {searchTerm ? "No test suites found matching your search" : "No additional test suites available"}
               </div>
             )}
