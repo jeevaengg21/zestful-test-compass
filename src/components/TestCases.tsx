@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ export const TestCases = () => {
   const dispatch = useAppDispatch();
   const testCases = useAppSelector(selectAllTestCases);
   const products = useAppSelector(selectAllProducts);
-  const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFolder, setSelectedFolder] = useState("all");
@@ -50,6 +48,9 @@ export const TestCases = () => {
     expectedResult: "",
     estimatedTime: 5
   });
+
+  // Get modules based on selected product
+  const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
 
   const folders = [
     { id: "all", name: "All Test Cases", count: testCases.length },
@@ -371,9 +372,7 @@ export const TestCases = () => {
                     <SelectValue placeholder="Select module" />
                   </SelectTrigger>
                   <SelectContent>
-                    {modules
-                      .filter(module => !formData.productId || module.productId === formData.productId)
-                      .map((module) => (
+                    {modules.map((module) => (
                       <SelectItem key={module.id} value={module.id}>
                         {module.name}
                       </SelectItem>
