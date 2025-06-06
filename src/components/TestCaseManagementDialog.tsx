@@ -23,7 +23,7 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
   ) || testSuite;
   const [searchTerm, setSearchTerm] = useState("");
 
-  console.log("TestCaseManagementDialog - Managing test cases for suite:", currentTestSuite.id, "Current test case IDs:", currentTestSuite.testCaseIds);
+  console.log("TestCaseManagementDialog - OPENED with suite:", currentTestSuite.name, "Dialog open:", open);
 
   // Reset search when dialog opens/closes
   useEffect(() => {
@@ -122,33 +122,37 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
         <DialogHeader>
           <DialogTitle>Manage Test Cases - {currentTestSuite.name}</DialogTitle>
           <DialogDescription>
-            Map and unmap test cases for this test suite.
+            Add or remove test cases for this test suite using the side-by-side interface below.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Available Test Cases - Left Side */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Available Test Cases</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Available Test Cases</h3>
+              <Badge variant="outline">{availableTestCases.length} available</Badge>
+            </div>
+            
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search test cases..."
+                placeholder="Search available test cases..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
               />
             </div>
 
-            {availableTestCases.length > 0 ? (
-              <div className="border rounded-lg">
+            <div className="border rounded-lg bg-card">
+              {availableTestCases.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead className="w-[200px]">Title</TableHead>
+                      <TableHead className="w-[80px]">Priority</TableHead>
+                      <TableHead className="w-[80px]">Status</TableHead>
+                      <TableHead className="w-[80px]">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -156,8 +160,8 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
                       <TableRow key={testCase.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{testCase.title}</div>
-                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            <div className="font-medium text-sm">{testCase.title}</div>
+                            <div className="text-xs text-muted-foreground truncate max-w-[180px]">
                               {testCase.description}
                             </div>
                           </div>
@@ -177,6 +181,7 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
                             variant="outline"
                             size="sm"
                             onClick={() => handleAddTestCase(testCase.id)}
+                            className="h-8"
                           >
                             <Plus className="h-4 w-4 mr-1" />
                             Add
@@ -186,26 +191,30 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                {searchTerm ? "No test cases found matching your search" : "No additional test cases available"}
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? "No test cases found matching your search" : "No additional test cases available"}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mapped Test Cases - Right Side */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Mapped Test Cases ({mappedTestCases.length})</h3>
-            {mappedTestCases.length > 0 ? (
-              <div className="border rounded-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Mapped Test Cases</h3>
+              <Badge variant="outline">{mappedTestCases.length} mapped</Badge>
+            </div>
+            
+            <div className="border rounded-lg bg-card">
+              {mappedTestCases.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="w-[200px]">Title</TableHead>
+                      <TableHead className="w-[80px]">Priority</TableHead>
+                      <TableHead className="w-[80px]">Status</TableHead>
+                      <TableHead className="w-[120px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -213,8 +222,8 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
                       <TableRow key={testCase.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{testCase.title}</div>
-                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            <div className="font-medium text-sm">{testCase.title}</div>
+                            <div className="text-xs text-muted-foreground truncate max-w-[180px]">
                               {testCase.description}
                             </div>
                           </div>
@@ -266,12 +275,12 @@ export function TestCaseManagementDialog({ testSuite, open, onOpenChange }: Test
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                No test cases mapped to this suite yet
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No test cases mapped to this suite yet. Add some from the available test cases on the left.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
