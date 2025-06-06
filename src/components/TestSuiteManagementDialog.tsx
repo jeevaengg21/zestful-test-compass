@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,12 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   const dispatch = useAppDispatch();
   const allTestSuites = useAppSelector(selectAllTestSuites);
   const users = useAppSelector(selectAllUsers);
+  
+  // Get the current test plan from Redux state to ensure we have the latest updates
+  const currentTestPlan = useAppSelector(state => 
+    state.testPlans.testPlans.find(plan => plan.id === testPlan.id)
+  ) || testPlan;
+  
   const [searchTerm, setSearchTerm] = useState("");
 
   const getUserName = (userId: string) => {
@@ -28,28 +33,28 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   };
 
   const availableTestSuites = allTestSuites.filter(
-    suite => !testPlan.testSuiteIds.includes(suite.id) &&
+    suite => !currentTestPlan.testSuiteIds.includes(suite.id) &&
              suite.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const mappedTestSuites = testPlan.testSuiteIds.map(suiteId => 
+  const mappedTestSuites = currentTestPlan.testSuiteIds.map(suiteId => 
     allTestSuites.find(suite => suite.id === suiteId)
   ).filter(Boolean);
 
   const handleAddTestSuite = (suiteId: string) => {
     console.log("Adding test suite:", suiteId);
-    const updatedSuiteIds = [...testPlan.testSuiteIds, suiteId];
+    const updatedSuiteIds = [...currentTestPlan.testSuiteIds, suiteId];
     dispatch(updateTestPlan({
-      id: testPlan.id,
+      id: currentTestPlan.id,
       updates: { testSuiteIds: updatedSuiteIds }
     }));
   };
 
   const handleRemoveTestSuite = (suiteId: string) => {
     console.log("Removing test suite:", suiteId);
-    const updatedSuiteIds = testPlan.testSuiteIds.filter(id => id !== suiteId);
+    const updatedSuiteIds = currentTestPlan.testSuiteIds.filter(id => id !== suiteId);
     dispatch(updateTestPlan({
-      id: testPlan.id,
+      id: currentTestPlan.id,
       updates: { testSuiteIds: updatedSuiteIds }
     }));
   };
@@ -57,10 +62,10 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   const handleMoveUp = (index: number) => {
     console.log("Moving up index:", index);
     if (index > 0) {
-      const updatedSuiteIds = [...testPlan.testSuiteIds];
+      const updatedSuiteIds = [...currentTestPlan.testSuiteIds];
       [updatedSuiteIds[index], updatedSuiteIds[index - 1]] = [updatedSuiteIds[index - 1], updatedSuiteIds[index]];
       dispatch(updateTestPlan({
-        id: testPlan.id,
+        id: currentTestPlan.id,
         updates: { testSuiteIds: updatedSuiteIds }
       }));
     }
@@ -68,11 +73,11 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
 
   const handleMoveDown = (index: number) => {
     console.log("Moving down index:", index);
-    if (index < testPlan.testSuiteIds.length - 1) {
-      const updatedSuiteIds = [...testPlan.testSuiteIds];
+    if (index < currentTestPlan.testSuiteIds.length - 1) {
+      const updatedSuiteIds = [...currentTestPlan.testSuiteIds];
       [updatedSuiteIds[index], updatedSuiteIds[index + 1]] = [updatedSuiteIds[index + 1], updatedSuiteIds[index]];
       dispatch(updateTestPlan({
-        id: testPlan.id,
+        id: currentTestPlan.id,
         updates: { testSuiteIds: updatedSuiteIds }
       }));
     }
@@ -97,7 +102,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[98vw] w-full max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Test Suites - {testPlan.name}</DialogTitle>
+          <DialogTitle>Manage Test Suites - {currentTestPlan.name}</DialogTitle>
           <DialogDescription>
             Map and unmap test suites for this test plan
           </DialogDescription>
@@ -178,7 +183,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           {/* Mapped Test Suites */}
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold">Mapped Test Suites ({testPlan.testSuiteIds.length})</h3>
+              <h3 className="text-lg font-semibold">Mapped Test Suites ({currentTestPlan.testSuiteIds.length})</h3>
             </div>
 
             <div className="overflow-x-auto">
