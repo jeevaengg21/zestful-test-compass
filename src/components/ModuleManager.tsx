@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useModuleStore, Module } from "@/store/moduleStore";
 import { 
   Plus, 
   Users, 
@@ -16,20 +19,10 @@ import {
   User,
   UserCheck,
   Code,
-  Bug
+  Bug,
+  Edit,
+  MoreVertical
 } from "lucide-react";
-
-interface Module {
-  id: string;
-  name: string;
-  description: string;
-  moduleOwner: string;
-  manager: string;
-  developers: string[];
-  testers: string[];
-  createdDate: string;
-  status: string;
-}
 
 interface ModuleManagerProps {
   productId: string;
@@ -37,41 +30,20 @@ interface ModuleManagerProps {
 }
 
 export const ModuleManager = ({ productId, productName }: ModuleManagerProps) => {
+  const { modules, addModule, updateModule, getModulesByProduct } = useModuleStore();
+  const productModules = getModulesByProduct(productId);
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [formData, setFormData] = useState({
     moduleName: "",
     description: "",
     moduleOwner: "",
     manager: "",
     developers: "",
-    testers: ""
+    testers: "",
+    status: "Active" as Module['status']
   });
-
-  // Sample modules data
-  const [modules] = useState<Module[]>([
-    {
-      id: "MOD001",
-      name: "User Authentication",
-      description: "Login, registration, and password management functionality",
-      moduleOwner: "John Doe",
-      manager: "Jane Smith",
-      developers: ["Alice Johnson", "Bob Wilson"],
-      testers: ["Carol Brown", "David Lee"],
-      createdDate: "2023-11-01",
-      status: "Active"
-    },
-    {
-      id: "MOD002",
-      name: "Payment Processing",
-      description: "Payment gateway integration and transaction handling",
-      moduleOwner: "Mike Johnson",
-      manager: "Sarah Wilson",
-      developers: ["Tom Davis", "Lisa Garcia"],
-      testers: ["Mark Anderson"],
-      createdDate: "2023-11-05",
-      status: "In Development"
-    }
-  ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,6 +51,7 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
       case "In Development": return "bg-blue-100 text-blue-800";
       case "Testing": return "bg-yellow-100 text-yellow-800";
       case "Completed": return "bg-gray-100 text-gray-800";
+      case "On Hold": return "bg-orange-100 text-orange-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -87,18 +60,63 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCreateModule = () => {
-    console.log("Creating module:", formData);
-    // Here you would handle the module creation logic
-    setIsCreateDialogOpen(false);
+  const resetForm = () => {
     setFormData({
       moduleName: "",
       description: "",
       moduleOwner: "",
       manager: "",
       developers: "",
-      testers: ""
+      testers: "",
+      status: "Active"
     });
+  };
+
+  const handleCreateModule = () => {
+    if (formData.moduleName && formData.moduleOwner) {
+      console.log("Creating module:", formData);
+      addModule({
+        name: formData.moduleName,
+        description: formData.description,
+        moduleOwner: formData.moduleOwner,
+        manager: formData.manager,
+        developers: formData.developers ? formData.developers.split(',').map(d => d.trim()) : [],
+        testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
+        productId: productId
+      });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    }
+  };
+
+  const handleEditModule = (module: Module) => {
+    setEditingModule(module);
+    setFormData({
+      moduleName: module.name,
+      description: module.description,
+      moduleOwner: module.moduleOwner,
+      manager: module.manager,
+      developers: module.developers.join(', '),
+      testers: module.testers.join(', '),
+      status: module.status
+    });
+  };
+
+  const handleUpdateModule = () => {
+    if (editingModule && formData.moduleName && formData.moduleOwner) {
+      console.log("Updating module:", formData);
+      updateModule(editingModule.id, {
+        name: formData.moduleName,
+        description: formData.description,
+        moduleOwner: formData.moduleOwner,
+        manager: formData.manager,
+        developers: formData.developers ? formData.developers.split(',').map(d => d.trim()) : [],
+        testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
+        status: formData.status
+      });
+      setEditingModule(null);
+      resetForm();
+    }
   };
 
   return (
@@ -177,7 +195,10 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
               </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsCreateDialogOpen(false);
+                resetForm();
+              }}>
                 Cancel
               </Button>
               <Button onClick={handleCreateModule}>
@@ -188,8 +209,103 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
         </Dialog>
       </div>
 
+      {/* Edit Module Dialog */}
+      <Dialog open={!!editingModule} onOpenChange={() => {
+        setEditingModule(null);
+        resetForm();
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Module</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="editModuleName">Module Name</Label>
+              <Input
+                id="editModuleName"
+                value={formData.moduleName}
+                onChange={(e) => handleInputChange("moduleName", e.target.value)}
+                placeholder="Enter module name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editDescription">Description</Label>
+              <Textarea
+                id="editDescription"
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                placeholder="Enter module description"
+                rows={3}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editStatus">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="In Development">In Development</SelectItem>
+                  <SelectItem value="Testing">Testing</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="On Hold">On Hold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editModuleOwner">Module Owner</Label>
+              <Input
+                id="editModuleOwner"
+                value={formData.moduleOwner}
+                onChange={(e) => handleInputChange("moduleOwner", e.target.value)}
+                placeholder="Enter module owner"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editManager">Manager</Label>
+              <Input
+                id="editManager"
+                value={formData.manager}
+                onChange={(e) => handleInputChange("manager", e.target.value)}
+                placeholder="Enter manager name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editDevelopers">Developers</Label>
+              <Input
+                id="editDevelopers"
+                value={formData.developers}
+                onChange={(e) => handleInputChange("developers", e.target.value)}
+                placeholder="Enter developer names (comma separated)"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editTesters">Testers</Label>
+              <Input
+                id="editTesters"
+                value={formData.testers}
+                onChange={(e) => handleInputChange("testers", e.target.value)}
+                placeholder="Enter tester names (comma separated)"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => {
+              setEditingModule(null);
+              resetForm();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateModule}>
+              Update Module
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modules Table */}
-      {modules.length > 0 ? (
+      {productModules.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Module List</CardTitle>
@@ -211,7 +327,7 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {modules.map((module) => (
+                {productModules.map((module) => (
                   <TableRow key={module.id}>
                     <TableCell className="font-medium">{module.id}</TableCell>
                     <TableCell className="font-medium">{module.name}</TableCell>
@@ -260,9 +376,19 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">
-                        <Settings className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditModule(module)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Module
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
