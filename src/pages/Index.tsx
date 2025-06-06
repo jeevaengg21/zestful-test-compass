@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { TestCases } from "@/components/TestCases";
 import { TestRuns } from "@/components/TestRuns";
-import { Projects } from "@/components/Projects";
+import { Products } from "@/components/Products";
 import { Reports } from "@/components/Reports";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -19,8 +19,8 @@ const Index = () => {
         return <TestCases />;
       case "test-runs":
         return <TestRuns />;
-      case "projects":
-        return <Projects />;
+      case "products":
+        return <Products />;
       case "reports":
         return <Reports />;
       default:

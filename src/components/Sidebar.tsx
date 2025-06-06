@@ -20,7 +20,7 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "test-cases", label: "Test Cases", icon: FileText },
     { id: "test-runs", label: "Test Runs", icon: Play },
-    { id: "projects", label: "Projects", icon: FolderOpen },
+    { id: "products", label: "Products", icon: FolderOpen },
     { id: "reports", label: "Reports", icon: PieChart },
   ];
 
