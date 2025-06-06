@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ModuleManager } from "./ModuleManager";
+import { useProductStore } from "@/store/productStore";
 import { 
   Plus, 
   FolderOpen, 
@@ -22,6 +25,7 @@ import {
 } from "lucide-react";
 
 export const Products = () => {
+  const { products, addProduct } = useProductStore();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -29,61 +33,6 @@ export const Products = () => {
     productOwner: "",
     description: ""
   });
-
-  const products = [
-    {
-      id: "PROD001",
-      name: "E-Commerce Platform",
-      description: "Main e-commerce website testing product including web and mobile interfaces",
-      status: "Active",
-      testCases: 347,
-      testRuns: 12,
-      teamMembers: 8,
-      coverage: 89,
-      lastActivity: "2 hours ago",
-      createdDate: "2023-10-15",
-      owner: "John Doe"
-    },
-    {
-      id: "PROD002", 
-      name: "Mobile Application",
-      description: "iOS and Android mobile app testing for customer-facing features",
-      status: "Active",
-      testCases: 156,
-      testRuns: 6,
-      teamMembers: 5,
-      coverage: 76,
-      lastActivity: "1 day ago",
-      createdDate: "2023-11-20",
-      owner: "Jane Smith"
-    },
-    {
-      id: "PROD003",
-      name: "Backend Services",
-      description: "API testing and microservices integration testing suite",
-      status: "On Hold",
-      testCases: 234,
-      testRuns: 3,
-      teamMembers: 4,
-      coverage: 92,
-      lastActivity: "1 week ago",
-      createdDate: "2023-09-10",
-      owner: "Mike Johnson"
-    },
-    {
-      id: "PROD004",
-      name: "Payment Gateway",
-      description: "Payment processing and financial transaction testing",
-      status: "Completed",
-      testCases: 89,
-      testRuns: 8,
-      teamMembers: 3,
-      coverage: 95,
-      lastActivity: "2 weeks ago",
-      createdDate: "2023-08-05",
-      owner: "Sarah Wilson"
-    }
-  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -105,10 +54,16 @@ export const Products = () => {
   };
 
   const handleCreateProduct = () => {
-    console.log("Creating product:", formData);
-    // Here you would handle the product creation logic
-    setIsCreateDialogOpen(false);
-    setFormData({ productName: "", productOwner: "", description: "" });
+    if (formData.productName && formData.productOwner) {
+      console.log("Creating product:", formData);
+      addProduct({
+        name: formData.productName,
+        owner: formData.productOwner,
+        description: formData.description
+      });
+      setIsCreateDialogOpen(false);
+      setFormData({ productName: "", productOwner: "", description: "" });
+    }
   };
 
   const handleViewModules = (productId: string) => {
@@ -257,86 +212,95 @@ export const Products = () => {
         </Card>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {products.map((product) => (
-          <Card key={product.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-xl mb-2">{product.name}</CardTitle>
-                  <p className="text-sm text-gray-600 mb-3">{product.description}</p>
-                </div>
-                <Badge className={getStatusColor(product.status)}>
-                  {product.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{product.testCases}</div>
-                  <div className="text-xs text-gray-500">Test Cases</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{product.testRuns}</div>
-                  <div className="text-xs text-gray-500">Test Runs</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-900">{product.teamMembers}</div>
-                  <div className="text-xs text-gray-500">Team Members</div>
-                </div>
-              </div>
+      {/* Products Grid with Scroll Area */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Products</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {products.map((product) => (
+                <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl mb-2">{product.name}</CardTitle>
+                        <p className="text-sm text-gray-600 mb-3">{product.description}</p>
+                      </div>
+                      <Badge className={getStatusColor(product.status)}>
+                        {product.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-gray-900">{product.testCases}</div>
+                        <div className="text-xs text-gray-500">Test Cases</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-gray-900">{product.testRuns}</div>
+                        <div className="text-xs text-gray-500">Test Runs</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-gray-900">{product.teamMembers}</div>
+                        <div className="text-xs text-gray-500">Team Members</div>
+                      </div>
+                    </div>
 
-              {/* Coverage */}
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Test Coverage</span>
-                  <span className={`font-medium ${getCoverageColor(product.coverage)}`}>
-                    {product.coverage}%
-                  </span>
-                </div>
-                <Progress value={product.coverage} className="h-2" />
-              </div>
+                    {/* Coverage */}
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span>Test Coverage</span>
+                        <span className={`font-medium ${getCoverageColor(product.coverage)}`}>
+                          {product.coverage}%
+                        </span>
+                      </div>
+                      <Progress value={product.coverage} className="h-2" />
+                    </div>
 
-              {/* Meta Information */}
-              <div className="space-y-2 text-sm text-gray-500">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1">
-                    <Users className="h-4 w-4" />
-                    <span>Owner: {product.owner}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{product.lastActivity}</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created: {product.createdDate}</span>
-                </div>
-              </div>
+                    {/* Meta Information */}
+                    <div className="space-y-2 text-sm text-gray-500">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-4 w-4" />
+                          <span>Owner: {product.owner}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{product.lastActivity}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>Created: {product.createdDate}</span>
+                      </div>
+                    </div>
 
-              {/* Actions */}
-              <div className="flex space-x-2 pt-3 border-t">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleViewModules(product.id)}
-                >
-                  <Layers className="h-4 w-4 mr-2" />
-                  View Modules
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                    {/* Actions */}
+                    <div className="flex space-x-2 pt-3 border-t">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleViewModules(product.id)}
+                      >
+                        <Layers className="h-4 w-4 mr-2" />
+                        View Modules
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>
