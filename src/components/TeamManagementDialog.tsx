@@ -72,7 +72,7 @@ export function TeamManagementDialog({ testPlan, open, onOpenChange }: TeamManag
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Team - {currentTestPlan.name}</DialogTitle>
           <DialogDescription>
@@ -80,59 +80,18 @@ export function TeamManagementDialog({ testPlan, open, onOpenChange }: TeamManag
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Assigned Team Members */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Assigned Team Members ({assignedMembers.length})</h3>
-            {assignedMembers.length > 0 ? (
-              <div className="space-y-2">
-                {assignedMembers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <div className="font-medium">{user.fullName}</div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
-                      <div className="flex gap-1 mt-1">
-                        {user.roles.map((role) => (
-                          <Badge key={role} variant="secondary" className={getRoleColor(role)}>
-                            {role}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveTeamMember(user.id)}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No team members assigned to this test plan yet
-              </div>
-            )}
-          </div>
-
-          {/* Search and Add Team Members */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Available Team Members</h3>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or role..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+        <div className="grid grid-cols-2 gap-8">
+          {/* Available Team Members - Left Side */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Available Team Members</h3>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or role..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
 
             {availableUsers.length > 0 ? (
@@ -151,7 +110,7 @@ export function TeamManagementDialog({ testPlan, open, onOpenChange }: TeamManag
                       <TableCell className="font-medium">{user.fullName}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           {user.roles.map((role) => (
                             <Badge key={role} variant="secondary" className={getRoleColor(role)}>
                               {role}
@@ -174,8 +133,56 @@ export function TeamManagementDialog({ testPlan, open, onOpenChange }: TeamManag
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 {searchTerm ? "No team members found matching your search" : "No additional team members available"}
+              </div>
+            )}
+          </div>
+
+          {/* Assigned Team Members - Right Side */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Assigned Team Members ({assignedMembers.length})</h3>
+            {assignedMembers.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Roles</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {assignedMembers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.fullName}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 flex-wrap">
+                          {user.roles.map((role) => (
+                            <Badge key={role} variant="secondary" className={getRoleColor(role)}>
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveTeamMember(user.id)}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                No team members assigned to this test plan yet
               </div>
             )}
           </div>
