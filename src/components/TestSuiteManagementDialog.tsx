@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Search, Plus, X, ChevronUp, ChevronDown } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { TestPlan, updateTestPlan } from "@/store/slices/testPlanSlice";
@@ -16,6 +17,8 @@ interface TestSuiteManagementDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: TestSuiteManagementDialogProps) {
   const dispatch = useAppDispatch();
   const allTestSuites = useAppSelector(selectAllTestSuites);
@@ -23,11 +26,15 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     state.testPlans.testPlans.find(plan => plan.id === testPlan.id)
   ) || testPlan;
   const [searchTerm, setSearchTerm] = useState("");
+  const [availablePage, setAvailablePage] = useState(1);
+  const [mappedPage, setMappedPage] = useState(1);
 
-  // Reset search when dialog opens/closes
+  // Reset search and pagination when dialog opens/closes
   useEffect(() => {
     if (!open) {
       setSearchTerm("");
+      setAvailablePage(1);
+      setMappedPage(1);
     }
   }, [open]);
 
@@ -46,6 +53,25 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     (suite.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      suite.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Pagination calculations
+  const availableTotalPages = Math.ceil(availableTestSuites.length / ITEMS_PER_PAGE);
+  const mappedTotalPages = Math.ceil(mappedTestSuites.length / ITEMS_PER_PAGE);
+  
+  const paginatedAvailableTestSuites = availableTestSuites.slice(
+    (availablePage - 1) * ITEMS_PER_PAGE,
+    availablePage * ITEMS_PER_PAGE
+  );
+  
+  const paginatedMappedTestSuites = mappedTestSuites.slice(
+    (mappedPage - 1) * ITEMS_PER_PAGE,
+    mappedPage * ITEMS_PER_PAGE
+  );
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setAvailablePage(1);
+  }, [searchTerm]);
 
   const handleAddTestSuite = (testSuiteId: string) => {
     const updatedTestSuiteIds = [...currentTestPlan.testSuiteIds, testSuiteId];
@@ -91,6 +117,40 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     }
   };
 
+  const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <Pagination className="mt-4">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <PaginationItem key={page}>
+              <PaginationLink
+                onClick={() => onPageChange(page)}
+                isActive={currentPage === page}
+                className="cursor-pointer"
+              >
+                {page}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+          <PaginationItem>
+            <PaginationNext 
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
@@ -115,45 +175,48 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
               />
             </div>
 
-            {availableTestSuites.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Test Cases</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {availableTestSuites.map((suite) => (
-                    <TableRow key={suite.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{suite.name}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
-                            {suite.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{suite.status}</Badge>
-                      </TableCell>
-                      <TableCell>{suite.testCaseIds.length}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddTestSuite(suite.id)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </TableCell>
+            {paginatedAvailableTestSuites.length > 0 ? (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Test Cases</TableHead>
+                      <TableHead>Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedAvailableTestSuites.map((suite) => (
+                      <TableRow key={suite.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{suite.name}</div>
+                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                              {suite.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{suite.status}</Badge>
+                        </TableCell>
+                        <TableCell>{suite.testCaseIds.length}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddTestSuite(suite.id)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {renderPagination(availablePage, availableTotalPages, setAvailablePage)}
+              </>
             ) : (
               <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 {searchTerm ? "No test suites found matching your search" : "No additional test suites available"}
@@ -164,65 +227,71 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
           {/* Mapped Test Suites - Right Side */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Mapped Test Suites ({mappedTestSuites.length})</h3>
-            {mappedTestSuites.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Test Cases</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mappedTestSuites.map((suite, index) => (
-                    <TableRow key={suite.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{suite.name}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
-                            {suite.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{suite.status}</Badge>
-                      </TableCell>
-                      <TableCell>{suite.testCaseIds.length}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleMoveUp(suite.id)}
-                            disabled={index === 0}
-                            className="h-8 w-8 p-0"
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleMoveDown(suite.id)}
-                            disabled={index === mappedTestSuites.length - 1}
-                            className="h-8 w-8 p-0"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveTestSuite(suite.id)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            {paginatedMappedTestSuites.length > 0 ? (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Test Cases</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedMappedTestSuites.map((suite) => {
+                      const globalIndex = mappedTestSuites.findIndex(s => s.id === suite.id);
+                      return (
+                        <TableRow key={suite.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{suite.name}</div>
+                              <div className="text-sm text-muted-foreground truncate max-w-xs">
+                                {suite.description}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{suite.status}</Badge>
+                          </TableCell>
+                          <TableCell>{suite.testCaseIds.length}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMoveUp(suite.id)}
+                                disabled={globalIndex === 0}
+                                className="h-8 w-8 p-0"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMoveDown(suite.id)}
+                                disabled={globalIndex === mappedTestSuites.length - 1}
+                                className="h-8 w-8 p-0"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveTestSuite(suite.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                {renderPagination(mappedPage, mappedTotalPages, setMappedPage)}
+              </>
             ) : (
               <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 No test suites mapped to this plan yet
