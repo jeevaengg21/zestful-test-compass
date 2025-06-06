@@ -66,11 +66,15 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
     
     const totalTestCases = calculateTotalTestCases();
     
+    // Create sorted copies of the arrays to avoid mutating read-only arrays
+    const currentSuiteIds = [...formData.testSuiteIds].sort();
+    const originalSuiteIds = [...testRun.testSuiteIds].sort();
+    
     const updates = {
       ...formData,
       totalTestCases,
       // Reset execution counts if test suites changed
-      ...(JSON.stringify(formData.testSuiteIds.sort()) !== JSON.stringify(testRun.testSuiteIds.sort()) && {
+      ...(JSON.stringify(currentSuiteIds) !== JSON.stringify(originalSuiteIds) && {
         executedTestCases: 0,
         passedTestCases: 0,
         failedTestCases: 0,
