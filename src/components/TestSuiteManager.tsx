@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,9 +64,14 @@ export const TestSuiteManager = () => {
     formData.productId ? selectModulesByProduct(state, formData.productId) : []
   );
 
-  // Get test cases for the selected suite
+  // Get test cases for the selected suite - this will update when suite changes
   const suiteTestCases = useAppSelector((state) => 
     selectedSuite ? selectTestCasesInSuite(state, selectedSuite.id) : []
+  );
+
+  // Get the current suite data to ensure we have the latest testCaseIds
+  const currentSelectedSuite = useAppSelector((state) => 
+    selectedSuite ? state.tests.testSuites.find(s => s.id === selectedSuite.id) : null
   );
 
   // Get filtered test cases for the manage dialog
@@ -235,6 +239,7 @@ export const TestSuiteManager = () => {
   };
 
   const handleManageTestCases = (suite: TestSuite) => {
+    console.log("Managing test cases for suite:", suite.id, "Current test case IDs:", suite.testCaseIds);
     setSelectedSuite(suite);
     setTestCaseSearchTerm("");
     setTestCaseCurrentPage(1);
@@ -244,17 +249,26 @@ export const TestSuiteManager = () => {
   const handleTestCaseToggle = (testCaseId: string, isChecked: boolean) => {
     if (!selectedSuite) return;
 
+    console.log("Toggling test case:", testCaseId, "isChecked:", isChecked, "suiteId:", selectedSuite.id);
+
     if (isChecked) {
       dispatch(addTestCaseToSuite({
         suiteId: selectedSuite.id,
         testCaseId: testCaseId
       }));
+      console.log("Added test case to suite");
     } else {
       dispatch(removeTestCaseFromSuite({
         suiteId: selectedSuite.id,
         testCaseId: testCaseId
       }));
+      console.log("Removed test case from suite");
     }
+  };
+
+  // Check if a test case is in the current suite
+  const isTestCaseInSuite = (testCaseId: string) => {
+    return currentSelectedSuite?.testCaseIds.includes(testCaseId) || false;
   };
 
   const filteredTestSuites = testSuites.filter(suite => {
@@ -524,7 +538,7 @@ export const TestSuiteManager = () => {
                 />
               </div>
               <div className="text-sm text-gray-600">
-                {selectedSuite?.testCaseIds.length || 0} test cases selected
+                {currentSelectedSuite?.testCaseIds.length || 0} test cases selected
               </div>
             </div>
 
@@ -544,39 +558,45 @@ export const TestSuiteManager = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentTestCasesForManagement.map((testCase) => (
-                    <TableRow key={testCase.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedSuite?.testCaseIds.includes(testCase.id) || false}
-                          onCheckedChange={(checked) => handleTestCaseToggle(testCase.id, checked as boolean)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{testCase.id}</TableCell>
-                      <TableCell className="font-medium">
-                        <div className="max-w-[280px] truncate" title={testCase.title}>
-                          {testCase.title}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[180px] truncate text-sm text-gray-600" title={testCase.description}>
-                          {testCase.description}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getPriorityColor(testCase.priority)}>
-                          {testCase.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getTestCaseStatusColor(testCase.status)}>
-                          {testCase.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{testCase.assignee}</TableCell>
-                      <TableCell className="text-sm">{testCase.estimatedTime}m</TableCell>
-                    </TableRow>
-                  ))}
+                  {currentTestCasesForManagement.map((testCase) => {
+                    const isChecked = isTestCaseInSuite(testCase.id);
+                    return (
+                      <TableRow key={testCase.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              console.log("Checkbox clicked for test case:", testCase.id, "new checked state:", checked);
+                              handleTestCaseToggle(testCase.id, checked as boolean);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{testCase.id}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="max-w-[280px] truncate" title={testCase.title}>
+                            {testCase.title}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[180px] truncate text-sm text-gray-600" title={testCase.description}>
+                            {testCase.description}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityColor(testCase.priority)}>
+                            {testCase.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getTestCaseStatusColor(testCase.status)}>
+                            {testCase.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{testCase.assignee}</TableCell>
+                        <TableCell className="text-sm">{testCase.estimatedTime}m</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
