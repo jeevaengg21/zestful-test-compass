@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,26 +7,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestSuite, updateTestSuite, TestSuite, addTestCaseToSuite, removeTestCaseFromSuite } from "@/store/slices/testSlice";
-import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectTestCasesInSuite, selectAllModules } from "@/store/selectors";
+import { addTestSuite, updateTestSuite, TestSuite } from "@/store/slices/testSlice";
+import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectAllModules } from "@/store/selectors";
 import { 
   Plus, 
   Search, 
   Filter, 
   FolderOpen, 
   CheckCircle, 
-  XCircle, 
   Clock,
   Edit,
   Users,
   Calendar,
   FileText,
   Archive,
-  MoreHorizontal
+  ChevronUp,
+  ChevronDown,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,10 +46,8 @@ export const TestSuiteManager = () => {
   const [isManageTestCasesOpen, setIsManageTestCasesOpen] = useState(false);
   const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
   
-  // Test case management pagination
+  // Test case management search
   const [testCaseSearchTerm, setTestCaseSearchTerm] = useState("");
-  const [testCaseCurrentPage, setTestCaseCurrentPage] = useState(1);
-  const [testCaseItemsPerPage] = useState(10);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -66,41 +63,28 @@ export const TestSuiteManager = () => {
     formData.productId ? selectModulesByProduct(state, formData.productId) : []
   );
 
-  // Get test cases for the selected suite - this will update when suite changes
-  const suiteTestCases = useAppSelector((state) => 
-    selectedSuite ? selectTestCasesInSuite(state, selectedSuite.id) : []
-  );
-
   // Get the current suite data to ensure we have the latest testCaseIds
   const currentSelectedSuite = useAppSelector((state) => 
     selectedSuite ? state.tests.testSuites.find(s => s.id === selectedSuite.id) : null
   );
 
-  // Get filtered test cases for the manage dialog
-  const getFilteredTestCasesForManagement = () => {
-    if (!selectedSuite) return [];
-    
-    // Get all test cases for the same product as the selected suite
-    const productTestCases = testCases.filter(tc => tc.productId === selectedSuite.productId);
-    
-    // Filter by search term
-    const searchFiltered = productTestCases.filter(tc =>
-      tc.title.toLowerCase().includes(testCaseSearchTerm.toLowerCase()) ||
-      tc.id.toLowerCase().includes(testCaseSearchTerm.toLowerCase()) ||
-      tc.description.toLowerCase().includes(testCaseSearchTerm.toLowerCase())
-    );
-    
-    return searchFiltered;
-  };
-
-  const filteredTestCasesForManagement = getFilteredTestCasesForManagement();
+  // Get mapped test cases using the current state from Redux
+  const mappedTestCases = testCases.filter(testCase => 
+    currentSelectedSuite?.testCaseIds.includes(testCase.id)
+  ).sort((a, b) => {
+    const indexA = currentSelectedSuite?.testCaseIds.indexOf(a.id) ?? -1;
+    const indexB = currentSelectedSuite?.testCaseIds.indexOf(b.id) ?? -1;
+    return indexA - indexB;
+  });
   
-  // Pagination for test case management
-  const testCaseTotalItems = filteredTestCasesForManagement.length;
-  const testCaseTotalPages = Math.ceil(testCaseTotalItems / testCaseItemsPerPage);
-  const testCaseStartIndex = (testCaseCurrentPage - 1) * testCaseItemsPerPage;
-  const testCaseEndIndex = testCaseStartIndex + testCaseItemsPerPage;
-  const currentTestCasesForManagement = filteredTestCasesForManagement.slice(testCaseStartIndex, testCaseEndIndex);
+  // Get available test cases (not mapped and matching search)
+  const availableTestCases = testCases.filter(testCase => 
+    !currentSelectedSuite?.testCaseIds.includes(testCase.id) &&
+    testCase.productId === currentSelectedSuite?.productId &&
+    testCase.moduleId === currentSelectedSuite?.moduleId &&
+    (testCase.title.toLowerCase().includes(testCaseSearchTerm.toLowerCase()) ||
+     testCase.description.toLowerCase().includes(testCaseSearchTerm.toLowerCase()))
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -121,22 +105,22 @@ export const TestSuiteManager = () => {
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "Critical": return "bg-red-100 text-red-800";
-      case "High": return "bg-orange-100 text-orange-800";
-      case "Medium": return "bg-yellow-100 text-yellow-800";
-      case "Low": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+    switch (priority.toLowerCase()) {
+      case 'critical': return 'bg-red-100 text-red-800';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getTestCaseStatusColor = (status: string) => {
-    switch (status) {
-      case "Passed": return "bg-green-100 text-green-800";
-      case "Failed": return "bg-red-100 text-red-800";
-      case "Blocked": return "bg-yellow-100 text-yellow-800";
-      case "Not Run": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+    switch (status.toLowerCase()) {
+      case 'passed': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'blocked': return 'bg-gray-100 text-gray-800';
+      case 'not run': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -244,33 +228,57 @@ export const TestSuiteManager = () => {
     console.log("Managing test cases for suite:", suite.id, "Current test case IDs:", suite.testCaseIds);
     setSelectedSuite(suite);
     setTestCaseSearchTerm("");
-    setTestCaseCurrentPage(1);
     setIsManageTestCasesOpen(true);
   };
 
-  const handleTestCaseToggle = (testCaseId: string, isChecked: boolean) => {
-    if (!selectedSuite) return;
+  const handleAddTestCase = (testCaseId: string) => {
+    if (!currentSelectedSuite) return;
+    const updatedTestCaseIds = [...currentSelectedSuite.testCaseIds, testCaseId];
+    console.log("Adding test case:", testCaseId, "Updated IDs:", updatedTestCaseIds);
+    dispatch(updateTestSuite({ 
+      id: currentSelectedSuite.id, 
+      updates: { testCaseIds: updatedTestCaseIds } 
+    }));
+  };
 
-    console.log("Toggling test case:", testCaseId, "isChecked:", isChecked, "suiteId:", selectedSuite.id);
+  const handleRemoveTestCase = (testCaseId: string) => {
+    if (!currentSelectedSuite) return;
+    const updatedTestCaseIds = currentSelectedSuite.testCaseIds.filter(id => id !== testCaseId);
+    console.log("Removing test case:", testCaseId, "Updated IDs:", updatedTestCaseIds);
+    dispatch(updateTestSuite({ 
+      id: currentSelectedSuite.id, 
+      updates: { testCaseIds: updatedTestCaseIds } 
+    }));
+  };
 
-    if (isChecked) {
-      dispatch(addTestCaseToSuite({
-        suiteId: selectedSuite.id,
-        testCaseId: testCaseId
+  const handleMoveUp = (testCaseId: string) => {
+    if (!currentSelectedSuite) return;
+    const currentIndex = currentSelectedSuite.testCaseIds.indexOf(testCaseId);
+    if (currentIndex > 0) {
+      const updatedTestCaseIds = [...currentSelectedSuite.testCaseIds];
+      [updatedTestCaseIds[currentIndex - 1], updatedTestCaseIds[currentIndex]] = 
+      [updatedTestCaseIds[currentIndex], updatedTestCaseIds[currentIndex - 1]];
+      
+      dispatch(updateTestSuite({ 
+        id: currentSelectedSuite.id, 
+        updates: { testCaseIds: updatedTestCaseIds } 
       }));
-      console.log("Added test case to suite");
-    } else {
-      dispatch(removeTestCaseFromSuite({
-        suiteId: selectedSuite.id,
-        testCaseId: testCaseId
-      }));
-      console.log("Removed test case from suite");
     }
   };
 
-  // Check if a test case is in the current suite
-  const isTestCaseInSuite = (testCaseId: string) => {
-    return currentSelectedSuite?.testCaseIds.includes(testCaseId) || false;
+  const handleMoveDown = (testCaseId: string) => {
+    if (!currentSelectedSuite) return;
+    const currentIndex = currentSelectedSuite.testCaseIds.indexOf(testCaseId);
+    if (currentIndex < currentSelectedSuite.testCaseIds.length - 1) {
+      const updatedTestCaseIds = [...currentSelectedSuite.testCaseIds];
+      [updatedTestCaseIds[currentIndex], updatedTestCaseIds[currentIndex + 1]] = 
+      [updatedTestCaseIds[currentIndex + 1], updatedTestCaseIds[currentIndex]];
+      
+      dispatch(updateTestSuite({ 
+        id: currentSelectedSuite.id, 
+        updates: { testCaseIds: updatedTestCaseIds } 
+      }));
+    }
   };
 
   const filteredTestSuites = testSuites.filter(suite => {
@@ -514,144 +522,174 @@ export const TestSuiteManager = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Manage Test Cases Dialog */}
+      {/* Updated Manage Test Cases Dialog with Side-by-Side Layout */}
       <Dialog open={isManageTestCasesOpen} onOpenChange={setIsManageTestCasesOpen}>
-        <DialogContent className="sm:max-w-[1200px]">
+        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Test Cases - {selectedSuite?.name}</DialogTitle>
-            <p className="text-sm text-gray-600">
-              Select test cases to include in this test suite. Showing test cases for {selectedSuite && getProductName(selectedSuite.productId)}.
+            <p className="text-sm text-muted-foreground">
+              Add or remove test cases for this test suite using the side-by-side interface below.
             </p>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            {/* Search for test cases */}
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Available Test Cases - Left Side */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-foreground">Available Test Cases</h3>
+                <Badge variant="outline">{availableTestCases.length} available</Badge>
+              </div>
+              
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search test cases..."
+                  placeholder="Search available test cases..."
                   value={testCaseSearchTerm}
-                  onChange={(e) => {
-                    setTestCaseSearchTerm(e.target.value);
-                    setTestCaseCurrentPage(1);
-                  }}
-                  className="pl-10"
+                  onChange={(e) => setTestCaseSearchTerm(e.target.value)}
+                  className="pl-8"
                 />
               </div>
-              <div className="text-sm text-gray-600">
-                {currentSelectedSuite?.testCaseIds.length || 0} test cases selected
-              </div>
-            </div>
 
-            {/* Test Cases Table */}
-            <div className="border rounded-lg max-h-[60vh] overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">Select</TableHead>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    <TableHead className="w-[300px]">Title</TableHead>
-                    <TableHead className="w-[200px]">Description</TableHead>
-                    <TableHead className="w-[100px]">Priority</TableHead>
-                    <TableHead className="w-[100px]">Status</TableHead>
-                    <TableHead className="w-[100px]">Est. Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentTestCasesForManagement.map((testCase) => {
-                    const isChecked = isTestCaseInSuite(testCase.id);
-                    return (
-                      <TableRow key={testCase.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={isChecked}
-                            onCheckedChange={(checked) => {
-                              console.log("Checkbox clicked for test case:", testCase.id, "new checked state:", checked);
-                              handleTestCaseToggle(testCase.id, checked as boolean);
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{testCase.id}</TableCell>
-                        <TableCell className="font-medium">
-                          <div className="max-w-[280px] truncate" title={testCase.title}>
-                            {testCase.title}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="max-w-[180px] truncate text-sm text-gray-600" title={testCase.description}>
-                            {testCase.description}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getPriorityColor(testCase.priority)}>
-                            {testCase.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getTestCaseStatusColor(testCase.status)}>
-                            {testCase.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{testCase.estimatedTime}m</TableCell>
+              <div className="border rounded-lg bg-card">
+                {availableTestCases.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[200px]">Title</TableHead>
+                        <TableHead className="w-[80px]">Priority</TableHead>
+                        <TableHead className="w-[80px]">Status</TableHead>
+                        <TableHead className="w-[80px]">Action</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-
-              {currentTestCasesForManagement.length === 0 && (
-                <div className="p-8 text-center">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Test Cases Found</h3>
-                  <p className="text-gray-600">
-                    {testCaseSearchTerm 
-                      ? "Try adjusting your search criteria." 
-                      : "No test cases are available for this product."}
-                  </p>
-                </div>
-              )}
+                    </TableHeader>
+                    <TableBody>
+                      {availableTestCases.map((testCase) => (
+                        <TableRow key={testCase.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium text-sm">{testCase.title}</div>
+                              <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                {testCase.description}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={getPriorityColor(testCase.priority)}>
+                              {testCase.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={getTestCaseStatusColor(testCase.status)}>
+                              {testCase.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAddTestCase(testCase.id)}
+                              className="h-8"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {testCaseSearchTerm ? "No test cases found matching your search" : "No additional test cases available"}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Test Case Pagination */}
-            {testCaseTotalPages > 1 && (
+            {/* Mapped Test Cases - Right Side */}
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {testCaseStartIndex + 1} to {Math.min(testCaseEndIndex, testCaseTotalItems)} of {testCaseTotalItems} test cases
-                </div>
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => setTestCaseCurrentPage(Math.max(1, testCaseCurrentPage - 1))}
-                        className={testCaseCurrentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: Math.min(5, testCaseTotalPages) }, (_, i) => {
-                      const page = Math.max(1, Math.min(testCaseCurrentPage - 2, testCaseTotalPages - 4)) + i;
-                      if (page > testCaseTotalPages) return null;
-                      return (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setTestCaseCurrentPage(page)}
-                            isActive={testCaseCurrentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => setTestCaseCurrentPage(Math.min(testCaseTotalPages, testCaseCurrentPage + 1))}
-                        className={testCaseCurrentPage === testCaseTotalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                <h3 className="text-lg font-semibold text-foreground">Mapped Test Cases</h3>
+                <Badge variant="outline">{mappedTestCases.length} mapped</Badge>
               </div>
-            )}
+              
+              <div className="border rounded-lg bg-card">
+                {mappedTestCases.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[200px]">Title</TableHead>
+                        <TableHead className="w-[80px]">Priority</TableHead>
+                        <TableHead className="w-[80px]">Status</TableHead>
+                        <TableHead className="w-[120px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mappedTestCases.map((testCase, index) => (
+                        <TableRow key={testCase.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium text-sm">{testCase.title}</div>
+                              <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                {testCase.description}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={getPriorityColor(testCase.priority)}>
+                              {testCase.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={getTestCaseStatusColor(testCase.status)}>
+                              {testCase.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMoveUp(testCase.id)}
+                                disabled={index === 0}
+                                className="h-8 w-8 p-0"
+                                title="Move up"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMoveDown(testCase.id)}
+                                disabled={index === mappedTestCases.length - 1}
+                                className="h-8 w-8 p-0"
+                                title="Move down"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveTestCase(testCase.id)}
+                                className="h-8 w-8 p-0"
+                                title="Remove"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No test cases mapped to this suite yet. Add some from the available test cases on the left.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+
           <div className="flex justify-end">
             <Button onClick={() => setIsManageTestCasesOpen(false)}>
               Done
