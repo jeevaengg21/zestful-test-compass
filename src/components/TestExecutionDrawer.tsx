@@ -104,12 +104,12 @@ export function TestExecutionDrawer({
 
   return (
     <Drawer open={isOpen} onOpenChange={onClose}>
-      <DrawerContent className="h-[85vh] bg-white">
-        <DrawerHeader className="border-b bg-gray-50/50 px-6 py-4">
+      <DrawerContent className="h-[85vh] bg-white select-text">
+        <DrawerHeader className="border-b bg-gray-50/50 px-6 py-4 select-text">
           <div className="flex items-center justify-between">
-            <div className="flex-1">
+            <div className="flex-1 select-text">
               <div className="flex items-center gap-4 mb-3">
-                <DrawerTitle className="text-xl font-semibold text-gray-900">Execute Test Case</DrawerTitle>
+                <DrawerTitle className="text-xl font-semibold text-gray-900 select-text">Execute Test Case</DrawerTitle>
                 {countdownActive && (
                   <div className="flex items-center gap-2">
                     <div className="animate-pulse text-blue-600 font-medium text-sm">
@@ -126,7 +126,7 @@ export function TestExecutionDrawer({
                   </div>
                 )}
               </div>
-              <DrawerDescription className="text-sm text-gray-600 font-medium">
+              <DrawerDescription className="text-sm text-gray-600 font-medium select-text">
                 Test case {currentExecutionNumber} of {totalExecutions} ({completionPercentage}% complete)
               </DrawerDescription>
               {/* Progress bar */}
@@ -134,7 +134,7 @@ export function TestExecutionDrawer({
                 <Progress value={completionPercentage} className="h-2" />
               </div>
               {/* Keyboard shortcuts hint */}
-              <div className="text-xs text-gray-500 mt-2 font-medium">
+              <div className="text-xs text-gray-500 mt-2 font-medium select-text">
                 Use ← → arrows to navigate, Ctrl+1-4 for quick actions, Esc to cancel/close
               </div>
             </div>
@@ -164,56 +164,56 @@ export function TestExecutionDrawer({
         </DrawerHeader>
         
         {selectedTestCase && selectedExecution && (
-          <div className="flex-1 overflow-y-auto bg-gray-50/30">
+          <div className="flex-1 overflow-y-auto bg-gray-50/30 select-text">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
               {/* Test Case Details */}
-              <div className="space-y-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+              <div className="space-y-6 select-text">
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
                   <div className="flex items-center gap-3 mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedTestCase.title}</h3>
-                    <Badge className={`${getPriorityColor(selectedTestCase.priority)} border font-medium`}>
+                    <h3 className="text-lg font-semibold text-gray-900 select-text">{selectedTestCase.title}</h3>
+                    <Badge className={`${getPriorityColor(selectedTestCase.priority)} border font-medium select-text`}>
                       {selectedTestCase.priority}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-700 mb-6 leading-relaxed">{selectedTestCase.description}</p>
+                  <p className="text-sm text-gray-700 mb-6 leading-relaxed select-text">{selectedTestCase.description}</p>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-2 gap-4 text-sm select-text">
+                    <div className="flex items-center gap-2 select-text">
                       <Timer className="h-4 w-4 text-gray-600" />
-                      <span className="text-gray-900 font-medium">Est. Time:</span>
-                      <span className="text-gray-700">{selectedTestCase.estimatedTime}m</span>
+                      <span className="text-gray-900 font-medium select-text">Est. Time:</span>
+                      <span className="text-gray-700 select-text">{selectedTestCase.estimatedTime}m</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 select-text">
                       <Calendar className="h-4 w-4 text-gray-600" />
-                      <span className="text-gray-900 font-medium">Created:</span>
-                      <span className="text-gray-700">{selectedTestCase.createdDate}</span>
+                      <span className="text-gray-900 font-medium select-text">Created:</span>
+                      <span className="text-gray-700 select-text">{selectedTestCase.createdDate}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 select-text">
                       <Play className="h-4 w-4 text-gray-600" />
-                      <span className="text-gray-900 font-medium">Last Run:</span>
-                      <span className="text-gray-700">{selectedTestCase.lastRun}</span>
+                      <span className="text-gray-900 font-medium select-text">Last Run:</span>
+                      <span className="text-gray-700 select-text">{selectedTestCase.lastRun}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                  <h4 className="font-semibold text-gray-900 mb-4 text-base">Test Steps</h4>
-                  <ol className="space-y-3">
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
+                  <h4 className="font-semibold text-gray-900 mb-4 text-base select-text">Test Steps</h4>
+                  <ol className="space-y-3 select-text">
                     {selectedTestCase.steps.map((step: string, index: number) => (
-                      <li key={index} className="flex gap-3">
-                        <span className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                      <li key={index} className="flex gap-3 select-text">
+                        <span className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5 select-none">
                           {index + 1}
                         </span>
-                        <span className="text-sm text-gray-800 leading-relaxed">{step}</span>
+                        <span className="text-sm text-gray-800 leading-relaxed select-text">{step}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                  <h4 className="font-semibold text-gray-900 mb-4 text-base">Expected Result</h4>
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <p className="text-sm text-green-800 leading-relaxed font-medium">
+                <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
+                  <h4 className="font-semibold text-gray-900 mb-4 text-base select-text">Expected Result</h4>
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 select-text">
+                    <p className="text-sm text-green-800 leading-relaxed font-medium select-text">
                       {selectedTestCase.expectedResult}
                     </p>
                   </div>
@@ -221,27 +221,27 @@ export function TestExecutionDrawer({
 
                 {/* Test Data Section */}
                 {testDataSets.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+                  <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
                     <div className="flex items-center gap-2 mb-4">
                       <Database className="h-5 w-5 text-blue-600" />
-                      <h4 className="font-semibold text-gray-900 text-base">Test Data</h4>
+                      <h4 className="font-semibold text-gray-900 text-base select-text">Test Data</h4>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-4 select-text">
                       {testDataSets.map((dataSet) => (
-                        <div key={dataSet.id} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                          <div className="font-semibold text-sm text-blue-900 mb-3">{dataSet.name}</div>
-                          <div className="space-y-2">
+                        <div key={dataSet.id} className="bg-blue-50 p-4 rounded-lg border border-blue-200 select-text">
+                          <div className="font-semibold text-sm text-blue-900 mb-3 select-text">{dataSet.name}</div>
+                          <div className="space-y-2 select-text">
                             {dataSet.items.map((item) => (
-                              <div key={item.id} className="flex justify-between text-sm bg-white p-2 rounded border border-blue-100">
-                                <span className="font-medium text-gray-800">{item.key}:</span>
-                                <span className="text-gray-700 ml-2 font-mono">
+                              <div key={item.id} className="flex justify-between text-sm bg-white p-2 rounded border border-blue-100 select-text">
+                                <span className="font-medium text-gray-800 select-text">{item.key}:</span>
+                                <span className="text-gray-700 ml-2 font-mono select-text">
                                   {item.type === 'password' ? '••••••••' : item.value}
                                 </span>
                               </div>
                             ))}
                           </div>
                           {dataSet.description && (
-                            <div className="text-xs text-blue-700 mt-2 italic font-medium">
+                            <div className="text-xs text-blue-700 mt-2 italic font-medium select-text">
                               {dataSet.description}
                             </div>
                           )}
@@ -253,15 +253,15 @@ export function TestExecutionDrawer({
 
                 {/* Debug info when no test data */}
                 {testDataSets.length === 0 && selectedTestCase && (
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 select-text">
                     <div className="flex items-center gap-2 mb-3">
                       <Database className="h-4 w-4 text-yellow-600" />
-                      <h4 className="font-semibold text-yellow-800">No Test Data Found</h4>
+                      <h4 className="font-semibold text-yellow-800 select-text">No Test Data Found</h4>
                     </div>
-                    <div className="text-xs text-yellow-700 space-y-1 font-medium">
-                      <p>Test Case ID: {selectedTestCase.id}</p>
-                      <p>Available mappings: {allMappings.filter(m => m.testCaseId === selectedTestCase.id).length}</p>
-                      <p>To add test data, use the Test Data Mapper in the test case details.</p>
+                    <div className="text-xs text-yellow-700 space-y-1 font-medium select-text">
+                      <p className="select-text">Test Case ID: {selectedTestCase.id}</p>
+                      <p className="select-text">Available mappings: {allMappings.filter(m => m.testCaseId === selectedTestCase.id).length}</p>
+                      <p className="select-text">To add test data, use the Test Data Mapper in the test case details.</p>
                     </div>
                   </div>
                 )}
@@ -270,22 +270,22 @@ export function TestExecutionDrawer({
               {/* Execution Form */}
               <div className="space-y-6">
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                  <label className="text-sm font-semibold text-gray-900 block mb-3">Actual Result</label>
+                  <label className="text-sm font-semibold text-gray-900 block mb-3 select-text">Actual Result</label>
                   <Textarea
                     value={actualResult}
                     onChange={(e) => onActualResultChange(e.target.value)}
                     placeholder="Describe what actually happened during execution"
-                    className="min-h-[140px] text-sm leading-relaxed"
+                    className="min-h-[140px] text-sm leading-relaxed select-text"
                   />
                 </div>
                 
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-                  <label className="text-sm font-semibold text-gray-900 block mb-3">Notes</label>
+                  <label className="text-sm font-semibold text-gray-900 block mb-3 select-text">Notes</label>
                   <Textarea
                     value={executionNotes}
                     onChange={(e) => onExecutionNotesChange(e.target.value)}
                     placeholder="Any additional notes or observations"
-                    className="min-h-[120px] text-sm leading-relaxed"
+                    className="min-h-[120px] text-sm leading-relaxed select-text"
                   />
                 </div>
               </div>
