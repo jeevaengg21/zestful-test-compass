@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addTestSuite, updateTestSuite, TestSuite, addTestCaseToSuite, removeTestCaseFromSuite } from "@/store/slices/testSlice";
 import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectTestCasesInSuite } from "@/store/selectors";
@@ -24,7 +26,8 @@ import {
   Users,
   Calendar,
   FileText,
-  Archive
+  Archive,
+  MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +39,8 @@ export const TestSuiteManager = () => {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingSuite, setEditingSuite] = useState<TestSuite | null>(null);
   const [isManageTestCasesOpen, setIsManageTestCasesOpen] = useState(false);
@@ -220,6 +225,13 @@ export const TestSuiteManager = () => {
     const matchesStatus = statusFilter === "all" || suite.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination logic
+  const totalItems = filteredTestSuites.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTestSuites = filteredTestSuites.slice(startIndex, endIndex);
 
   const getProductName = (productId: string) => {
     const product = products.find(p => p.id === productId);
@@ -525,90 +537,145 @@ export const TestSuiteManager = () => {
         </CardContent>
       </Card>
 
-      {/* Test Suites Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredTestSuites.map((suite) => (
-          <Card key={suite.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  <FolderOpen className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">{suite.name}</CardTitle>
-                </div>
-                <Badge className={getStatusColor(suite.status)}>
-                  <div className="flex items-center space-x-1">
-                    {getStatusIcon(suite.status)}
-                    <span>{suite.status}</span>
-                  </div>
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-600 mt-2">{suite.description}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4 text-gray-400" />
-                  <span>{suite.testCaseIds.length} Test Cases</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-gray-400" />
-                  <span>{suite.owner}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span>{suite.lastModified}</span>
-                </div>
-              </div>
-              
-              <div className="text-xs text-gray-500">
-                <p>Product: {getProductName(suite.productId)}</p>
-                <p>Module: {getModuleName(suite.moduleId)}</p>
-              </div>
+      {/* Test Suites Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Suite Name</TableHead>
+                <TableHead className="w-[300px]">Description</TableHead>
+                <TableHead className="w-[120px]">Product</TableHead>
+                <TableHead className="w-[120px]">Module</TableHead>
+                <TableHead className="w-[80px]">Test Cases</TableHead>
+                <TableHead className="w-[100px]">Status</TableHead>
+                <TableHead className="w-[120px]">Owner</TableHead>
+                <TableHead className="w-[100px]">Last Modified</TableHead>
+                <TableHead className="w-[120px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentTestSuites.map((suite) => (
+                <TableRow key={suite.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center space-x-2">
+                      <FolderOpen className="h-4 w-4 text-blue-600" />
+                      <span>{suite.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-sm text-gray-600 truncate max-w-[280px]" title={suite.description}>
+                      {suite.description}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-sm">{getProductName(suite.productId)}</TableCell>
+                  <TableCell className="text-sm">{getModuleName(suite.moduleId)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-1">
+                      <FileText className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{suite.testCaseIds.length}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(suite.status)}>
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(suite.status)}
+                        <span>{suite.status}</span>
+                      </div>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-1">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{suite.owner}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{suite.lastModified}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleEditTestSuite(suite)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleManageTestCases(suite)}
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleEditTestSuite(suite)}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
+          {currentTestSuites.length === 0 && (
+            <div className="p-8 text-center">
+              <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Test Suites Found</h3>
+              <p className="text-gray-600 mb-4">
+                {searchTerm || statusFilter !== "all" 
+                  ? "Try adjusting your search criteria or filters." 
+                  : "Create your first test suite to get started with organized testing."}
+              </p>
+              {!searchTerm && statusFilter === "all" && (
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Test Suite
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleManageTestCases(suite)}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  Manage Cases
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              )}
+            </div>
+          )}
 
-      {filteredTestSuites.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Test Suites Found</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm || statusFilter !== "all" 
-                ? "Try adjusting your search criteria or filters." 
-                : "Create your first test suite to get started with organized testing."}
-            </p>
-            {!searchTerm && statusFilter === "all" && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Test Suite
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="p-4 border-t">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} test suites
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
