@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { TestPlan, addTestPlan, updateTestPlan, deleteTestPlan } from "@/store/s
 import { selectAllProducts, selectAllTestSuites } from "@/store/selectors";
 import { TestPlanForm } from "./TestPlanForm";
 import { TestPlanDetails } from "./TestPlanDetails";
+import { TestSuiteManagementDialog } from "./TestSuiteManagementDialog";
 
 export function TestPlanManager() {
   const dispatch = useAppDispatch();
@@ -26,6 +26,7 @@ export function TestPlanManager() {
   const [selectedTestPlan, setSelectedTestPlan] = useState<TestPlan | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isTestSuiteDialogOpen, setIsTestSuiteDialogOpen] = useState(false);
 
   const filteredTestPlans = testPlans.filter(plan => {
     const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,8 +85,8 @@ export function TestPlanManager() {
   };
 
   const handleManageTestSuites = (testPlan: TestPlan) => {
-    // TODO: Implement test suite management dialog
-    console.log("Managing test suites for:", testPlan.name);
+    setSelectedTestPlan(testPlan);
+    setIsTestSuiteDialogOpen(true);
   };
 
   const handleManageTeam = (testPlan: TestPlan) => {
@@ -313,6 +314,15 @@ export function TestPlanManager() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Test Suite Management Dialog */}
+      {selectedTestPlan && (
+        <TestSuiteManagementDialog
+          testPlan={selectedTestPlan}
+          open={isTestSuiteDialogOpen}
+          onOpenChange={setIsTestSuiteDialogOpen}
+        />
+      )}
     </div>
   );
 }
