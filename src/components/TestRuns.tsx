@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +25,10 @@ import { selectAllTestRuns, selectAllUsers, selectAllTestPlans } from "@/store/s
 import { startTestRun, pauseTestRun, completeTestRun } from "@/store/slices/testRunSlice";
 import { TestRunForm } from "./TestRunForm";
 import { TestRunEditForm } from "./TestRunEditForm";
-import { TestRunExecution } from "./TestRunExecution";
 
 export const TestRuns = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const testRuns = useAppSelector(selectAllTestRuns);
   const users = useAppSelector(selectAllUsers);
   const testPlans = useAppSelector(selectAllTestPlans);
@@ -36,7 +36,6 @@ export const TestRuns = () => {
   const [activeTab, setActiveTab] = useState("active");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isExecutionDialogOpen, setIsExecutionDialogOpen] = useState(false);
   const [selectedTestRun, setSelectedTestRun] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
@@ -107,8 +106,7 @@ export const TestRuns = () => {
   };
 
   const handleExecuteRun = (runId: string) => {
-    setSelectedTestRun(runId);
-    setIsExecutionDialogOpen(true);
+    navigate(`/test-run-execution?id=${runId}`);
   };
 
   const handleEditRun = (runId: string) => {
@@ -349,18 +347,6 @@ export const TestRuns = () => {
             <TestRunEditForm 
               testRun={selectedTestRunData}
               onClose={() => setIsEditDialogOpen(false)} 
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Test Run Execution Dialog */}
-      <Dialog open={isExecutionDialogOpen} onOpenChange={setIsExecutionDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          {selectedTestRun && (
-            <TestRunExecution 
-              testRunId={selectedTestRun}
-              onClose={() => setIsExecutionDialogOpen(false)}
             />
           )}
         </DialogContent>
