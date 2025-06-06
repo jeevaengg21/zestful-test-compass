@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +12,12 @@ import { TestPlan } from "@/store/slices/testPlanSlice";
 
 interface TestPlanFormProps {
   onSubmit: (testPlan: Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>) => void;
+  onCancel?: () => void;
   initialData?: Partial<TestPlan>;
+  isEditing?: boolean;
 }
 
-export function TestPlanForm({ onSubmit, initialData }: TestPlanFormProps) {
+export function TestPlanForm({ onSubmit, onCancel, initialData, isEditing = false }: TestPlanFormProps) {
   const products = useAppSelector(selectAllProducts);
 
   const [formData, setFormData] = useState({
@@ -391,11 +392,11 @@ export function TestPlanForm({ onSubmit, initialData }: TestPlanFormProps) {
       </Card>
 
       <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
         <Button type="submit">
-          Create Test Plan
+          {isEditing ? 'Update Test Plan' : 'Create Test Plan'}
         </Button>
       </div>
     </form>

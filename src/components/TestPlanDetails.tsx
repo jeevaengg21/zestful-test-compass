@@ -6,10 +6,11 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
-import { useAppSelector } from "@/store/hooks";
+import { Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Edit } from "lucide-react";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { selectAllProducts, selectAllTestSuites, selectAllUsers } from "@/store/selectors";
-import { TestPlan } from "@/store/slices/testPlanSlice";
+import { TestPlan, updateTestPlan } from "@/store/slices/testPlanSlice";
+import { TestPlanForm } from "./TestPlanForm";
 
 interface TestPlanDetailsProps {
   testPlan: TestPlan;
@@ -17,10 +18,47 @@ interface TestPlanDetailsProps {
 }
 
 export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
+  const dispatch = useAppDispatch();
   const products = useAppSelector(selectAllProducts);
   const testSuites = useAppSelector(selectAllTestSuites);
   const users = useAppSelector(selectAllUsers);
   const testExecutions = useAppSelector(state => state.testPlans.testExecutions);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Get current test plan from Redux store to ensure we have latest data
+  const currentTestPlan = useAppSelector(state => 
+    state.testPlans.testPlans.find(plan => plan.id === testPlan.id)
+  ) || testPlan;
+
+  const handleEditSubmit = (updatedTestPlan: Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>) => {
+    dispatch(updateTestPlan({ 
+      id: currentTestPlan.id, 
+      updates: updatedTestPlan 
+    }));
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  // If in edit mode, show the form
+  if (isEditing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Edit Test Plan</h2>
+          <Button variant="outline" onClick={handleCancelEdit}>
+            Cancel
+          </Button>
+        </div>
+        <TestPlanForm 
+          onSubmit={handleEditSubmit}
+          initialData={currentTestPlan}
+        />
+      </div>
+    );
+  }
 
   const getProductName = (productId: string) => {
     const product = products.find(p => p.id === productId);
@@ -58,21 +96,21 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
     }
   };
 
-  const planExecutions = testExecutions.filter(execution => execution.testPlanId === testPlan.id);
+  const planExecutions = testExecutions.filter(execution => execution.testPlanId === currentTestPlan.id);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold">{testPlan.name}</h2>
-          <p className="text-muted-foreground mt-1">{testPlan.description}</p>
+          <h2 className="text-2xl font-bold">{currentTestPlan.name}</h2>
+          <p className="text-muted-foreground mt-1">{currentTestPlan.description}</p>
         </div>
         <div className="flex gap-2">
-          <Badge variant="secondary" className={getStatusColor(testPlan.status)}>
-            {testPlan.status}
+          <Badge variant="secondary" className={getStatusColor(currentTestPlan.status)}>
+            {currentTestPlan.status}
           </Badge>
-          <Badge variant="secondary" className={getPriorityColor(testPlan.priority)}>
-            {testPlan.priority}
+          <Badge variant="secondary" className={getPriorityColor(currentTestPlan.priority)}>
+            {currentTestPlan.priority}
           </Badge>
         </div>
       </div>
@@ -85,8 +123,8 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{testPlan.progress}%</div>
-            <Progress value={testPlan.progress} className="mt-2" />
+            <div className="text-2xl font-bold">{currentTestPlan.progress}%</div>
+            <Progress value={currentTestPlan.progress} className="mt-2" />
           </CardContent>
         </Card>
         <Card>
@@ -95,7 +133,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{testPlan.assignedTeamMembers.length}</div>
+            <div className="text-2xl font-bold">{currentTestPlan.assignedTeamMembers.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -104,7 +142,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{testPlan.testSuiteIds.length}</div>
+            <div className="text-2xl font-bold">{currentTestPlan.testSuiteIds.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -113,10 +151,10 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{testPlan.estimatedEffort}h</div>
-            {testPlan.actualEffort && (
+            <div className="text-2xl font-bold">{currentTestPlan.estimatedEffort}h</div>
+            {currentTestPlan.actualEffort && (
               <p className="text-xs text-muted-foreground">
-                Actual: {testPlan.actualEffort}h
+                Actual: {currentTestPlan.actualEffort}h
               </p>
             )}
           </CardContent>
@@ -141,19 +179,19 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
               <CardContent className="space-y-3">
                 <div>
                   <Label className="text-sm font-medium">Product</Label>
-                  <p className="text-sm text-muted-foreground">{getProductName(testPlan.productId)}</p>
+                  <p className="text-sm text-muted-foreground">{getProductName(currentTestPlan.productId)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Environment</Label>
-                  <p className="text-sm text-muted-foreground">{testPlan.environment}</p>
+                  <p className="text-sm text-muted-foreground">{currentTestPlan.environment}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Test Strategy</Label>
-                  <p className="text-sm text-muted-foreground">{testPlan.testStrategy}</p>
+                  <p className="text-sm text-muted-foreground">{currentTestPlan.testStrategy}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Scope</Label>
-                  <p className="text-sm text-muted-foreground">{testPlan.scope}</p>
+                  <p className="text-sm text-muted-foreground">{currentTestPlan.scope}</p>
                 </div>
               </CardContent>
             </Card>
@@ -166,7 +204,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
                 <div>
                   <Label className="text-sm font-medium">Entry Criteria</Label>
                   <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                    {testPlan.entryExitCriteria.entryCriteria.map((criteria, index) => (
+                    {currentTestPlan.entryExitCriteria.entryCriteria.map((criteria, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                         {criteria}
@@ -177,7 +215,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
                 <div>
                   <Label className="text-sm font-medium">Exit Criteria</Label>
                   <ul className="text-sm text-muted-foreground mt-1 space-y-1">
-                    {testPlan.entryExitCriteria.exitCriteria.map((criteria, index) => (
+                    {currentTestPlan.entryExitCriteria.exitCriteria.map((criteria, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                         {criteria}
@@ -196,7 +234,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
               </CardHeader>
               <CardContent>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  {testPlan.deliverables.map((deliverable, index) => (
+                  {currentTestPlan.deliverables.map((deliverable, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <FileText className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                       {deliverable}
@@ -212,7 +250,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
               </CardHeader>
               <CardContent>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  {testPlan.risks.map((risk, index) => (
+                  {currentTestPlan.risks.map((risk, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                       {risk}
@@ -232,7 +270,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
-                {testPlan.objectives.map((objective, index) => (
+                {currentTestPlan.objectives.map((objective, index) => (
                   <li key={index} className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-medium flex items-center justify-center mt-0.5">
                       {index + 1}
@@ -257,29 +295,29 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
                   <Label className="text-sm font-medium">Start Date</Label>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {testPlan.startDate}
+                    {currentTestPlan.startDate}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">End Date</Label>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {testPlan.endDate}
+                    {currentTestPlan.endDate}
                   </p>
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <Label className="text-sm font-medium">Created Date</Label>
-                  <p className="text-sm text-muted-foreground">{testPlan.createdDate}</p>
+                  <p className="text-sm text-muted-foreground">{currentTestPlan.createdDate}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Last Modified</Label>
-                  <p className="text-sm text-muted-foreground">{testPlan.lastModified}</p>
+                  <p className="text-sm text-muted-foreground">{currentTestPlan.lastModified}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Created By</Label>
-                  <p className="text-sm text-muted-foreground">{getUserName(testPlan.createdBy)}</p>
+                  <p className="text-sm text-muted-foreground">{getUserName(currentTestPlan.createdBy)}</p>
                 </div>
               </div>
             </CardContent>
@@ -294,7 +332,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {testPlan.assignedTeamMembers.map((userId) => {
+                {currentTestPlan.assignedTeamMembers.map((userId) => {
                   const user = users.find(u => u.id === userId);
                   return (
                     <div key={userId} className="flex items-center gap-3 p-3 border rounded-lg">
@@ -326,7 +364,7 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {testPlan.testSuiteIds.map((suiteId) => {
+                {currentTestPlan.testSuiteIds.map((suiteId) => {
                   const suite = testSuites.find(s => s.id === suiteId);
                   return (
                     <div key={suiteId} className="p-3 border rounded-lg">
@@ -408,7 +446,8 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
         <Button variant="outline" onClick={onClose}>
           Close
         </Button>
-        <Button>
+        <Button onClick={() => setIsEditing(true)}>
+          <Edit className="h-4 w-4 mr-2" />
           Edit Plan
         </Button>
       </div>
