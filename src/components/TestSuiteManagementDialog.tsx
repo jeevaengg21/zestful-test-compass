@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,30 +19,42 @@ interface TestSuiteManagementDialogProps {
 export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: TestSuiteManagementDialogProps) {
   const dispatch = useAppDispatch();
   const allTestSuites = useAppSelector(selectAllTestSuites);
+  const currentTestPlan = useAppSelector(state => 
+    state.testPlans.testPlans.find(plan => plan.id === testPlan.id)
+  ) || testPlan;
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Get mapped test suites
-  const mappedTestSuites = allTestSuites.filter(suite => testPlan.testSuiteIds.includes(suite.id));
+  // Reset search when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm("");
+    }
+  }, [open]);
+
+  // Get mapped test suites using the current state from Redux
+  const mappedTestSuites = allTestSuites.filter(suite => 
+    currentTestPlan.testSuiteIds.includes(suite.id)
+  );
   
   // Get available test suites (not mapped and matching search)
   const availableTestSuites = allTestSuites.filter(suite => 
-    !testPlan.testSuiteIds.includes(suite.id) &&
+    !currentTestPlan.testSuiteIds.includes(suite.id) &&
     (suite.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      suite.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleAddTestSuite = (testSuiteId: string) => {
-    const updatedTestSuiteIds = [...testPlan.testSuiteIds, testSuiteId];
+    const updatedTestSuiteIds = [...currentTestPlan.testSuiteIds, testSuiteId];
     dispatch(updateTestPlan({ 
-      id: testPlan.id, 
+      id: currentTestPlan.id, 
       updates: { testSuiteIds: updatedTestSuiteIds } 
     }));
   };
 
   const handleRemoveTestSuite = (testSuiteId: string) => {
-    const updatedTestSuiteIds = testPlan.testSuiteIds.filter(id => id !== testSuiteId);
+    const updatedTestSuiteIds = currentTestPlan.testSuiteIds.filter(id => id !== testSuiteId);
     dispatch(updateTestPlan({ 
-      id: testPlan.id, 
+      id: currentTestPlan.id, 
       updates: { testSuiteIds: updatedTestSuiteIds } 
     }));
   };
@@ -51,7 +63,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Test Suites - {testPlan.name}</DialogTitle>
+          <DialogTitle>Manage Test Suites - {currentTestPlan.name}</DialogTitle>
           <DialogDescription>
             Map and unmap test suites for this test plan
           </DialogDescription>
