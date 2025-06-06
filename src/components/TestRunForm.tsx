@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,7 +136,7 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
               <SelectContent>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName}
+                    {user.fullName}
                   </SelectItem>
                 ))}
               </SelectContent>

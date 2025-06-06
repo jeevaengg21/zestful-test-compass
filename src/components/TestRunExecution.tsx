@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectTestRunById, selectTestCaseExecutionsByRun, selectAllTestCases } from "@/store/selectors";
-import { updateTestCaseExecution, addDefect } from "@/store/slices/testRunSlice";
+import { updateTestCaseExecution, addDefect, TestCaseExecution } from "@/store/slices/testRunSlice";
 
 interface TestRunExecutionProps {
   testRunId: string;
@@ -68,7 +67,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     return allTestCases.find(tc => tc.id === testCaseId);
   };
 
-  const handleExecutionUpdate = (executionId: string, status: string) => {
+  const handleExecutionUpdate = (executionId: string, status: TestCaseExecution['status']) => {
     const updates = {
       status,
       executedBy: "USR001", // Should be current user

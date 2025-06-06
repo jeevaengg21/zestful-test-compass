@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,7 @@ export const TestRuns = () => {
 
   const getUserName = (userId: string) => {
     const user = users.find(u => u.id === userId);
-    return user ? `${user.firstName} ${user.lastName}` : "Unknown User";
+    return user ? user.fullName : "Unknown User";
   };
 
   const getTestPlanName = (testPlanId: string) => {
