@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -192,7 +193,7 @@ export const TestCases = () => {
                 New Test Case
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[800px]">
               <DialogHeader>
                 <DialogTitle>Create New Test Case</DialogTitle>
               </DialogHeader>
@@ -325,7 +326,7 @@ export const TestCases = () => {
         setEditingTestCase(null);
         resetForm();
       }}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>Edit Test Case</DialogTitle>
           </DialogHeader>
