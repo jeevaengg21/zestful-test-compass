@@ -118,7 +118,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(user).returning();
+    const result = await db.insert(users).values([user]).returning();
     return result[0];
   }
 
@@ -135,7 +135,7 @@ export class DatabaseStorage implements IStorage {
   async createProduct(product: InsertProduct): Promise<Product> {
     const id = `PROD_${crypto.randomUUID()}`;
     const newProduct = { ...product, id };
-    const result = await db.insert(products).values(newProduct).returning();
+    const result = await db.insert(products).values([newProduct]).returning();
     return result[0];
   }
 
@@ -146,7 +146,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProduct(id: string): Promise<boolean> {
     const result = await db.delete(products).where(eq(products.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Module methods
@@ -166,7 +166,7 @@ export class DatabaseStorage implements IStorage {
   async createModule(module: InsertModule): Promise<Module> {
     const id = `MOD_${crypto.randomUUID()}`;
     const newModule = { ...module, id };
-    const result = await db.insert(modules).values(newModule).returning();
+    const result = await db.insert(modules).values([newModule]).returning();
     return result[0];
   }
 
