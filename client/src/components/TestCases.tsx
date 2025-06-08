@@ -123,7 +123,7 @@ export const TestCases = () => {
   const handleCreateTestCase = () => {
     if (formData.title && formData.productId && formData.moduleId) {
       console.log("Creating test case:", formData);
-      dispatch(addTestCase({
+      createTestCaseMutation.mutate({
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
@@ -134,9 +134,7 @@ export const TestCases = () => {
         productId: formData.productId,
         moduleId: formData.moduleId,
         estimatedTime: formData.estimatedTime
-      }));
-      setIsCreateDialogOpen(false);
-      resetForm();
+      });
     }
   };
 
@@ -144,20 +142,20 @@ export const TestCases = () => {
     setEditingTestCase(testCase);
     setFormData({
       title: testCase.title,
-      description: testCase.description,
-      priority: testCase.priority,
+      description: testCase.description || "",
+      priority: testCase.priority as "High" | "Medium" | "Low" | "Critical",
       productId: testCase.productId,
       moduleId: testCase.moduleId,
-      steps: testCase.steps.join('\n'),
-      expectedResult: testCase.expectedResult,
-      estimatedTime: testCase.estimatedTime
+      steps: (testCase.steps || []).join('\n'),
+      expectedResult: testCase.expectedResult || "",
+      estimatedTime: testCase.estimatedTime || 5
     });
   };
 
   const handleUpdateTestCase = () => {
     if (editingTestCase && formData.title && formData.productId && formData.moduleId) {
       console.log("Updating test case:", formData);
-      dispatch(updateTestCase({
+      updateTestCaseMutation.mutate({
         id: editingTestCase.id,
         updates: {
           title: formData.title,
@@ -169,15 +167,13 @@ export const TestCases = () => {
           moduleId: formData.moduleId,
           estimatedTime: formData.estimatedTime
         }
-      }));
-      setEditingTestCase(null);
-      resetForm();
+      });
     }
   };
 
   const filteredTestCases = testCases.filter(testCase => 
     testCase.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    testCase.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (testCase.description || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Pagination logic
@@ -540,7 +536,7 @@ export const TestCases = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-gray-500">
-                      {testCase.lastRun}
+                      {testCase.lastRun ? new Date(testCase.lastRun).toLocaleDateString() : 'Never'}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => handleEditTestCase(testCase)}>
