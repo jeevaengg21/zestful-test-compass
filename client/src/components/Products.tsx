@@ -30,8 +30,35 @@ import {
 } from "lucide-react";
 
 export const Products = () => {
-  const dispatch = useAppDispatch();
-  const products = useAppSelector(selectAllProducts);
+  const { data: products = [], isLoading } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    queryFn: () => apiRequest('/api/products')
+  });
+
+  const createProductMutation = useMutation({
+    mutationFn: (productData: any) => apiRequest('/api/products', {
+      method: 'POST',
+      body: JSON.stringify(productData)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    }
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: any }) => 
+      apiRequest(`/api/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      setEditingProduct(null);
+      resetForm();
+    }
+  });
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -40,7 +67,7 @@ export const Products = () => {
     productName: "",
     productOwner: "",
     description: "",
-    status: "Active" as Product['status']
+    status: "Active" as const
   });
 
   const getStatusColor = (status: string) => {
@@ -65,14 +92,12 @@ export const Products = () => {
 
   const handleCreateProduct = () => {
     if (formData.productName && formData.productOwner) {
-      console.log("Creating product:", formData);
-      dispatch(addProduct({
+      createProductMutation.mutate({
         name: formData.productName,
         owner: formData.productOwner,
-        description: formData.description
-      }));
-      setIsCreateDialogOpen(false);
-      setFormData({ productName: "", productOwner: "", description: "", status: "Active" });
+        description: formData.description,
+        status: formData.status
+      });
     }
   };
 
@@ -88,8 +113,7 @@ export const Products = () => {
 
   const handleUpdateProduct = () => {
     if (editingProduct && formData.productName && formData.productOwner) {
-      console.log("Updating product:", formData);
-      dispatch(updateProduct({
+      updateProductMutation.mutate({
         id: editingProduct.id,
         updates: {
           name: formData.productName,
@@ -97,9 +121,7 @@ export const Products = () => {
           description: formData.description,
           status: formData.status
         }
-      }));
-      setEditingProduct(null);
-      setFormData({ productName: "", productOwner: "", description: "", status: "Active" });
+      });
     }
   };
 

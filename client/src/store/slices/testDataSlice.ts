@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { TestDataSet } from '@shared/schema';
+import { TestDataSet, TestCaseDataMapping } from '@shared/schema';
 
 interface TestDataState {
   testDataSets: TestDataSet[];
+  testCaseDataMappings: TestCaseDataMapping[];
 }
 
 const initialState: TestDataState = {
