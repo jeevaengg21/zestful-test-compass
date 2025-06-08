@@ -314,7 +314,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestSuite(testSuite: InsertTestSuite): Promise<TestSuite> {
-    const result = await db.insert(testSuites).values(testSuite).returning();
+    const id = `TS_${crypto.randomUUID()}`;
+    const newTestSuite = { ...testSuite, id };
+    const result = await db.insert(testSuites).values([newTestSuite]).returning();
     return result[0];
   }
 
@@ -343,7 +345,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestPlan(testPlan: InsertTestPlan): Promise<TestPlan> {
-    const result = await db.insert(testPlans).values(testPlan).returning();
+    const id = `TP_${crypto.randomUUID()}`;
+    const newTestPlan = { ...testPlan, id };
+    const result = await db.insert(testPlans).values([newTestPlan]).returning();
     return result[0];
   }
 
@@ -372,7 +376,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestRun(testRun: InsertTestRun): Promise<TestRun> {
-    const result = await db.insert(testRuns).values(testRun).returning();
+    const id = `TR_${crypto.randomUUID()}`;
+    const newTestRun = { ...testRun, id };
+    const result = await db.insert(testRuns).values([newTestRun]).returning();
     return result[0];
   }
 
@@ -401,7 +407,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestCaseExecution(execution: InsertTestCaseExecution): Promise<TestCaseExecution> {
-    const result = await db.insert(testCaseExecutions).values(execution).returning();
+    const id = `TCE_${crypto.randomUUID()}`;
+    const newExecution = { ...execution, id };
+    const result = await db.insert(testCaseExecutions).values([newExecution]).returning();
     return result[0];
   }
 
