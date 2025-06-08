@@ -170,7 +170,7 @@ export class DatabaseStorage implements IStorage {
   async createModule(module: InsertModule): Promise<Module> {
     const id = `MOD_${crypto.randomUUID()}`;
     const newModule = { ...module, id };
-    const result = await db.insert(modules).values([newModule]).returning();
+    const result = await db.insert(modules).values(newModule).returning();
     return result[0];
   }
 
@@ -285,18 +285,23 @@ export class DatabaseStorage implements IStorage {
     const id = `TC_${crypto.randomUUID()}`;
     
     const newTestCase = { ...testCase, id };
-    const result = await db.insert(testCases).values([newTestCase]).returning();
+    const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
   }
 
   async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
-    const result = await db.update(testCases).set(updates).where(eq(testCases.id, id)).returning();
+    // Handle array fields properly to ensure proper type compatibility
+    const cleanUpdates = { ...updates };
+    if ('steps' in cleanUpdates && cleanUpdates.steps) {
+      cleanUpdates.steps = Array.isArray(cleanUpdates.steps) ? cleanUpdates.steps : [];
+    }
+    const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];
   }
 
   async deleteTestCase(id: string): Promise<boolean> {
     const result = await db.delete(testCases).where(eq(testCases.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Test Suite methods
@@ -320,18 +325,23 @@ export class DatabaseStorage implements IStorage {
   async createTestSuite(testSuite: InsertTestSuite): Promise<TestSuite> {
     const id = `TS_${crypto.randomUUID()}`;
     const newTestSuite = { ...testSuite, id };
-    const result = await db.insert(testSuites).values([newTestSuite]).returning();
+    const result = await db.insert(testSuites).values(newTestSuite).returning();
     return result[0];
   }
 
   async updateTestSuite(id: string, updates: Partial<InsertTestSuite>): Promise<TestSuite | undefined> {
-    const result = await db.update(testSuites).set(updates).where(eq(testSuites.id, id)).returning();
+    // Handle array fields properly to ensure proper type compatibility
+    const cleanUpdates = { ...updates };
+    if ('testCaseIds' in cleanUpdates && cleanUpdates.testCaseIds) {
+      cleanUpdates.testCaseIds = Array.isArray(cleanUpdates.testCaseIds) ? cleanUpdates.testCaseIds : [];
+    }
+    const result = await db.update(testSuites).set(cleanUpdates).where(eq(testSuites.id, id)).returning();
     return result[0];
   }
 
   async deleteTestSuite(id: string): Promise<boolean> {
     const result = await db.delete(testSuites).where(eq(testSuites.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Test Plan methods
@@ -351,18 +361,23 @@ export class DatabaseStorage implements IStorage {
   async createTestPlan(testPlan: InsertTestPlan): Promise<TestPlan> {
     const id = `TP_${crypto.randomUUID()}`;
     const newTestPlan = { ...testPlan, id };
-    const result = await db.insert(testPlans).values([newTestPlan]).returning();
+    const result = await db.insert(testPlans).values(newTestPlan).returning();
     return result[0];
   }
 
   async updateTestPlan(id: string, updates: Partial<InsertTestPlan>): Promise<TestPlan | undefined> {
-    const result = await db.update(testPlans).set(updates).where(eq(testPlans.id, id)).returning();
+    // Handle array fields properly to ensure proper type compatibility
+    const cleanUpdates = { ...updates };
+    if ('testSuiteIds' in cleanUpdates && cleanUpdates.testSuiteIds) {
+      cleanUpdates.testSuiteIds = Array.isArray(cleanUpdates.testSuiteIds) ? cleanUpdates.testSuiteIds : [];
+    }
+    const result = await db.update(testPlans).set(cleanUpdates).where(eq(testPlans.id, id)).returning();
     return result[0];
   }
 
   async deleteTestPlan(id: string): Promise<boolean> {
     const result = await db.delete(testPlans).where(eq(testPlans.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Test Run methods
