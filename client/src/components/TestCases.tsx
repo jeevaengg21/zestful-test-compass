@@ -64,10 +64,10 @@ export const TestCases = () => {
         limit: '50'
       });
       if (search) params.append('search', search);
-      if (productFilter) params.append('productId', productFilter);
-      if (moduleFilter) params.append('moduleId', moduleFilter);
-      if (priorityFilter) params.append('priority', priorityFilter);
-      if (statusFilter) params.append('status', statusFilter);
+      if (productFilter && productFilter !== 'all') params.append('productId', productFilter);
+      if (moduleFilter && moduleFilter !== 'all') params.append('moduleId', moduleFilter);
+      if (priorityFilter && priorityFilter !== 'all') params.append('priority', priorityFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       
       return fetch(`/api/test-cases?${params}`).then(res => res.json());
     }
@@ -353,7 +353,7 @@ export const TestCases = () => {
                   <SelectValue placeholder="All products" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All products</SelectItem>
+                  <SelectItem value="all">All products</SelectItem>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.name}
@@ -369,7 +369,7 @@ export const TestCases = () => {
                   <SelectValue placeholder="All modules" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All modules</SelectItem>
+                  <SelectItem value="all">All modules</SelectItem>
                   {allModules.map((module) => (
                     <SelectItem key={module.id} value={module.id}>
                       {module.name}
@@ -385,7 +385,7 @@ export const TestCases = () => {
                   <SelectValue placeholder="All priorities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All priorities</SelectItem>
+                  <SelectItem value="all">All priorities</SelectItem>
                   <SelectItem value="Critical">Critical</SelectItem>
                   <SelectItem value="High">High</SelectItem>
                   <SelectItem value="Medium">Medium</SelectItem>
@@ -400,7 +400,7 @@ export const TestCases = () => {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Deprecated">Deprecated</SelectItem>
                   <SelectItem value="Draft">Draft</SelectItem>
