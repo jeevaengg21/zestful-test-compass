@@ -1,12 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { TestRun } from '@shared/schema';
+import { TestRun, TestCaseExecution, Defect } from '@shared/schema';
 
 interface TestRunState {
   testRuns: TestRun[];
+  testCaseExecutions: TestCaseExecution[];
+  defects: Defect[];
 }
 
 const initialState: TestRunState = {
-  testRuns: []
+  testRuns: [],
+  testCaseExecutions: [],
+  defects: []
 };
 
 const testRunSlice = createSlice({
@@ -47,9 +51,49 @@ const testRunSlice = createSlice({
       if (index !== -1) {
         state.testRuns[index] = { ...state.testRuns[index], status: 'Paused' };
       }
+    },
+    setTestCaseExecutions: (state, action: PayloadAction<TestCaseExecution[]>) => {
+      state.testCaseExecutions = action.payload;
+    },
+    addTestCaseExecution: (state, action: PayloadAction<TestCaseExecution>) => {
+      state.testCaseExecutions.push(action.payload);
+    },
+    updateTestCaseExecution: (state, action: PayloadAction<{ id: string; updates: Partial<TestCaseExecution> }>) => {
+      const { id, updates } = action.payload;
+      const index = state.testCaseExecutions.findIndex(execution => execution.id === id);
+      if (index !== -1) {
+        state.testCaseExecutions[index] = { ...state.testCaseExecutions[index], ...updates };
+      }
+    },
+    setDefects: (state, action: PayloadAction<Defect[]>) => {
+      state.defects = action.payload;
+    },
+    addDefect: (state, action: PayloadAction<Defect>) => {
+      state.defects.push(action.payload);
+    },
+    updateDefect: (state, action: PayloadAction<{ id: string; updates: Partial<Defect> }>) => {
+      const { id, updates } = action.payload;
+      const index = state.defects.findIndex(defect => defect.id === id);
+      if (index !== -1) {
+        state.defects[index] = { ...state.defects[index], ...updates };
+      }
     }
   }
 });
 
-export const { setTestRuns, addTestRun, updateTestRun, deleteTestRun, startTestRun, completeTestRun, pauseTestRun } = testRunSlice.actions;
+export const { 
+  setTestRuns, 
+  addTestRun, 
+  updateTestRun, 
+  deleteTestRun, 
+  startTestRun, 
+  completeTestRun, 
+  pauseTestRun,
+  setTestCaseExecutions,
+  addTestCaseExecution,
+  updateTestCaseExecution,
+  setDefects,
+  addDefect,
+  updateDefect
+} = testRunSlice.actions;
 export default testRunSlice.reducer;

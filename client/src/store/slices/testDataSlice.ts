@@ -39,6 +39,33 @@ const testDataSlice = createSlice({
     },
     removeTestCaseDataMapping: (state, action: PayloadAction<string>) => {
       state.testCaseDataMappings = state.testCaseDataMappings.filter(mapping => mapping.id !== action.payload);
+    },
+    updateTestDataItem: (state, action: PayloadAction<{ id: string; itemId: string; updates: any }>) => {
+      const { id, itemId, updates } = action.payload;
+      const dataSet = state.testDataSets.find(set => set.id === id);
+      if (dataSet && dataSet.data) {
+        const itemIndex = dataSet.data.findIndex((item: any) => item.id === itemId);
+        if (itemIndex !== -1) {
+          dataSet.data[itemIndex] = { ...dataSet.data[itemIndex], ...updates };
+        }
+      }
+    },
+    addTestDataItem: (state, action: PayloadAction<{ id: string; item: any }>) => {
+      const { id, item } = action.payload;
+      const dataSet = state.testDataSets.find(set => set.id === id);
+      if (dataSet) {
+        if (!dataSet.data) {
+          dataSet.data = [];
+        }
+        dataSet.data.push(item);
+      }
+    },
+    deleteTestDataItem: (state, action: PayloadAction<{ id: string; itemId: string }>) => {
+      const { id, itemId } = action.payload;
+      const dataSet = state.testDataSets.find(set => set.id === id);
+      if (dataSet && dataSet.data) {
+        dataSet.data = dataSet.data.filter((item: any) => item.id !== itemId);
+      }
     }
   }
 });
@@ -50,6 +77,9 @@ export const {
   deleteTestDataSet,
   setTestCaseDataMappings,
   addTestCaseDataMapping,
-  removeTestCaseDataMapping
+  removeTestCaseDataMapping,
+  updateTestDataItem,
+  addTestDataItem,
+  deleteTestDataItem
 } = testDataSlice.actions;
 export default testDataSlice.reducer;

@@ -55,6 +55,14 @@ export const selectAllTestPlans = (state: RootState) => state.testPlans.testPlan
 
 // Test Run selectors
 export const selectAllTestRuns = (state: RootState) => state.testRuns.testRuns;
+export const selectTestRunById = (state: RootState, id: string) => 
+  state.testRuns.testRuns.find(run => run.id === id);
+export const selectAllTestCaseExecutions = (state: RootState) => state.testRuns.testCaseExecutions;
+export const selectTestCaseExecutionsByRun = (state: RootState, testRunId: string) =>
+  state.testRuns.testCaseExecutions.filter(execution => execution.testRunId === testRunId);
+export const selectAllDefects = (state: RootState) => state.testRuns.defects;
+export const selectDefectsByTestRun = (state: RootState, testRunId: string) =>
+  state.testRuns.defects.filter(defect => defect.testRunId === testRunId);
 
 // Test Data selectors
 export const selectAllTestDataSets = (state: RootState) => state.testData.testDataSets;
