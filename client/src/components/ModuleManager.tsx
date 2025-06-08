@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addModule, updateModule } from "@/store/slices/moduleSlice";
-import { selectModulesByProduct } from "@/store/selectors";
-import { Module } from "@/store/slices/moduleSlice";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Module } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +31,37 @@ interface ModuleManagerProps {
 }
 
 export const ModuleManager = ({ productId, productName }: ModuleManagerProps) => {
-  const dispatch = useAppDispatch();
-  const productModules = useAppSelector(state => selectModulesByProduct(state, productId));
+  const { data: allModules = [], isLoading } = useQuery<Module[]>({
+    queryKey: ['/api/modules'],
+    queryFn: () => apiRequest('/api/modules')
+  });
+
+  const productModules = allModules.filter(module => module.productId === productId);
+
+  const createModuleMutation = useMutation({
+    mutationFn: (moduleData: any) => apiRequest('/api/modules', {
+      method: 'POST',
+      body: JSON.stringify(moduleData)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/modules'] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    }
+  });
+
+  const updateModuleMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: any }) => 
+      apiRequest(`/api/modules/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/modules'] });
+      setEditingModule(null);
+      resetForm();
+    }
+  });
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
@@ -44,7 +72,7 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
     manager: "",
     developers: "",
     testers: "",
-    status: "Active" as Module['status']
+    status: "Active" as "Active" | "Testing" | "In Development" | "On Hold" | "Completed"
   });
 
   const getStatusColor = (status: string) => {
@@ -76,18 +104,16 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
 
   const handleCreateModule = () => {
     if (formData.moduleName && formData.moduleOwner) {
-      console.log("Creating module:", formData);
-      dispatch(addModule({
+      createModuleMutation.mutate({
         name: formData.moduleName,
         description: formData.description,
         moduleOwner: formData.moduleOwner,
         manager: formData.manager,
         developers: formData.developers ? formData.developers.split(',').map(d => d.trim()) : [],
         testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
-        productId: productId
-      }));
-      setIsCreateDialogOpen(false);
-      resetForm();
+        productId: productId,
+        status: formData.status
+      });
     }
   };
 
@@ -96,18 +122,17 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
     setFormData({
       moduleName: module.name,
       description: module.description,
-      moduleOwner: module.moduleOwner,
-      manager: module.manager,
-      developers: module.developers.join(', '),
-      testers: module.testers.join(', '),
-      status: module.status
+      moduleOwner: module.moduleOwner || "",
+      manager: module.manager || "",
+      developers: module.developers ? module.developers.join(', ') : "",
+      testers: module.testers ? module.testers.join(', ') : "",
+      status: (module.status || "Active") as "Active" | "Testing" | "In Development" | "On Hold" | "Completed"
     });
   };
 
   const handleUpdateModule = () => {
     if (editingModule && formData.moduleName && formData.moduleOwner) {
-      console.log("Updating module:", formData);
-      dispatch(updateModule({
+      updateModuleMutation.mutate({
         id: editingModule.id,
         updates: {
           name: formData.moduleName,
@@ -118,9 +143,7 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
           testers: formData.testers ? formData.testers.split(',').map(t => t.trim()) : [],
           status: formData.status
         }
-      }));
-      setEditingModule(null);
-      resetForm();
+      });
     }
   };
 
