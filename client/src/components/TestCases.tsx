@@ -30,9 +30,10 @@ import {
 export const TestCases = () => {
   const { toast } = useToast();
   
-  const { data: testCases = [], isLoading: testCasesLoading } = useQuery<TestCase[]>({
+  const { data: testCases = [], isLoading: testCasesLoading, refetch: refetchTestCases } = useQuery<TestCase[]>({
     queryKey: ['/api/test-cases'],
-    queryFn: () => apiRequest('/api/test-cases')
+    queryFn: () => apiRequest('/api/test-cases'),
+    staleTime: 0 // Always refetch to get latest data
   });
 
   // Use Redux store for products and modules instead of individual API calls
@@ -45,14 +46,10 @@ export const TestCases = () => {
       body: JSON.stringify(testCaseData)
     }),
     onSuccess: (newTestCase) => {
-      // Immediately add the new test case to the cache
-      queryClient.setQueryData(['/api/test-cases'], (oldData: TestCase[] | undefined) => {
-        if (!oldData) return [newTestCase];
-        return [...oldData, newTestCase];
-      });
+      console.log("Create success, new test case:", newTestCase);
       
-      // Also invalidate to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      // Force refetch the data using the query's refetch function
+      refetchTestCases();
       
       setIsCreateDialogOpen(false);
       resetForm();
@@ -70,22 +67,16 @@ export const TestCases = () => {
         body: JSON.stringify(updates)
       }),
     onSuccess: (updatedTestCase) => {
-      // Immediately update the cache with the new data
-      queryClient.setQueryData(['/api/test-cases'], (oldData: TestCase[] | undefined) => {
-        if (!oldData) return oldData;
-        return oldData.map(testCase => 
-          testCase.id === updatedTestCase.id ? updatedTestCase : testCase
-        );
-      });
+      console.log("Update success, updated test case:", updatedTestCase);
       
-      // Also invalidate to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      // Force refetch the data using the query's refetch function
+      refetchTestCases();
       
       // Close dialog and reset form
       setTimeout(() => {
         setEditingTestCase(null);
         resetForm();
-      }, 100);
+      }, 200);
       
       toast({
         title: "Test case updated",
