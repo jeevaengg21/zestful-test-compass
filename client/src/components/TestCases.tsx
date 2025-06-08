@@ -32,6 +32,9 @@ export const TestCases = () => {
   const [moduleFilter, setModuleFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  
+  // Local test cases state for immediate UI updates
+  const [localTestCases, setLocalTestCases] = useState<TestCase[]>([]);
 
   // Form and dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -73,7 +76,14 @@ export const TestCases = () => {
     }
   });
 
-  const testCases = testCasesData?.testCases || [];
+  // Sync local state when API data changes
+  useEffect(() => {
+    if (testCasesData?.testCases) {
+      setLocalTestCases(testCasesData.testCases);
+    }
+  }, [testCasesData]);
+
+  const testCases = localTestCases;
   const totalPages = testCasesData?.totalPages || 1;
 
   // Create test case mutation
@@ -83,12 +93,10 @@ export const TestCases = () => {
         method: 'POST',
         body: JSON.stringify(testCase)
       }),
-    onSuccess: () => {
-      // Invalidate all test-cases queries regardless of parameters
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/test-cases'],
-        exact: false 
-      });
+    onSuccess: (newTestCase) => {
+      // Add new test case to local state for immediate UI update
+      setLocalTestCases(prevTestCases => [newTestCase, ...prevTestCases]);
+      
       setIsCreateDialogOpen(false);
       resetForm();
       toast({
@@ -106,25 +114,12 @@ export const TestCases = () => {
         body: JSON.stringify(updates)
       }),
     onSuccess: (updatedTestCase) => {
-      // Update the cache directly with the new data
-      const currentQueryKey = ['/api/test-cases', {
-        page: currentPage,
-        search, 
-        productId: productFilter, 
-        moduleId: moduleFilter,
-        priority: priorityFilter,
-        status: statusFilter
-      }];
-      
-      queryClient.setQueryData(currentQueryKey, (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          testCases: oldData.testCases.map((tc: any) => 
-            tc.id === updatedTestCase.id ? updatedTestCase : tc
-          )
-        };
-      });
+      // Update local state immediately for instant UI update
+      setLocalTestCases(prevTestCases => 
+        prevTestCases.map(tc => 
+          tc.id === updatedTestCase.id ? updatedTestCase : tc
+        )
+      );
       
       setEditingTestCase(null);
       setIsEditDialogOpen(false);
