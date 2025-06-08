@@ -13,6 +13,7 @@ export const selectModulesByProduct = createSelector(
 );
 
 // User selectors
+export const selectAllUsers = (state: RootState) => state.users.users || [];
 export const selectCurrentUser = (state: RootState) => state.users.currentUser;
 export const selectIsAuthenticated = (state: RootState) => state.users.isAuthenticated;
 
