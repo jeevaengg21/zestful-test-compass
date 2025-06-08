@@ -59,8 +59,11 @@ export const TestCases = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
-      setEditingTestCase(null);
-      resetForm();
+      // Use setTimeout to ensure UI updates properly
+      setTimeout(() => {
+        setEditingTestCase(null);
+        resetForm();
+      }, 100);
     }
   });
   
