@@ -212,22 +212,23 @@ export const TestCases = () => {
   };
 
   const handleFilterChange = (filterType: string, value: string) => {
+    const filterValue = value === "all" ? "" : value;
     switch (filterType) {
       case 'status':
-        setStatusFilter(value);
+        setStatusFilter(filterValue);
         break;
       case 'priority':
-        setPriorityFilter(value);
+        setPriorityFilter(filterValue);
         break;
       case 'assignee':
-        setAssigneeFilter(value);
+        setAssigneeFilter(filterValue);
         break;
       case 'product':
-        setProductFilter(value);
+        setProductFilter(filterValue);
         setModuleFilter(""); // Reset module when product changes
         break;
       case 'module':
-        setModuleFilter(value);
+        setModuleFilter(filterValue);
         break;
     }
     setCurrentPage(1);
@@ -381,7 +382,7 @@ export const TestCases = () => {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Not Run">Not Run</SelectItem>
             <SelectItem value="Passed">Passed</SelectItem>
             <SelectItem value="Failed">Failed</SelectItem>
@@ -393,7 +394,7 @@ export const TestCases = () => {
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Priority</SelectItem>
+            <SelectItem value="all">All Priority</SelectItem>
             <SelectItem value="Critical">Critical</SelectItem>
             <SelectItem value="High">High</SelectItem>
             <SelectItem value="Medium">Medium</SelectItem>
@@ -405,7 +406,7 @@ export const TestCases = () => {
             <SelectValue placeholder="Product" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Products</SelectItem>
+            <SelectItem value="all">All Products</SelectItem>
             {products.map((product) => (
               <SelectItem key={product.id} value={product.id}>
                 {product.name}

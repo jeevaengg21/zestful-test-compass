@@ -171,7 +171,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined> {
-    const result = await db.update(modules).set(updates).where(eq(modules.id, id)).returning();
+    const cleanUpdates = { ...updates };
+    // Handle array fields properly
+    if ('developers' in cleanUpdates && cleanUpdates.developers) {
+      cleanUpdates.developers = Array.isArray(cleanUpdates.developers) ? cleanUpdates.developers : [];
+    }
+    if ('testers' in cleanUpdates && cleanUpdates.testers) {
+      cleanUpdates.testers = Array.isArray(cleanUpdates.testers) ? cleanUpdates.testers : [];
+    }
+    const result = await db.update(modules).set(cleanUpdates).where(eq(modules.id, id)).returning();
     return result[0];
   }
 
@@ -273,7 +281,7 @@ export class DatabaseStorage implements IStorage {
     const id = `TC_${crypto.randomUUID()}`;
     
     const newTestCase = { ...testCase, id };
-    const result = await db.insert(testCases).values(newTestCase).returning();
+    const result = await db.insert(testCases).values([newTestCase]).returning();
     return result[0];
   }
 
