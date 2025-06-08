@@ -1,5 +1,8 @@
 
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { TestCase, Product, Module } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestCase, updateTestCase, TestCase } from "@/store/slices/testSlice";
-import { selectAllProducts, selectModulesByProduct, selectAllTestCases } from "@/store/selectors";
 import { TestDataMapper } from "./TestDataMapper";
 import { 
   Plus, 
@@ -24,9 +24,45 @@ import {
 } from "lucide-react";
 
 export const TestCases = () => {
-  const dispatch = useAppDispatch();
-  const testCases = useAppSelector(selectAllTestCases);
-  const products = useAppSelector(selectAllProducts);
+  const { data: testCases = [], isLoading: testCasesLoading } = useQuery<TestCase[]>({
+    queryKey: ['/api/test-cases'],
+    queryFn: () => apiRequest('/api/test-cases')
+  });
+
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ['/api/products'],
+    queryFn: () => apiRequest('/api/products')
+  });
+
+  const { data: allModules = [] } = useQuery<Module[]>({
+    queryKey: ['/api/modules'],
+    queryFn: () => apiRequest('/api/modules')
+  });
+
+  const createTestCaseMutation = useMutation({
+    mutationFn: (testCaseData: any) => apiRequest('/api/test-cases', {
+      method: 'POST',
+      body: JSON.stringify(testCaseData)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    }
+  });
+
+  const updateTestCaseMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: any }) => 
+      apiRequest(`/api/test-cases/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      setEditingTestCase(null);
+      resetForm();
+    }
+  });
   
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,7 +72,7 @@ export const TestCases = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    priority: "Medium" as TestCase['priority'],
+    priority: "Medium" as "High" | "Medium" | "Low" | "Critical",
     productId: "",
     moduleId: "",
     steps: "",
@@ -45,7 +81,7 @@ export const TestCases = () => {
   });
 
   // Get modules based on selected product
-  const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
+  const modules = allModules.filter(module => module.productId === formData.productId);
 
   const getStatusColor = (status: string) => {
     switch (status) {

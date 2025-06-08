@@ -377,30 +377,30 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Code className="h-3 w-3 text-purple-600" />
-                        <span className="text-sm">{module.developers.length}</span>
+                        <span className="text-sm">{(module.developers || []).length}</span>
                       </div>
-                      <div className="text-xs text-gray-500 max-w-32 truncate" title={module.developers.join(", ")}>
-                        {module.developers.join(", ")}
+                      <div className="text-xs text-gray-500 max-w-32 truncate" title={(module.developers || []).join(", ")}>
+                        {(module.developers || []).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Bug className="h-3 w-3 text-orange-600" />
-                        <span className="text-sm">{module.testers.length}</span>
+                        <span className="text-sm">{(module.testers || []).length}</span>
                       </div>
-                      <div className="text-xs text-gray-500 max-w-32 truncate" title={module.testers.join(", ")}>
-                        {module.testers.join(", ")}
+                      <div className="text-xs text-gray-500 max-w-32 truncate" title={(module.testers || []).join(", ")}>
+                        {(module.testers || []).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(module.status)}>
-                        {module.status}
+                      <Badge className={getStatusColor(module.status || "Active")}>
+                        {module.status || "Active"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-3 w-3 text-gray-400" />
-                        <span className="text-sm">{module.createdDate}</span>
+                        <span className="text-sm">{module.createdDate ? new Date(module.createdDate).toLocaleDateString() : 'Unknown'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
