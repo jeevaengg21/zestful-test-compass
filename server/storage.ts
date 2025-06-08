@@ -118,7 +118,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(users).values([user]).returning();
+    const userWithDefaults = {
+      ...user,
+      roles: user.roles || []
+    };
+    const result = await db.insert(users).values([userWithDefaults]).returning();
     return result[0];
   }
 
@@ -433,7 +437,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDefect(defect: InsertDefect): Promise<Defect> {
-    const result = await db.insert(defects).values(defect).returning();
+    const id = `DEF_${crypto.randomUUID()}`;
+    const newDefect = { ...defect, id };
+    const result = await db.insert(defects).values([newDefect]).returning();
     return result[0];
   }
 
@@ -461,7 +467,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestDataSet(testDataSet: InsertTestDataSet): Promise<TestDataSet> {
-    const result = await db.insert(testDataSets).values(testDataSet).returning();
+    const id = `TDS_${crypto.randomUUID()}`;
+    const newTestDataSet = { ...testDataSet, id };
+    const result = await db.insert(testDataSets).values([newTestDataSet]).returning();
     return result[0];
   }
 
