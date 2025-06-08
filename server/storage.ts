@@ -14,9 +14,9 @@ import {
 // Helper function to ensure proper array type for Drizzle ORM
 function ensureArray<T>(value: T[] | any): T[] | null {
   if (!value) return null;
-  if (Array.isArray(value)) return value;
+  if (Array.isArray(value)) return value as T[];
   try {
-    return Array.from(value);
+    return Array.from(value) as T[];
   } catch {
     return null;
   }
@@ -302,17 +302,16 @@ export class DatabaseStorage implements IStorage {
     const newTestCase = { 
       ...testCase, 
       id,
-      steps: normalizeArrayField(testCase.steps)
+      steps: ensureArray(testCase.steps)
     };
     const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
   }
 
   async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
-    // Handle array fields properly to ensure proper type compatibility
     const cleanUpdates = { ...updates };
-    if ('steps' in cleanUpdates && cleanUpdates.steps) {
-      cleanUpdates.steps = Array.isArray(cleanUpdates.steps) ? cleanUpdates.steps : [];
+    if ('steps' in cleanUpdates) {
+      cleanUpdates.steps = ensureArray(cleanUpdates.steps);
     }
     const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];

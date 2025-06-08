@@ -70,6 +70,9 @@ export const TestCases = () => {
   // Use Redux store for products and modules instead of individual API calls
   const products = useAppSelector(selectAllProducts);
   const productsLoading = useAppSelector(state => state.products.loading);
+  
+  // Pre-fetch all modules for all products to avoid hooks in render loop
+  const allModules = useAppSelector(state => state.modules.modules);
 
   // Form state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -453,8 +456,8 @@ export const TestCases = () => {
               ) : (
                 testCases.map((testCase) => {
                   const product = products.find(p => p.id === testCase.productId);
-                  const allModules = useAppSelector((state) => selectModulesByProduct(state, testCase.productId));
-                  const module = allModules.find(m => m.id === testCase.moduleId);
+                  const testCaseModules = allModules.filter(m => m.productId === testCase.productId);
+                  const module = testCaseModules.find(m => m.id === testCase.moduleId);
                   
                   return (
                     <TableRow key={testCase.id}>
