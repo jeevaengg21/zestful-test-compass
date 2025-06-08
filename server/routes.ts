@@ -123,16 +123,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/test-cases", async (req, res) => {
     try {
-      const { productId, moduleId } = req.query;
-      let testCases;
-      if (productId) {
-        testCases = await storage.getTestCasesByProduct(productId as string);
-      } else if (moduleId) {
-        testCases = await storage.getTestCasesByModule(moduleId as string);
-      } else {
-        testCases = await storage.getAllTestCases();
-      }
-      res.json(testCases);
+      const { 
+        productId, 
+        moduleId, 
+        page, 
+        limit, 
+        status, 
+        priority, 
+        assignee, 
+        search 
+      } = req.query;
+      
+      const pageNum = page ? parseInt(page as string) : 1;
+      const limitNum = limit ? parseInt(limit as string) : 50;
+      
+      const result = await storage.getAllTestCases({
+        page: pageNum,
+        limit: limitNum,
+        productId: productId as string,
+        moduleId: moduleId as string,
+        status: status as string,
+        priority: priority as string,
+        assignee: assignee as string,
+        search: search as string
+      });
+      
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch test cases" });
     }
