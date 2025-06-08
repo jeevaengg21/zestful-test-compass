@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addProduct, updateProduct } from "@/store/slices/productSlice";
-import { selectAllProducts } from "@/store/selectors";
-import { Product } from "@/store/slices/productSlice";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Product } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

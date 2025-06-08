@@ -23,10 +23,7 @@ const moduleSlice = createSlice({
       const { id, updates } = action.payload;
       const index = state.modules.findIndex(module => module.id === id);
       if (index !== -1) {
-        state.modules[index] = {
-          ...state.modules[index],
-          ...updates
-        };
+        state.modules[index] = { ...state.modules[index], ...updates };
       }
     },
     deleteModule: (state, action: PayloadAction<string>) => {

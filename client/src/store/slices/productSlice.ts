@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Product } from '@shared/schema';
 
@@ -24,10 +23,7 @@ const productSlice = createSlice({
       const { id, updates } = action.payload;
       const index = state.products.findIndex(product => product.id === id);
       if (index !== -1) {
-        state.products[index] = {
-          ...state.products[index],
-          ...updates
-        };
+        state.products[index] = { ...state.products[index], ...updates };
       }
     },
     deleteProduct: (state, action: PayloadAction<string>) => {
