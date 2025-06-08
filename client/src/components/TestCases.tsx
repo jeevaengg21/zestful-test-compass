@@ -4,6 +4,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { TestCase, Product, Module } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useAppSelector } from "@/store/hooks";
+import { selectAllProducts } from "@/store/selectors";
+import { selectModulesByProduct } from "@/store/selectors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,15 +35,9 @@ export const TestCases = () => {
     queryFn: () => apiRequest('/api/test-cases')
   });
 
-  const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ['/api/products'],
-    queryFn: () => apiRequest('/api/products')
-  });
-
-  const { data: allModules = [] } = useQuery<Module[]>({
-    queryKey: ['/api/modules'],
-    queryFn: () => apiRequest('/api/modules')
-  });
+  // Use Redux store for products and modules instead of individual API calls
+  const products = useAppSelector(selectAllProducts);
+  const productsLoading = useAppSelector(state => state.products.loading);
 
   const createTestCaseMutation = useMutation({
     mutationFn: (testCaseData: any) => apiRequest('/api/test-cases', {
@@ -87,8 +84,8 @@ export const TestCases = () => {
     estimatedTime: 5
   });
 
-  // Get modules based on selected product
-  const modules = allModules.filter(module => module.productId === formData.productId);
+  // Get modules based on selected product using Redux selector
+  const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
 
   const getStatusColor = (status: string) => {
     switch (status) {

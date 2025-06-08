@@ -81,6 +81,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('auth_token', data.token);
         setUser(data.user);
         setSession({ token: data.token });
+        
+        // Fetch global data after successful sign in
+        dispatch(fetchProducts());
+        dispatch(fetchModules());
+        
         return { error: null };
       } else {
         return { error: { message: data.error } };

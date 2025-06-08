@@ -30,10 +30,9 @@ import {
 } from "lucide-react";
 
 export const Products = () => {
-  const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ['/api/products'],
-    queryFn: () => apiRequest('/api/products')
-  });
+  // Use Redux store for products instead of individual API call
+  const products = useAppSelector(selectAllProducts);
+  const isLoading = useAppSelector(state => state.products.loading);
 
   const createProductMutation = useMutation({
     mutationFn: (productData: any) => apiRequest('/api/products', {

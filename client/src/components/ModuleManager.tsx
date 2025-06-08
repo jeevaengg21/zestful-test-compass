@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Module } from "@shared/schema";
+import { useAppSelector } from "@/store/hooks";
+import { selectModulesByProduct } from "@/store/selectors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,12 +33,9 @@ interface ModuleManagerProps {
 }
 
 export const ModuleManager = ({ productId, productName }: ModuleManagerProps) => {
-  const { data: allModules = [], isLoading } = useQuery<Module[]>({
-    queryKey: ['/api/modules'],
-    queryFn: () => apiRequest('/api/modules')
-  });
-
-  const productModules = allModules.filter(module => module.productId === productId);
+  // Use Redux store for modules data instead of individual API call
+  const productModules = useAppSelector((state) => selectModulesByProduct(state, productId));
+  const isLoading = useAppSelector(state => state.modules.loading);
 
   const createModuleMutation = useMutation({
     mutationFn: (moduleData: any) => apiRequest('/api/modules', {
