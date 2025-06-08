@@ -131,7 +131,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const userWithDefaults = {
       ...user,
-      roles: ensureArray(user.roles) || []
+      roles: user.roles || []
     };
     const result = await db.insert(users).values(userWithDefaults).returning();
     return result[0];
@@ -183,8 +183,8 @@ export class DatabaseStorage implements IStorage {
     const newModule = { 
       ...module, 
       id,
-      developers: ensureArray(module.developers),
-      testers: ensureArray(module.testers)
+      developers: module.developers || [],
+      testers: module.testers || []
     };
     const result = await db.insert(modules).values(newModule).returning();
     return result[0];
@@ -193,10 +193,10 @@ export class DatabaseStorage implements IStorage {
   async updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined> {
     const cleanUpdates = { ...updates };
     if ('developers' in cleanUpdates) {
-      cleanUpdates.developers = ensureArray(cleanUpdates.developers);
+      cleanUpdates.developers = cleanUpdates.developers || [];
     }
     if ('testers' in cleanUpdates) {
-      cleanUpdates.testers = ensureArray(cleanUpdates.testers);
+      cleanUpdates.testers = cleanUpdates.testers || [];
     }
     const result = await db.update(modules).set(cleanUpdates).where(eq(modules.id, id)).returning();
     return result[0];
@@ -204,7 +204,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteModule(id: string): Promise<boolean> {
     const result = await db.delete(modules).where(eq(modules.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Test Case methods with pagination and filtering
@@ -302,7 +302,7 @@ export class DatabaseStorage implements IStorage {
     const newTestCase = { 
       ...testCase, 
       id,
-      steps: ensureArray(testCase.steps)
+      steps: testCase.steps || []
     };
     const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
@@ -311,7 +311,7 @@ export class DatabaseStorage implements IStorage {
   async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
     const cleanUpdates = { ...updates };
     if ('steps' in cleanUpdates) {
-      cleanUpdates.steps = ensureArray(cleanUpdates.steps);
+      cleanUpdates.steps = cleanUpdates.steps || [];
     }
     const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];
