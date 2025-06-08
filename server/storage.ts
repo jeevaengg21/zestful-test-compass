@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql, like, or } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, products, modules, testCases, testSuites, testPlans, testRuns, 
@@ -33,7 +33,16 @@ export interface IStorage {
   deleteModule(id: string): Promise<boolean>;
   
   // Test Case methods
-  getAllTestCases(): Promise<TestCase[]>;
+  getAllTestCases(options?: {
+    page?: number;
+    limit?: number;
+    productId?: string;
+    moduleId?: string;
+    status?: string;
+    priority?: string;
+    assignee?: string;
+    search?: string;
+  }): Promise<{ testCases: TestCase[]; total: number; page: number; limit: number; totalPages: number }>;
   getTestCasesByProduct(productId: string): Promise<TestCase[]>;
   getTestCasesByModule(moduleId: string): Promise<TestCase[]>;
   getTestCase(id: string): Promise<TestCase | undefined>;
@@ -124,7 +133,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const result = await db.insert(products).values(product).returning();
+    const id = `PROD_${crypto.randomUUID()}`;
+    const newProduct = { ...product, id };
+    const result = await db.insert(products).values(newProduct).returning();
     return result[0];
   }
 
@@ -153,7 +164,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createModule(module: InsertModule): Promise<Module> {
-    const result = await db.insert(modules).values(module).returning();
+    const id = `MOD_${crypto.randomUUID()}`;
+    const newModule = { ...module, id };
+    const result = await db.insert(modules).values(newModule).returning();
     return result[0];
   }
 
@@ -167,9 +180,76 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
-  // Test Case methods
-  async getAllTestCases(): Promise<TestCase[]> {
-    return await db.select().from(testCases);
+  // Test Case methods with pagination and filtering
+  async getAllTestCases(options?: {
+    page?: number;
+    limit?: number;
+    productId?: string;
+    moduleId?: string;
+    status?: string;
+    priority?: string;
+    assignee?: string;
+    search?: string;
+  }): Promise<{ testCases: TestCase[]; total: number; page: number; limit: number; totalPages: number }> {
+    const { 
+      page = 1, 
+      limit = 50, 
+      productId, 
+      moduleId, 
+      status, 
+      priority, 
+      assignee,
+      search 
+    } = options || {};
+
+    // Build where conditions using proper drizzle syntax
+    const conditions = [];
+    if (productId) conditions.push(eq(testCases.productId, productId));
+    if (moduleId) conditions.push(eq(testCases.moduleId, moduleId));
+    if (status) conditions.push(eq(testCases.status, status));
+    if (priority) conditions.push(eq(testCases.priority, priority));
+    if (assignee) conditions.push(eq(testCases.assignee, assignee));
+    if (search) {
+      conditions.push(
+        or(
+          like(testCases.title, `%${search}%`),
+          like(testCases.description, `%${search}%`)
+        )
+      );
+    }
+
+    // Build where clause
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count
+    const totalQuery = db.select({ count: sql<number>`count(*)` }).from(testCases);
+    if (whereClause) {
+      totalQuery.where(whereClause);
+    }
+    const [{ count: total }] = await totalQuery;
+
+    // Get paginated results
+    const offset = (page - 1) * limit;
+    let query = db.select().from(testCases);
+    
+    if (whereClause) {
+      query = query.where(whereClause);
+    }
+    
+    const results = await query
+      .orderBy(testCases.createdDate)
+      .limit(limit)
+      .offset(offset);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      testCases: results,
+      total,
+      page,
+      limit,
+      totalPages
+    };
   }
 
   async getTestCasesByProduct(productId: string): Promise<TestCase[]> {
@@ -186,32 +266,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestCase(testCase: InsertTestCase): Promise<TestCase> {
-    // Generate industry-standard hierarchical ID
-    const product = await this.getProduct(testCase.productId);
-    const module = await this.getModule(testCase.moduleId);
-    
-    if (!product || !module) {
-      throw new Error('Invalid product or module ID');
-    }
-
-    // Extract product code (first 2-3 uppercase letters from product name)
-    const productCode = product.name.replace(/[^A-Z]/g, '').slice(0, 3) || 
-                       product.name.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
-    
-    // Extract module code (first 2 uppercase letters from module name)
-    const moduleCode = module.name.replace(/[^A-Z]/g, '').slice(0, 2) || 
-                      module.name.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
-    
-    // Get next sequence number for this product-module combination
-    const existingTestCases = await db.select()
-      .from(testCases)
-      .where(eq(testCases.productId, testCase.productId));
-    
-    const sequenceNumber = (existingTestCases.length + 1).toString().padStart(4, '0');
-    
-    // Format: {PRODUCT_CODE}_{MODULE_CODE}_TC_{SEQUENCE}
-    // Example: ECP_UA_TC_0001 (E-Commerce Platform, User Authentication, Test Case 0001)
-    const id = `${productCode}_${moduleCode}_TC_${sequenceNumber}`;
+    // Generate UUID-based ID with TC prefix for test case identification
+    const id = `TC_${crypto.randomUUID()}`;
     
     const newTestCase = { ...testCase, id };
     const result = await db.insert(testCases).values(newTestCase).returning();
