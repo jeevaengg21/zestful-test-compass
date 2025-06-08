@@ -1,11 +1,16 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+
+interface User {
+  id: number;
+  email: string;
+  fullName: string;
+  roles: string[];
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  session: { token: string } | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -16,52 +21,106 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<{ token: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Check for existing token on mount
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      fetchUser(token);
+    } else {
       setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
+  const fetchUser = async (token: string) => {
+    try {
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setSession({ token });
+      } else {
+        localStorage.removeItem('auth_token');
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      localStorage.removeItem('auth_token');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('auth_token', data.token);
+        setUser(data.user);
+        setSession({ token: data.token });
+        return { error: null };
+      } else {
+        return { error: { message: data.error } };
+      }
+    } catch (error) {
+      return { error: { message: 'Network error' } };
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          fullName: email.split('@')[0] // Simple default full name
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('auth_token', data.token);
+        setUser(data.user);
+        setSession({ token: data.token });
+        return { error: null };
+      } else {
+        return { error: { message: data.error } };
       }
-    });
-    return { error };
+    } catch (error) {
+      return { error: { message: 'Network error' } };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const value = {
