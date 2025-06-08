@@ -107,7 +107,7 @@ export const testRuns = pgTable("test_runs", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   testPlanId: text("test_plan_id").notNull(),
-  testSuiteIds: json("test_suite_ids").$type<string[]>().default([]),
+  testSuiteIds: json("test_suite_ids").$type<string[]>(),
   assignedTo: text("assigned_to").notNull(),
   status: text("status").notNull().default("Not Started"),
   priority: text("priority").notNull(),
@@ -141,8 +141,8 @@ export const testCaseExecutions = pgTable("test_case_executions", {
   executionTime: integer("execution_time"),
   actualResult: text("actual_result"),
   notes: text("notes"),
-  defectIds: json("defect_ids").$type<string[]>().default([]),
-  screenshots: json("screenshots").$type<string[]>().default([]),
+  defectIds: json("defect_ids").$type<string[]>(),
+  screenshots: json("screenshots").$type<string[]>(),
 });
 
 // Defects table
@@ -161,7 +161,7 @@ export const defects = pgTable("defects", {
   environment: text("environment").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
   resolvedDate: timestamp("resolved_date"),
-  attachments: json("attachments").$type<string[]>().default([]),
+  attachments: json("attachments").$type<string[]>(),
 });
 
 // Test Data Sets table
