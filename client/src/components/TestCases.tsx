@@ -605,12 +605,10 @@ export const TestCases = () => {
                                   </div>
                                 </TabsContent>
                                 <TabsContent value="testdata">
-                                  {editingTestCase && (
-                                    <TestDataMapper 
-                                      testCaseId={editingTestCase.id}
-                                      testCaseTitle={editingTestCase.title}
-                                    />
-                                  )}
+                                  <TestDataMapper 
+                                    testCaseId={editingTestCase?.id || ""}
+                                    testCaseTitle={editingTestCase?.title || ""}
+                                  />
                                 </TabsContent>
                               </Tabs>
                             </DialogContent>

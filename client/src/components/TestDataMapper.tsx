@@ -21,12 +21,21 @@ interface TestDataMapperProps {
 
 export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProps) => {
   const dispatch = useAppDispatch();
-  const mappedTestDataSets = useAppSelector((state) => selectTestDataSetsForTestCase(state, testCaseId));
+  const mappedTestDataSets = useAppSelector((state) => selectTestDataSetsForTestCase(state, testCaseId || ""));
   const allTestDataSets = useAppSelector(selectAllTestDataSets);
   const allMappings = useAppSelector(selectAllTestCaseDataMappings);
   
   const [isMapperDialogOpen, setIsMapperDialogOpen] = useState(false);
   const [selectedDataSets, setSelectedDataSets] = useState<string[]>([]);
+
+  // Don't render anything if testCaseId is empty
+  if (!testCaseId) {
+    return (
+      <div className="text-center text-gray-500 py-8">
+        No test case selected
+      </div>
+    );
+  }
 
   const handleOpenMapper = () => {
     // Pre-select currently mapped data sets
