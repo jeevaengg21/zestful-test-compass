@@ -1,82 +1,42 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { TestCase, Product, Module } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
-import { useAppSelector } from "@/store/hooks";
-import { selectAllProducts } from "@/store/selectors";
-import { selectModulesByProduct } from "@/store/selectors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Plus, Edit, Filter, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAppSelector } from "@/store/hooks";
 import { TestDataMapper } from "./TestDataMapper";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit,
-  Database
-} from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { TestCase, InsertTestCase } from "@shared/schema";
 
 export const TestCases = () => {
   const { toast } = useToast();
   
-  // Pagination and filtering state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(50);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  const [assigneeFilter, setAssigneeFilter] = useState("");
-  const [productFilter, setProductFilter] = useState("");
-  const [moduleFilter, setModuleFilter] = useState("");
-
-  // Build query parameters
-  const queryParams = new URLSearchParams({
-    page: currentPage.toString(),
-    limit: pageSize.toString(),
-    ...(searchTerm && { search: searchTerm }),
-    ...(statusFilter && { status: statusFilter }),
-    ...(priorityFilter && { priority: priorityFilter }),
-    ...(assigneeFilter && { assignee: assigneeFilter }),
-    ...(productFilter && { productId: productFilter }),
-    ...(moduleFilter && { moduleId: moduleFilter })
-  });
-
-  const { data: testCaseData, isLoading: testCasesLoading } = useQuery<{
-    testCases: TestCase[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }>({
-    queryKey: ['/api/test-cases', queryParams.toString()],
-    queryFn: () => apiRequest(`/api/test-cases?${queryParams.toString()}`)
-  });
-
-  // Extract test cases from paginated response
-  const testCases = testCaseData?.testCases || [];
-  const totalPages = testCaseData?.totalPages || 1;
-  const totalCount = testCaseData?.total || 0;
-
-  // Use Redux store for products and modules instead of individual API calls
-  const products = useAppSelector(selectAllProducts);
-  const productsLoading = useAppSelector(state => state.products.loading);
-  
-  // Pre-fetch all modules for all products to avoid hooks in render loop
+  // Get products and modules from Redux store
+  const products = useAppSelector(state => state.products.products);
   const allModules = useAppSelector(state => state.modules.modules);
 
-  // Form state
+  // Filter and pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [productFilter, setProductFilter] = useState("");
+  const [moduleFilter, setModuleFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  // Form and dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTestCase, setEditingTestCase] = useState<TestCase | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -88,18 +48,43 @@ export const TestCases = () => {
     estimatedTime: 5
   });
 
-  // Get modules based on selected product using Redux selector
-  const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
-
-  const createTestCaseMutation = useMutation({
-    mutationFn: (testCaseData: any) => apiRequest('/api/test-cases', {
-      method: 'POST',
-      body: JSON.stringify(testCaseData)
-    }),
-    onSuccess: () => {
-      // Invalidate cache to refetch data
-      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+  // Fetch test cases with pagination and filters
+  const { data: testCasesData, isLoading } = useQuery({
+    queryKey: ['/api/test-cases', { 
+      page: currentPage, 
+      search, 
+      productId: productFilter, 
+      moduleId: moduleFilter,
+      priority: priorityFilter,
+      status: statusFilter
+    }],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '50'
+      });
+      if (search) params.append('search', search);
+      if (productFilter) params.append('productId', productFilter);
+      if (moduleFilter) params.append('moduleId', moduleFilter);
+      if (priorityFilter) params.append('priority', priorityFilter);
+      if (statusFilter) params.append('status', statusFilter);
       
+      return fetch(`/api/test-cases?${params}`).then(res => res.json());
+    }
+  });
+
+  const testCases = testCasesData?.testCases || [];
+  const totalPages = testCasesData?.totalPages || 1;
+
+  // Create test case mutation
+  const createTestCaseMutation = useMutation({
+    mutationFn: (testCase: any) => 
+      apiRequest('/api/test-cases', {
+        method: 'POST',
+        body: JSON.stringify(testCase)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
       setIsCreateDialogOpen(false);
       resetForm();
       toast({
@@ -109,6 +94,7 @@ export const TestCases = () => {
     }
   });
 
+  // Update test case mutation
   const updateTestCaseMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: any }) => 
       apiRequest(`/api/test-cases/${id}`, {
@@ -116,15 +102,10 @@ export const TestCases = () => {
         body: JSON.stringify(updates)
       }),
     onSuccess: () => {
-      // Invalidate cache to refetch data
       queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
-      
-      // Close dialog and reset form
-      setTimeout(() => {
-        setEditingTestCase(null);
-        resetForm();
-      }, 200);
-      
+      setEditingTestCase(null);
+      setIsEditDialogOpen(false);
+      resetForm();
       toast({
         title: "Test case updated",
         description: "The test case has been successfully updated.",
@@ -134,21 +115,21 @@ export const TestCases = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Passed": return "bg-green-100 text-green-800";
-      case "Failed": return "bg-red-100 text-red-800";
-      case "Blocked": return "bg-yellow-100 text-yellow-800";
-      case "Not Run": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Passed": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "Failed": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      case "Blocked": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      case "Not Run": return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      default: return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "Critical": return "bg-red-100 text-red-800";
-      case "High": return "bg-orange-100 text-orange-800";
-      case "Medium": return "bg-yellow-100 text-yellow-800";
-      case "Low": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Critical": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      case "High": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
+      case "Medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      case "Low": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
   };
 
@@ -167,6 +148,7 @@ export const TestCases = () => {
 
   const handleEditTestCase = (testCase: TestCase) => {
     setEditingTestCase(testCase);
+    setIsEditDialogOpen(true);
     setFormData({
       title: testCase.title,
       description: testCase.description,
@@ -184,80 +166,46 @@ export const TestCases = () => {
       updateTestCaseMutation.mutate({
         id: editingTestCase.id,
         updates: {
-          title: formData.title,
-          description: formData.description,
-          priority: formData.priority,
+          ...formData,
           steps: formData.steps.split('\n').filter(step => step.trim()),
-          expectedResult: formData.expectedResult,
-          productId: formData.productId,
-          moduleId: formData.moduleId,
-          estimatedTime: formData.estimatedTime
         }
       });
     } else {
       createTestCaseMutation.mutate({
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
+        ...formData,
         steps: formData.steps.split('\n').filter(step => step.trim()),
-        expectedResult: formData.expectedResult,
-        productId: formData.productId,
-        moduleId: formData.moduleId,
-        estimatedTime: formData.estimatedTime
       });
     }
   };
 
-  // Reset to first page when search or filters change
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
-
-  const handleFilterChange = (filterType: string, value: string) => {
-    const filterValue = value === "all" ? "" : value;
-    switch (filterType) {
-      case 'status':
-        setStatusFilter(filterValue);
-        break;
-      case 'priority':
-        setPriorityFilter(filterValue);
-        break;
-      case 'assignee':
-        setAssigneeFilter(filterValue);
-        break;
-      case 'product':
-        setProductFilter(filterValue);
-        setModuleFilter(""); // Reset module when product changes
-        break;
-      case 'module':
-        setModuleFilter(filterValue);
-        break;
-    }
-    setCurrentPage(1);
-  };
+  // Filter modules based on selected product
+  const filteredModules = allModules.filter(module => 
+    !formData.productId || module.productId === formData.productId
+  );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Test Cases</h1>
-        <div className="flex space-x-3">
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Test Case
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New Test Case</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
+        <h1 className="text-3xl font-bold">Test Cases</h1>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Test Case
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Create New Test Case</DialogTitle>
+              <DialogDescription>Add a new test case to your test suite</DialogDescription>
+            </DialogHeader>
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Test Case Details</TabsTrigger>
+                <TabsTrigger value="testdata">Test Data</TabsTrigger>
+              </TabsList>
+              <TabsContent value="details" className="space-y-4">
                 <div>
                   <Label htmlFor="title">Title</Label>
                   <Input
@@ -274,6 +222,7 @@ export const TestCases = () => {
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Enter test case description"
+                    rows={3}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -324,7 +273,7 @@ export const TestCases = () => {
                         <SelectValue placeholder="Select module" />
                       </SelectTrigger>
                       <SelectContent>
-                        {modules.map((module) => (
+                        {filteredModules.map((module) => (
                           <SelectItem key={module.id} value={module.id}>
                             {module.name}
                           </SelectItem>
@@ -363,70 +312,108 @@ export const TestCases = () => {
                     {createTestCaseMutation.isPending ? "Creating..." : "Create Test Case"}
                   </Button>
                 </div>
+              </TabsContent>
+              <TabsContent value="testdata">
+                <div className="text-center py-8 text-gray-500">
+                  Test data mapping will be available after creating the test case.
+                </div>
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Filter className="h-5 w-5 mr-2" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <Label htmlFor="search">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Search test cases..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex space-x-4 items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search test cases..."
-            value={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={(value) => handleFilterChange('status', value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Not Run">Not Run</SelectItem>
-            <SelectItem value="Passed">Passed</SelectItem>
-            <SelectItem value="Failed">Failed</SelectItem>
-            <SelectItem value="Blocked">Blocked</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={(value) => handleFilterChange('priority', value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="Critical">Critical</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
-            <SelectItem value="Low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={productFilter} onValueChange={(value) => handleFilterChange('product', value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Product" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Products</SelectItem>
-            {products.map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Summary */}
-      <div className="text-sm text-gray-600">
-        Showing {testCases.length} of {totalCount} test cases
-      </div>
+            </div>
+            <div>
+              <Label htmlFor="product-filter">Product</Label>
+              <Select value={productFilter} onValueChange={setProductFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All products" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All products</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="module-filter">Module</Label>
+              <Select value={moduleFilter} onValueChange={setModuleFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All modules" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All modules</SelectItem>
+                  {allModules.map((module) => (
+                    <SelectItem key={module.id} value={module.id}>
+                      {module.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="priority-filter">Priority</Label>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All priorities</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="status-filter">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Deprecated">Deprecated</SelectItem>
+                  <SelectItem value="Draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Test Cases Table */}
       <Card>
-        <CardContent className="p-0">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -441,7 +428,7 @@ export const TestCases = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {testCasesLoading ? (
+              {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     Loading test cases...
@@ -450,173 +437,39 @@ export const TestCases = () => {
               ) : testCases.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
-                    No test cases found
+                    No test cases found. Create your first test case to get started.
                   </TableCell>
                 </TableRow>
               ) : (
-                testCases.map((testCase) => {
+                testCases.map((testCase: TestCase) => {
                   const product = products.find(p => p.id === testCase.productId);
-                  const testCaseModules = allModules.filter(m => m.productId === testCase.productId);
-                  const module = testCaseModules.find(m => m.id === testCase.moduleId);
+                  const module = allModules.find(m => m.id === testCase.moduleId);
                   
                   return (
                     <TableRow key={testCase.id}>
                       <TableCell className="font-mono text-sm">{testCase.id}</TableCell>
-                      <TableCell className="max-w-xs">
-                        <div className="truncate" title={testCase.title}>
-                          {testCase.title}
-                        </div>
-                      </TableCell>
+                      <TableCell className="font-medium">{testCase.title}</TableCell>
                       <TableCell>
                         <Badge className={getPriorityColor(testCase.priority)}>
                           {testCase.priority}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(testCase.status || "Not Run")}>
-                          {testCase.status || "Not Run"}
+                        <Badge className={getStatusColor(testCase.status || "Active")}>
+                          {testCase.status || "Active"}
                         </Badge>
                       </TableCell>
                       <TableCell>{product?.name || "N/A"}</TableCell>
                       <TableCell>{module?.name || "N/A"}</TableCell>
                       <TableCell>{testCase.assignee || "Unassigned"}</TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleEditTestCase(testCase)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl">
-                              <DialogHeader>
-                                <DialogTitle>Edit Test Case</DialogTitle>
-                              </DialogHeader>
-                              <Tabs defaultValue="details" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2">
-                                  <TabsTrigger value="details">Test Case Details</TabsTrigger>
-                                  <TabsTrigger value="testdata">Test Data</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="details" className="space-y-4">
-                                  <div>
-                                    <Label htmlFor="edit-title">Title</Label>
-                                    <Input
-                                      id="edit-title"
-                                      value={formData.title}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-description">Description</Label>
-                                    <Textarea
-                                      id="edit-description"
-                                      value={formData.description}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                      rows={3}
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="edit-priority">Priority</Label>
-                                      <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}>
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="Critical">Critical</SelectItem>
-                                          <SelectItem value="High">High</SelectItem>
-                                          <SelectItem value="Medium">Medium</SelectItem>
-                                          <SelectItem value="Low">Low</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-estimatedTime">Estimated Time (minutes)</Label>
-                                      <Input
-                                        id="edit-estimatedTime"
-                                        type="number"
-                                        value={formData.estimatedTime}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, estimatedTime: parseInt(e.target.value) || 5 }))}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="edit-product">Product</Label>
-                                      <Select value={formData.productId} onValueChange={(value) => setFormData(prev => ({ ...prev, productId: value, moduleId: "" }))}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select product" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {products.map((product) => (
-                                            <SelectItem key={product.id} value={product.id}>
-                                              {product.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-module">Module</Label>
-                                      <Select value={formData.moduleId} onValueChange={(value) => setFormData(prev => ({ ...prev, moduleId: value }))}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select module" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {modules.map((module) => (
-                                            <SelectItem key={module.id} value={module.id}>
-                                              {module.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-steps">Test Steps</Label>
-                                    <Textarea
-                                      id="edit-steps"
-                                      value={formData.steps}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, steps: e.target.value }))}
-                                      placeholder="Enter test steps (one per line)"
-                                      rows={4}
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-expectedResult">Expected Result</Label>
-                                    <Textarea
-                                      id="edit-expectedResult"
-                                      value={formData.expectedResult}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, expectedResult: e.target.value }))}
-                                      placeholder="Enter expected result"
-                                    />
-                                  </div>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button variant="outline" onClick={() => setEditingTestCase(null)}>
-                                      Cancel
-                                    </Button>
-                                    <Button 
-                                      onClick={handleSubmit}
-                                      disabled={updateTestCaseMutation.isPending}
-                                    >
-                                      {updateTestCaseMutation.isPending ? "Updating..." : "Update Test Case"}
-                                    </Button>
-                                  </div>
-                                </TabsContent>
-                                <TabsContent value="testdata">
-                                  <TestDataMapper 
-                                    testCaseId={editingTestCase?.id || ""}
-                                    testCaseTitle={editingTestCase?.title || ""}
-                                  />
-                                </TabsContent>
-                              </Tabs>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditTestCase(testCase)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -626,6 +479,134 @@ export const TestCases = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit Test Case</DialogTitle>
+            <DialogDescription>Update the test case details and settings</DialogDescription>
+          </DialogHeader>
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">Test Case Details</TabsTrigger>
+              <TabsTrigger value="testdata">Test Data</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Title</Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-priority">Priority</Label>
+                  <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Critical">Critical</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-estimatedTime">Estimated Time (minutes)</Label>
+                  <Input
+                    id="edit-estimatedTime"
+                    type="number"
+                    value={formData.estimatedTime}
+                    onChange={(e) => setFormData(prev => ({ ...prev, estimatedTime: parseInt(e.target.value) || 5 }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-product">Product</Label>
+                  <Select value={formData.productId} onValueChange={(value) => setFormData(prev => ({ ...prev, productId: value, moduleId: "" }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-module">Module</Label>
+                  <Select value={formData.moduleId} onValueChange={(value) => setFormData(prev => ({ ...prev, moduleId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select module" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredModules.map((module) => (
+                        <SelectItem key={module.id} value={module.id}>
+                          {module.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-steps">Test Steps</Label>
+                <Textarea
+                  id="edit-steps"
+                  value={formData.steps}
+                  onChange={(e) => setFormData(prev => ({ ...prev, steps: e.target.value }))}
+                  placeholder="Enter test steps (one per line)"
+                  rows={4}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-expectedResult">Expected Result</Label>
+                <Textarea
+                  id="edit-expectedResult"
+                  value={formData.expectedResult}
+                  onChange={(e) => setFormData(prev => ({ ...prev, expectedResult: e.target.value }))}
+                  placeholder="Enter expected result"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={updateTestCaseMutation.isPending}
+                >
+                  {updateTestCaseMutation.isPending ? "Updating..." : "Update Test Case"}
+                </Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="testdata">
+              <TestDataMapper 
+                testCaseId={editingTestCase?.id || ""}
+                testCaseTitle={editingTestCase?.title || ""}
+              />
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -639,7 +620,6 @@ export const TestCases = () => {
                 />
               </PaginationItem>
               
-              {/* Show page numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
                 if (pageNum <= totalPages) {
