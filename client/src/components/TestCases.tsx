@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { TestCase, Product, Module } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,8 @@ import {
 } from "lucide-react";
 
 export const TestCases = () => {
+  const { toast } = useToast();
+  
   const { data: testCases = [], isLoading: testCasesLoading } = useQuery<TestCase[]>({
     queryKey: ['/api/test-cases'],
     queryFn: () => apiRequest('/api/test-cases')
@@ -59,11 +62,12 @@ export const TestCases = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
-      // Use setTimeout to ensure UI updates properly
-      setTimeout(() => {
-        setEditingTestCase(null);
-        resetForm();
-      }, 100);
+      setEditingTestCase(null);
+      resetForm();
+      toast({
+        title: "Test case updated",
+        description: "The test case has been successfully updated.",
+      });
     }
   });
   
@@ -345,9 +349,11 @@ export const TestCases = () => {
       </div>
 
       {/* Edit Test Case Dialog */}
-      <Dialog open={!!editingTestCase} onOpenChange={() => {
-        setEditingTestCase(null);
-        resetForm();
+      <Dialog open={!!editingTestCase} onOpenChange={(open) => {
+        if (!open) {
+          setEditingTestCase(null);
+          resetForm();
+        }
       }}>
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
@@ -477,8 +483,11 @@ export const TestCases = () => {
             }}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateTestCase}>
-              Update Test Case
+            <Button 
+              onClick={handleUpdateTestCase}
+              disabled={updateTestCaseMutation.isPending}
+            >
+              {updateTestCaseMutation.isPending ? "Updating..." : "Update Test Case"}
             </Button>
           </div>
         </DialogContent>
