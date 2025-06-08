@@ -120,7 +120,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const userWithDefaults = {
       ...user,
-      roles: Array.isArray(user.roles) ? user.roles : (user.roles || [])
+      roles: user.roles ? (Array.isArray(user.roles) ? user.roles : Array.from(user.roles)) : []
     };
     const result = await db.insert(users).values(userWithDefaults).returning();
     return result[0];
@@ -169,7 +169,12 @@ export class DatabaseStorage implements IStorage {
 
   async createModule(module: InsertModule): Promise<Module> {
     const id = `MOD_${crypto.randomUUID()}`;
-    const newModule = { ...module, id };
+    const newModule = { 
+      ...module, 
+      id,
+      developers: module.developers ? (Array.isArray(module.developers) ? module.developers : Array.from(module.developers)) : null,
+      testers: module.testers ? (Array.isArray(module.testers) ? module.testers : Array.from(module.testers)) : null
+    };
     const result = await db.insert(modules).values(newModule).returning();
     return result[0];
   }
@@ -284,7 +289,11 @@ export class DatabaseStorage implements IStorage {
     // Generate UUID-based ID with TC prefix for test case identification
     const id = `TC_${crypto.randomUUID()}`;
     
-    const newTestCase = { ...testCase, id };
+    const newTestCase = { 
+      ...testCase, 
+      id,
+      steps: testCase.steps ? (Array.isArray(testCase.steps) ? testCase.steps : Array.from(testCase.steps)) : null
+    };
     const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
   }
@@ -397,7 +406,7 @@ export class DatabaseStorage implements IStorage {
   async createTestRun(testRun: InsertTestRun): Promise<TestRun> {
     const id = `TR_${crypto.randomUUID()}`;
     const newTestRun = { ...testRun, id };
-    const result = await db.insert(testRuns).values([newTestRun]).returning();
+    const result = await db.insert(testRuns).values(newTestRun).returning();
     return result[0];
   }
 
