@@ -84,7 +84,11 @@ export const TestCases = () => {
         body: JSON.stringify(testCase)
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      // Invalidate all test-cases queries regardless of parameters
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/test-cases'],
+        exact: false 
+      });
       setIsCreateDialogOpen(false);
       resetForm();
       toast({
@@ -102,7 +106,11 @@ export const TestCases = () => {
         body: JSON.stringify(updates)
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      // Invalidate all test-cases queries regardless of parameters
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/test-cases'],
+        exact: false 
+      });
       setEditingTestCase(null);
       setIsEditDialogOpen(false);
       resetForm();
