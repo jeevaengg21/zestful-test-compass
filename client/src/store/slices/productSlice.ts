@@ -1,13 +1,27 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Product } from '@shared/schema';
+import { apiRequest } from '@/lib/queryClient';
 
 interface ProductState {
   products: Product[];
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: ProductState = {
-  products: []
+  products: [],
+  loading: false,
+  error: null
 };
+
+// Async thunk to fetch products from API
+export const fetchProducts = createAsyncThunk(
+  'products/fetchProducts',
+  async () => {
+    const response = await apiRequest('/api/products');
+    return response as Product[];
+  }
+);
 
 const productSlice = createSlice({
   name: 'products',
@@ -29,6 +43,21 @@ const productSlice = createSlice({
     deleteProduct: (state, action: PayloadAction<string>) => {
       state.products = state.products.filter(product => product.id !== action.payload);
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchProducts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products = action.payload;
+      })
+      .addCase(fetchProducts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch products';
+      });
   }
 });
 

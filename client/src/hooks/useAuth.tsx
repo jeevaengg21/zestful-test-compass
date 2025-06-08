@@ -1,5 +1,8 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
+import { useAppDispatch } from '@/store/hooks';
+import { fetchProducts } from '@/store/slices/productSlice';
+import { fetchModules } from '@/store/slices/moduleSlice';
 
 interface User {
   id: number;
@@ -20,6 +23,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const dispatch = useAppDispatch();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<{ token: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +50,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         setUser(data.user);
         setSession({ token });
+        
+        // Fetch global data after successful authentication
+        dispatch(fetchProducts());
+        dispatch(fetchModules());
       } else {
         localStorage.removeItem('auth_token');
       }
