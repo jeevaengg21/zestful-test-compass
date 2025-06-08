@@ -7,7 +7,8 @@ interface TestDataState {
 }
 
 const initialState: TestDataState = {
-  testDataSets: []
+  testDataSets: [],
+  testCaseDataMappings: []
 };
 
 const testDataSlice = createSlice({
@@ -29,9 +30,26 @@ const testDataSlice = createSlice({
     },
     deleteTestDataSet: (state, action: PayloadAction<string>) => {
       state.testDataSets = state.testDataSets.filter(set => set.id !== action.payload);
+    },
+    setTestCaseDataMappings: (state, action: PayloadAction<TestCaseDataMapping[]>) => {
+      state.testCaseDataMappings = action.payload;
+    },
+    addTestCaseDataMapping: (state, action: PayloadAction<TestCaseDataMapping>) => {
+      state.testCaseDataMappings.push(action.payload);
+    },
+    removeTestCaseDataMapping: (state, action: PayloadAction<string>) => {
+      state.testCaseDataMappings = state.testCaseDataMappings.filter(mapping => mapping.id !== action.payload);
     }
   }
 });
 
-export const { setTestDataSets, addTestDataSet, updateTestDataSet, deleteTestDataSet } = testDataSlice.actions;
+export const { 
+  setTestDataSets, 
+  addTestDataSet, 
+  updateTestDataSet, 
+  deleteTestDataSet,
+  setTestCaseDataMappings,
+  addTestCaseDataMapping,
+  removeTestCaseDataMapping
+} = testDataSlice.actions;
 export default testDataSlice.reducer;

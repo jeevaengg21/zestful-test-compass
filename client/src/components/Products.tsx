@@ -67,7 +67,7 @@ export const Products = () => {
     productName: "",
     productOwner: "",
     description: "",
-    status: "Active" as const
+    status: "Active" as "Active" | "On Hold" | "Completed"
   });
 
   const getStatusColor = (status: string) => {
@@ -101,13 +101,22 @@ export const Products = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      productName: "",
+      productOwner: "",
+      description: "",
+      status: "Active" as const
+    });
+  };
+
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
     setFormData({
       productName: product.name,
-      productOwner: product.owner,
+      productOwner: product.owner || "",
       description: product.description,
-      status: product.status
+      status: (product.status || "Active") as "Active"
     });
   };
 
@@ -309,7 +318,7 @@ export const Products = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Team Members</p>
                 <p className="text-3xl font-bold text-purple-600">
-                  {products.reduce((sum, p) => sum + p.teamMembers, 0)}
+                  {products.reduce((sum, p) => sum + (p.teamMembers || 0), 0)}
                 </p>
               </div>
               <Users className="h-8 w-8 text-purple-600" />
@@ -323,7 +332,7 @@ export const Products = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Coverage</p>
                 <p className="text-3xl font-bold text-blue-600">
-                  {Math.round(products.reduce((sum, p) => sum + p.coverage, 0) / products.length)}%
+                  {products.length > 0 ? Math.round(products.reduce((sum, p) => sum + (p.coverage || 0), 0) / products.length) : 0}%
                 </p>
               </div>
               <BarChart3 className="h-8 w-8 text-blue-600" />
@@ -389,11 +398,11 @@ export const Products = () => {
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Test Coverage</span>
-                        <span className={`font-medium ${getCoverageColor(product.coverage)}`}>
-                          {product.coverage}%
+                        <span className={`font-medium ${getCoverageColor(product.coverage || 0)}`}>
+                          {product.coverage || 0}%
                         </span>
                       </div>
-                      <Progress value={product.coverage} className="h-2" />
+                      <Progress value={product.coverage || 0} className="h-2" />
                     </div>
 
                     {/* Meta Information */}
@@ -405,12 +414,12 @@ export const Products = () => {
                         </div>
                         <div className="flex items-center space-x-1">
                           <Clock className="h-4 w-4" />
-                          <span>{product.lastActivity}</span>
+                          <span>{product.lastActivity ? new Date(product.lastActivity).toLocaleDateString() : 'No activity'}</span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
-                        <span>Created: {product.createdDate}</span>
+                        <span>Created: {product.createdDate ? new Date(product.createdDate).toLocaleDateString() : 'Unknown'}</span>
                       </div>
                     </div>
 

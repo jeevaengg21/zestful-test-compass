@@ -57,3 +57,37 @@ export const selectAllTestRuns = (state: RootState) => state.testRuns.testRuns;
 
 // Test Data selectors
 export const selectAllTestDataSets = (state: RootState) => state.testData.testDataSets;
+export const selectAllTestCaseDataMappings = (state: RootState) => state.testData.testCaseDataMappings;
+
+export const selectTestDataSetsByProduct = createSelector(
+  [selectAllTestDataSets, (state: RootState, productId: string) => productId],
+  (testDataSets, productId) => testDataSets.filter(set => set.productId === productId)
+);
+
+export const selectTestDataSetsByModule = createSelector(
+  [selectAllTestDataSets, (state: RootState, moduleId: string) => moduleId],
+  (testDataSets, moduleId) => testDataSets.filter(set => set.moduleId === moduleId)
+);
+
+export const selectTestDataSetById = (state: RootState, id: string) =>
+  state.testData.testDataSets.find(set => set.id === id);
+
+export const selectTestDataSetsForTestCase = createSelector(
+  [selectAllTestDataSets, selectAllTestCaseDataMappings, (state: RootState, testCaseId: string) => testCaseId],
+  (testDataSets, mappings, testCaseId) => {
+    const testCaseMappings = mappings.filter(mapping => mapping.testCaseId === testCaseId);
+    return testDataSets.filter(set => 
+      testCaseMappings.some(mapping => mapping.testDataSetId === set.id)
+    );
+  }
+);
+
+export const selectTestCasesUsingTestDataSet = createSelector(
+  [selectAllTestCases, selectAllTestCaseDataMappings, (state: RootState, testDataSetId: string) => testDataSetId],
+  (testCases, mappings, testDataSetId) => {
+    const relevantMappings = mappings.filter(mapping => mapping.testDataSetId === testDataSetId);
+    return testCases.filter(testCase => 
+      relevantMappings.some(mapping => mapping.testCaseId === testCase.id)
+    );
+  }
+);
