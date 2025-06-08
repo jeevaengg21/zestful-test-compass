@@ -44,10 +44,22 @@ export const TestCases = () => {
       method: 'POST',
       body: JSON.stringify(testCaseData)
     }),
-    onSuccess: () => {
+    onSuccess: (newTestCase) => {
+      // Immediately add the new test case to the cache
+      queryClient.setQueryData(['/api/test-cases'], (oldData: TestCase[] | undefined) => {
+        if (!oldData) return [newTestCase];
+        return [...oldData, newTestCase];
+      });
+      
+      // Also invalidate to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
+      
       setIsCreateDialogOpen(false);
       resetForm();
+      toast({
+        title: "Test case created",
+        description: "The test case has been successfully created.",
+      });
     }
   });
 
@@ -57,8 +69,16 @@ export const TestCases = () => {
         method: 'PATCH',
         body: JSON.stringify(updates)
       }),
-    onSuccess: (data) => {
-      // Invalidate queries to refresh data
+    onSuccess: (updatedTestCase) => {
+      // Immediately update the cache with the new data
+      queryClient.setQueryData(['/api/test-cases'], (oldData: TestCase[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(testCase => 
+          testCase.id === updatedTestCase.id ? updatedTestCase : testCase
+        );
+      });
+      
+      // Also invalidate to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
       
       // Close dialog and reset form
