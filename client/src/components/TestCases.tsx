@@ -40,8 +40,10 @@ export const TestCases = () => {
 
   // Update local state when data is loaded
   useEffect(() => {
-    setTestCases(initialTestCases);
-  }, [initialTestCases]);
+    if (initialTestCases.length > 0) {
+      setTestCases(initialTestCases);
+    }
+  }, [initialTestCases.length]);
 
   // Use Redux store for products and modules instead of individual API calls
   const products = useAppSelector(selectAllProducts);

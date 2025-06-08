@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import { 
   users, products, modules, testCases, testSuites, testPlans, testRuns, 
@@ -186,7 +186,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestCase(testCase: InsertTestCase): Promise<TestCase> {
-    const result = await db.insert(testCases).values(testCase).returning();
+    // Generate industry-standard hierarchical ID
+    const product = await this.getProduct(testCase.productId);
+    const module = await this.getModule(testCase.moduleId);
+    
+    if (!product || !module) {
+      throw new Error('Invalid product or module ID');
+    }
+
+    // Extract product code (first 2-3 uppercase letters from product name)
+    const productCode = product.name.replace(/[^A-Z]/g, '').slice(0, 3) || 
+                       product.name.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    
+    // Extract module code (first 2 uppercase letters from module name)
+    const moduleCode = module.name.replace(/[^A-Z]/g, '').slice(0, 2) || 
+                      module.name.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+    
+    // Get next sequence number for this product-module combination
+    const existingTestCases = await db.select()
+      .from(testCases)
+      .where(eq(testCases.productId, testCase.productId));
+    
+    const sequenceNumber = (existingTestCases.length + 1).toString().padStart(4, '0');
+    
+    // Format: {PRODUCT_CODE}_{MODULE_CODE}_TC_{SEQUENCE}
+    // Example: ECP_UA_TC_0001 (E-Commerce Platform, User Authentication, Test Case 0001)
+    const id = `${productCode}_${moduleCode}_TC_${sequenceNumber}`;
+    
+    const newTestCase = { ...testCase, id };
+    const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
   }
 
