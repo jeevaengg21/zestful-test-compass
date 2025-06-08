@@ -11,6 +11,17 @@ import {
   type TestCaseDataMapping, type InsertTestCaseDataMapping
 } from "@shared/schema";
 
+// Helper function to ensure proper array type for Drizzle ORM
+function ensureArray<T>(value: T[] | any): T[] | null {
+  if (!value) return null;
+  if (Array.isArray(value)) return value;
+  try {
+    return Array.from(value);
+  } catch {
+    return null;
+  }
+}
+
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -120,7 +131,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const userWithDefaults = {
       ...user,
-      roles: user.roles ? (Array.isArray(user.roles) ? user.roles : Array.from(user.roles)) : []
+      roles: ensureArray(user.roles) || []
     };
     const result = await db.insert(users).values(userWithDefaults).returning();
     return result[0];
@@ -172,8 +183,8 @@ export class DatabaseStorage implements IStorage {
     const newModule = { 
       ...module, 
       id,
-      developers: module.developers ? (Array.isArray(module.developers) ? module.developers : Array.from(module.developers)) : null,
-      testers: module.testers ? (Array.isArray(module.testers) ? module.testers : Array.from(module.testers)) : null
+      developers: ensureArray(module.developers),
+      testers: ensureArray(module.testers)
     };
     const result = await db.insert(modules).values(newModule).returning();
     return result[0];
@@ -181,12 +192,11 @@ export class DatabaseStorage implements IStorage {
 
   async updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined> {
     const cleanUpdates = { ...updates };
-    // Handle array fields properly
-    if ('developers' in cleanUpdates && cleanUpdates.developers) {
-      cleanUpdates.developers = Array.isArray(cleanUpdates.developers) ? cleanUpdates.developers : [];
+    if ('developers' in cleanUpdates) {
+      cleanUpdates.developers = ensureArray(cleanUpdates.developers);
     }
-    if ('testers' in cleanUpdates && cleanUpdates.testers) {
-      cleanUpdates.testers = Array.isArray(cleanUpdates.testers) ? cleanUpdates.testers : [];
+    if ('testers' in cleanUpdates) {
+      cleanUpdates.testers = ensureArray(cleanUpdates.testers);
     }
     const result = await db.update(modules).set(cleanUpdates).where(eq(modules.id, id)).returning();
     return result[0];
@@ -292,7 +302,7 @@ export class DatabaseStorage implements IStorage {
     const newTestCase = { 
       ...testCase, 
       id,
-      steps: testCase.steps ? (Array.isArray(testCase.steps) ? testCase.steps : Array.from(testCase.steps)) : null
+      steps: normalizeArrayField(testCase.steps)
     };
     const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
