@@ -14,19 +14,11 @@ const productSlice = createSlice({
   name: 'products',
   initialState,
   reducers: {
-    addProduct: (state, action: PayloadAction<Omit<Product, 'id' | 'testCases' | 'testRuns' | 'teamMembers' | 'coverage' | 'lastActivity' | 'createdDate' | 'status'>>) => {
-      const newProduct: Product = {
-        ...action.payload,
-        id: `PROD${String(state.products.length + 1).padStart(3, '0')}`,
-        testCases: 0,
-        testRuns: 0,
-        teamMembers: 1,
-        coverage: 0,
-        lastActivity: "Just now",
-        createdDate: new Date().toISOString().split('T')[0],
-        status: "Active"
-      };
-      state.products.push(newProduct);
+    setProducts: (state, action: PayloadAction<Product[]>) => {
+      state.products = action.payload;
+    },
+    addProduct: (state, action: PayloadAction<Product>) => {
+      state.products.push(action.payload);
     },
     updateProduct: (state, action: PayloadAction<{ id: string; updates: Partial<Product> }>) => {
       const { id, updates } = action.payload;
@@ -34,8 +26,7 @@ const productSlice = createSlice({
       if (index !== -1) {
         state.products[index] = {
           ...state.products[index],
-          ...updates,
-          lastActivity: updates.status || updates.name || updates.description || updates.owner ? "Just now" : state.products[index].lastActivity
+          ...updates
         };
       }
     },
@@ -45,5 +36,5 @@ const productSlice = createSlice({
   }
 });
 
-export const { addProduct, updateProduct, deleteProduct } = productSlice.actions;
+export const { setProducts, addProduct, updateProduct, deleteProduct } = productSlice.actions;
 export default productSlice.reducer;
