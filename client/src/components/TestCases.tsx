@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { TestCase, Product, Module } from "@shared/schema";
@@ -30,11 +30,18 @@ import {
 export const TestCases = () => {
   const { toast } = useToast();
   
-  const { data: testCases = [], isLoading: testCasesLoading, refetch: refetchTestCases } = useQuery<TestCase[]>({
+  const { data: initialTestCases = [], isLoading: testCasesLoading } = useQuery<TestCase[]>({
     queryKey: ['/api/test-cases'],
-    queryFn: () => apiRequest('/api/test-cases'),
-    staleTime: 0 // Always refetch to get latest data
+    queryFn: () => apiRequest('/api/test-cases')
   });
+
+  // Local state to manage test cases with immediate updates
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+
+  // Update local state when data is loaded
+  useEffect(() => {
+    setTestCases(initialTestCases);
+  }, [initialTestCases]);
 
   // Use Redux store for products and modules instead of individual API calls
   const products = useAppSelector(selectAllProducts);
@@ -48,8 +55,8 @@ export const TestCases = () => {
     onSuccess: (newTestCase) => {
       console.log("Create success, new test case:", newTestCase);
       
-      // Force refetch the data using the query's refetch function
-      refetchTestCases();
+      // Update local state immediately
+      setTestCases(prev => [...prev, newTestCase]);
       
       setIsCreateDialogOpen(false);
       resetForm();
@@ -69,8 +76,10 @@ export const TestCases = () => {
     onSuccess: (updatedTestCase) => {
       console.log("Update success, updated test case:", updatedTestCase);
       
-      // Force refetch the data using the query's refetch function
-      refetchTestCases();
+      // Update local state immediately
+      setTestCases(prev => prev.map(testCase => 
+        testCase.id === updatedTestCase.id ? updatedTestCase : testCase
+      ));
       
       // Close dialog and reset form
       setTimeout(() => {
