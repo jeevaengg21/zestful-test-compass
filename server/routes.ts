@@ -138,6 +138,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/test-cases/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const testCase = await storage.getTestCase(id);
+      if (testCase) {
+        res.json(testCase);
+      } else {
+        res.status(404).json({ error: "Test case not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch test case" });
+    }
+  });
+
+  app.patch("/api/test-cases/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const updatedTestCase = await storage.updateTestCase(id, updates);
+      if (updatedTestCase) {
+        res.json(updatedTestCase);
+      } else {
+        res.status(404).json({ error: "Test case not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update test case" });
+    }
+  });
+
+  app.post("/api/test-cases", async (req, res) => {
+    try {
+      const testCaseData = req.body;
+      const newTestCase = await storage.createTestCase(testCaseData);
+      res.status(201).json(newTestCase);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create test case" });
+    }
+  });
+
   app.get("/api/test-suites", async (req, res) => {
     try {
       const { productId, moduleId } = req.query;

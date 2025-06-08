@@ -57,10 +57,16 @@ export const TestCases = () => {
         method: 'PATCH',
         body: JSON.stringify(updates)
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/test-cases'] });
-      setEditingTestCase(null);
-      resetForm();
+      
+      // Close dialog and reset form
+      setTimeout(() => {
+        setEditingTestCase(null);
+        resetForm();
+      }, 100);
+      
       toast({
         title: "Test case updated",
         description: "The test case has been successfully updated.",
@@ -347,7 +353,7 @@ export const TestCases = () => {
 
       {/* Edit Test Case Dialog */}
       <Dialog open={!!editingTestCase} onOpenChange={(open) => {
-        if (!open) {
+        if (!open && !updateTestCaseMutation.isPending) {
           setEditingTestCase(null);
           resetForm();
         }
