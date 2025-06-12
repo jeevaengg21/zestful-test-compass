@@ -84,9 +84,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const token = authHeader.substring(7);
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
       
-      const user = await storage.getUser(decoded.userId.toString());
+      const user = await storage.getUser(decoded.userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
