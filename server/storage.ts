@@ -148,9 +148,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const id = `PROD_${crypto.randomUUID()}`;
-    const newProduct = { ...product, id };
-    const result = await db.insert(products).values([newProduct]).returning();
+    const result = await db.insert(products).values(product).returning();
     return result[0];
   }
 
@@ -179,10 +177,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createModule(module: InsertModule): Promise<Module> {
-    const id = `MOD_${crypto.randomUUID()}`;
     const newModule = { 
       ...module, 
-      id,
       developers: module.developers || [],
       testers: module.testers || []
     };

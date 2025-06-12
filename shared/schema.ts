@@ -169,8 +169,8 @@ export const testDataSets = pgTable("test_data_sets", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  productId: text("product_id").notNull(),
-  moduleId: text("module_id").notNull(),
+  productId: uuid("product_id").notNull(),
+  moduleId: uuid("module_id").notNull(),
   data: json("data").$type<Array<{key: string, value: string, type: string}>>().default([]),
   createdBy: text("created_by").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
@@ -195,10 +195,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
   createdDate: true,
 });
 
 export const insertModuleSchema = createInsertSchema(modules).omit({
+  id: true,
   createdDate: true,
 });
 
