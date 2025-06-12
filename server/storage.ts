@@ -267,9 +267,7 @@ export class DatabaseStorage implements IStorage {
       if (priority) {
         allTestCases = allTestCases.filter(tc => tc.priority === priority);
       }
-      if (assignee) {
-        allTestCases = allTestCases.filter(tc => tc.assignee === assignee);
-      }
+
       if (search) {
         const searchLower = search.toLowerCase();
         allTestCases = allTestCases.filter(tc => 
@@ -320,16 +318,15 @@ export class DatabaseStorage implements IStorage {
     const id = `TC_${crypto.randomUUID()}`;
     
     const testCaseData: typeof testCases.$inferInsert = {
-      id,
       description: testCase.description,
       productId: testCase.productId,
       title: testCase.title,
       priority: testCase.priority,
       expectedResult: testCase.expectedResult,
       moduleId: testCase.moduleId,
-      assignee: testCase.assignee,
-      status: testCase.status || 'Not Run',
-      steps: testCase.steps ? ensureArray<string>(testCase.steps) : []
+      status: testCase.status || 'Draft',
+      steps: testCase.steps ? ensureArray<string>(testCase.steps) : [],
+      estimatedTime: testCase.estimatedTime
     };
     const result = await db.insert(testCases).values(testCaseData).returning();
     return result[0];
@@ -345,9 +342,10 @@ export class DatabaseStorage implements IStorage {
     if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
     if (updates.expectedResult !== undefined) cleanUpdates.expectedResult = updates.expectedResult;
     if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
-    if (updates.assignee !== undefined) cleanUpdates.assignee = updates.assignee;
+
     if (updates.status !== undefined) cleanUpdates.status = updates.status;
     if (updates.steps !== undefined) cleanUpdates.steps = ensureArray<string>(updates.steps);
+    if (updates.estimatedTime !== undefined) cleanUpdates.estimatedTime = updates.estimatedTime;
     
     const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];

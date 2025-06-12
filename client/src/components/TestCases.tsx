@@ -172,11 +172,11 @@ export const TestCases = () => {
       description: testCase.description,
       priority: testCase.priority as "High" | "Medium" | "Low" | "Critical",
       productId: testCase.productId,
-      moduleId: testCase.moduleId,
+      moduleId: testCase.moduleId || '',
       steps: Array.isArray(testCase.steps) 
         ? testCase.steps.map((step: any) => typeof step === 'object' ? step.action || step.step || JSON.stringify(step) : step).join('\n') 
-        : (testCase.steps || ''),
-      expectedResult: testCase.expectedResult,
+        : (testCase.steps ? String(testCase.steps) : ''),
+      expectedResult: testCase.expectedResult || '',
       estimatedTime: testCase.estimatedTime || 5
     });
   };

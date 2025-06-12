@@ -178,7 +178,7 @@ export const testDataSets = pgTable("test_data_sets", {
 // Test Case Data Mappings table
 export const testCaseDataMappings = pgTable("test_case_data_mappings", {
   id: text("id").primaryKey(),
-  testCaseId: text("test_case_id").notNull(),
+  testCaseId: uuid("test_case_id").notNull().references(() => testCases.id),
   testDataSetId: text("test_data_set_id").notNull(),
   isActive: boolean("is_active").default(true),
   createdDate: timestamp("created_date").defaultNow(),
@@ -203,6 +203,7 @@ export const insertModuleSchema = createInsertSchema(modules).omit({
 });
 
 export const insertTestCaseSchema = createInsertSchema(testCases).omit({
+  id: true,
   createdDate: true,
   lastRun: true,
 });
