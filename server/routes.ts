@@ -109,6 +109,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/products", async (req, res) => {
+    try {
+      const productData = req.body;
+      console.log("Received product data:", productData);
+      const newProduct = await storage.createProduct(productData);
+      console.log("Created product:", newProduct);
+      res.json(newProduct);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ error: "Failed to create product" });
+    }
+  });
+
+  app.patch("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const updatedProduct = await storage.updateProduct(id, updates);
+      if (!updatedProduct) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json(updatedProduct);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update product" });
+    }
+  });
+
   app.get("/api/modules", async (req, res) => {
     try {
       const { productId } = req.query;
