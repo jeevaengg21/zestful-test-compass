@@ -191,7 +191,7 @@ export class DatabaseStorage implements IStorage {
       name: module.name,
       description: module.description,
       moduleOwner: module.moduleOwner,
-      manager: module.manager,
+      manager: module.manager || '',
       productId: module.productId,
       status: module.status || 'Active',
       developers: module.developers ? ensureArray<string>(module.developers) : [],
@@ -315,20 +315,36 @@ export class DatabaseStorage implements IStorage {
     // Generate UUID-based ID with TC prefix for test case identification
     const id = `TC_${crypto.randomUUID()}`;
     
-    const newTestCase = { 
-      ...testCase, 
+    const testCaseData: typeof testCases.$inferInsert = {
       id,
+      description: testCase.description,
+      productId: testCase.productId,
+      title: testCase.title,
+      priority: testCase.priority,
+      expectedResult: testCase.expectedResult,
+      moduleId: testCase.moduleId,
+      assignee: testCase.assignee,
+      status: testCase.status || 'Not Run',
       steps: testCase.steps ? ensureArray<string>(testCase.steps) : []
     };
-    const result = await db.insert(testCases).values(newTestCase).returning();
+    const result = await db.insert(testCases).values(testCaseData).returning();
     return result[0];
   }
 
   async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
-    const cleanUpdates = { ...updates };
-    if ('steps' in cleanUpdates && cleanUpdates.steps !== undefined) {
-      cleanUpdates.steps = ensureArray<string>(cleanUpdates.steps);
-    }
+    const cleanUpdates: Partial<typeof testCases.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.productId !== undefined) cleanUpdates.productId = updates.productId;
+    if (updates.title !== undefined) cleanUpdates.title = updates.title;
+    if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
+    if (updates.expectedResult !== undefined) cleanUpdates.expectedResult = updates.expectedResult;
+    if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
+    if (updates.assignee !== undefined) cleanUpdates.assignee = updates.assignee;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.steps !== undefined) cleanUpdates.steps = ensureArray<string>(updates.steps);
+    
     const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];
   }
@@ -358,21 +374,33 @@ export class DatabaseStorage implements IStorage {
 
   async createTestSuite(testSuite: InsertTestSuite): Promise<TestSuite> {
     const id = `TS_${crypto.randomUUID()}`;
-    const newTestSuite = { 
-      ...testSuite, 
+    
+    const testSuiteData: typeof testSuites.$inferInsert = {
       id,
+      name: testSuite.name,
+      description: testSuite.description,
+      productId: testSuite.productId,
+      moduleId: testSuite.moduleId,
+      owner: testSuite.owner,
+      status: testSuite.status || 'Active',
       testCaseIds: testSuite.testCaseIds ? ensureArray<string>(testSuite.testCaseIds) : []
     };
-    const result = await db.insert(testSuites).values(newTestSuite).returning();
+    const result = await db.insert(testSuites).values(testSuiteData).returning();
     return result[0];
   }
 
   async updateTestSuite(id: string, updates: Partial<InsertTestSuite>): Promise<TestSuite | undefined> {
-    // Handle array fields properly to ensure proper type compatibility
-    const cleanUpdates = { ...updates };
-    if ('testCaseIds' in cleanUpdates && cleanUpdates.testCaseIds !== undefined) {
-      cleanUpdates.testCaseIds = ensureArray<string>(cleanUpdates.testCaseIds);
-    }
+    const cleanUpdates: Partial<typeof testSuites.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.name !== undefined) cleanUpdates.name = updates.name;
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.productId !== undefined) cleanUpdates.productId = updates.productId;
+    if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
+    if (updates.owner !== undefined) cleanUpdates.owner = updates.owner;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.testCaseIds !== undefined) cleanUpdates.testCaseIds = ensureArray<string>(updates.testCaseIds);
+    
     const result = await db.update(testSuites).set(cleanUpdates).where(eq(testSuites.id, id)).returning();
     return result[0];
   }
