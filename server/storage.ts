@@ -1,9 +1,9 @@
 import { eq, and, sql, like, or } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  users, products, modules, testCases, testSuites, testPlans, testRuns, 
+  tenants, users, products, modules, testCases, testSuites, testPlans, testRuns, 
   testCaseExecutions, defects, testDataSets, testCaseDataMappings,
-  type User, type InsertUser, type Product, type InsertProduct,
+  type Tenant, type InsertTenant, type User, type InsertUser, type Product, type InsertProduct,
   type Module, type InsertModule, type TestCase, type InsertTestCase,
   type TestSuite, type InsertTestSuite, type TestPlan, type InsertTestPlan,
   type TestRun, type InsertTestRun, type TestCaseExecution, type InsertTestCaseExecution,
@@ -37,6 +37,12 @@ function cleanObjectForDrizzle(obj: any, arrayFields: string[] = []): any {
 }
 
 export interface IStorage {
+  // Tenant methods
+  getTenant(id: string): Promise<Tenant | undefined>;
+  createTenant(tenant: InsertTenant): Promise<Tenant>;
+  updateTenant(id: string, updates: Partial<InsertTenant>): Promise<Tenant | undefined>;
+  getAllTenants(): Promise<Tenant[]>;
+  
   // User methods
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;

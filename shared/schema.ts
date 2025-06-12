@@ -206,15 +206,23 @@ export const testCaseDataMappings = pgTable("test_case_data_mappings", {
   testCaseId: uuid("test_case_id").notNull().references(() => testCases.id),
   testDataSetId: text("test_data_set_id").notNull(),
   isActive: boolean("is_active").default(true),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
 });
 
 // Insert schemas
+export const insertTenantSchema = createInsertSchema(tenants).omit({
+  id: true,
+  createdDate: true,
+  updatedDate: true,
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
   fullName: true,
   roles: true,
+  tenantId: true,
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({
@@ -264,6 +272,8 @@ export const insertTestCaseDataMappingSchema = createInsertSchema(testCaseDataMa
 });
 
 // Types
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
+export type Tenant = typeof tenants.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
