@@ -90,7 +90,7 @@ export default function Login() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="admin@techcorp.com"
+                        placeholder="Enter your email"
                         {...field}
                       />
                     </FormControl>
@@ -125,16 +125,18 @@ export default function Login() {
             </form>
           </Form>
           
-          <div className="mt-6 text-sm text-gray-600 dark:text-gray-400">
-            <p className="font-medium">Demo Accounts:</p>
-            <div className="space-y-2 mt-2">
-              <div>
-                <p><strong>TechCorp:</strong> admin@techcorp.com</p>
-                <p className="text-xs">Password: password123</p>
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <p className="font-medium text-sm text-gray-900 dark:text-white mb-2">Demo Accounts:</p>
+            <div className="space-y-3">
+              <div className="p-2 bg-white dark:bg-gray-700 rounded border">
+                <p className="font-medium text-blue-600 dark:text-blue-400">TechCorp Inc</p>
+                <p className="text-sm">Email: admin@techcorp.com</p>
+                <p className="text-xs text-gray-500">Password: password123</p>
               </div>
-              <div>
-                <p><strong>StartupLabs:</strong> admin@startup.com</p>
-                <p className="text-xs">Password: password123</p>
+              <div className="p-2 bg-white dark:bg-gray-700 rounded border">
+                <p className="font-medium text-green-600 dark:text-green-400">StartupLabs</p>
+                <p className="text-sm">Email: admin@startup.com</p>
+                <p className="text-xs text-gray-500">Password: password123</p>
               </div>
             </div>
           </div>
