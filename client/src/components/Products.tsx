@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -33,16 +33,29 @@ import {
 
 export const Products = () => {
   // Use Redux store for products instead of individual API call
-  const products = useAppSelector(selectAllProducts);
+  const reduxProducts = useAppSelector(selectAllProducts);
   const isLoading = useAppSelector(state => state.products.loading);
+  
+  // Local products state for immediate UI updates
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  
+  // Sync local state when Redux data changes
+  useEffect(() => {
+    if (reduxProducts.length > 0) {
+      setLocalProducts(reduxProducts);
+    }
+  }, [reduxProducts]);
+
+  const products = localProducts;
 
   const createProductMutation = useMutation({
     mutationFn: (productData: any) => apiRequest('/api/products', {
       method: 'POST',
       body: JSON.stringify(productData)
     }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    onSuccess: (newProduct) => {
+      // Add new product to local state for immediate UI update
+      setLocalProducts(prevProducts => [newProduct, ...prevProducts]);
       setIsCreateDialogOpen(false);
       resetForm();
     }
@@ -54,8 +67,13 @@ export const Products = () => {
         method: 'PATCH',
         body: JSON.stringify(updates)
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    onSuccess: (updatedProduct) => {
+      // Update local state immediately for instant UI update
+      setLocalProducts(prevProducts => 
+        prevProducts.map(product => 
+          product.id === updatedProduct.id ? updatedProduct : product
+        )
+      );
       setEditingProduct(null);
       resetForm();
     }
