@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Module } from "@shared/schema";
@@ -34,16 +34,29 @@ interface ModuleManagerProps {
 
 export const ModuleManager = ({ productId, productName }: ModuleManagerProps) => {
   // Use Redux store for modules data instead of individual API call
-  const productModules = useAppSelector((state) => selectModulesByProduct(state, productId));
+  const reduxModules = useAppSelector((state) => selectModulesByProduct(state, productId));
   const isLoading = useAppSelector(state => state.modules.loading);
+  
+  // Local modules state for immediate UI updates
+  const [localModules, setLocalModules] = useState<Module[]>([]);
+  
+  // Sync local state when Redux data changes
+  useEffect(() => {
+    if (reduxModules.length > 0) {
+      setLocalModules(reduxModules);
+    }
+  }, [reduxModules]);
+
+  const productModules = localModules;
 
   const createModuleMutation = useMutation({
     mutationFn: (moduleData: any) => apiRequest('/api/modules', {
       method: 'POST',
       body: JSON.stringify(moduleData)
     }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/modules'] });
+    onSuccess: (newModule) => {
+      // Add new module to local state for immediate UI update
+      setLocalModules(prevModules => [newModule, ...prevModules]);
       setIsCreateDialogOpen(false);
       resetForm();
     }
@@ -55,8 +68,13 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
         method: 'PATCH',
         body: JSON.stringify(updates)
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/modules'] });
+    onSuccess: (updatedModule) => {
+      // Update local state immediately for instant UI update
+      setLocalModules(prevModules => 
+        prevModules.map(module => 
+          module.id === updatedModule.id ? updatedModule : module
+        )
+      );
       setEditingModule(null);
       resetForm();
     }

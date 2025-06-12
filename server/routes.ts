@@ -148,6 +148,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/modules", async (req, res) => {
+    try {
+      const moduleData = req.body;
+      console.log("Received module data:", moduleData);
+      const newModule = await storage.createModule(moduleData);
+      console.log("Created module:", newModule);
+      res.json(newModule);
+    } catch (error) {
+      console.error("Error creating module:", error);
+      res.status(500).json({ error: "Failed to create module" });
+    }
+  });
+
+  app.patch("/api/modules/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      console.log("Updating module:", id, "with data:", updates);
+      const updatedModule = await storage.updateModule(id, updates);
+      if (!updatedModule) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      console.log("Updated module:", updatedModule);
+      res.json(updatedModule);
+    } catch (error) {
+      console.error("Error updating module:", error);
+      res.status(500).json({ error: "Failed to update module" });
+    }
+  });
+
   app.get("/api/test-cases", async (req, res) => {
     try {
       const { 
