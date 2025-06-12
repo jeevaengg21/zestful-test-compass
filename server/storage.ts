@@ -244,12 +244,12 @@ export class DatabaseStorage implements IStorage {
     if (updates.developers !== undefined) cleanUpdates.developers = ensureArray<string>(updates.developers);
     if (updates.testers !== undefined) cleanUpdates.testers = ensureArray<string>(updates.testers);
     
-    const result = await db.update(modules).set(cleanUpdates).where(eq(modules.id, id)).returning();
+    const result = await db.update(modules).set(cleanUpdates).where(and(eq(modules.id, id), eq(modules.tenantId, tenantId))).returning();
     return result[0];
   }
 
-  async deleteModule(id: string): Promise<boolean> {
-    const result = await db.delete(modules).where(eq(modules.id, id));
+  async deleteModule(id: string, tenantId: string): Promise<boolean> {
+    const result = await db.delete(modules).where(and(eq(modules.id, id), eq(modules.tenantId, tenantId)));
     return (result.rowCount || 0) > 0;
   }
 
@@ -353,7 +353,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
+  async updateTestCase(id: string, updates: Partial<InsertTestCase>, tenantId: string): Promise<TestCase | undefined> {
     const cleanUpdates: Partial<typeof testCases.$inferInsert> = {};
     
     // Only copy defined fields to avoid undefined issues
@@ -363,17 +363,16 @@ export class DatabaseStorage implements IStorage {
     if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
     if (updates.expectedResult !== undefined) cleanUpdates.expectedResult = updates.expectedResult;
     if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
-
     if (updates.status !== undefined) cleanUpdates.status = updates.status;
     if (updates.steps !== undefined) cleanUpdates.steps = ensureArray<string>(updates.steps);
     if (updates.estimatedTime !== undefined) cleanUpdates.estimatedTime = updates.estimatedTime;
     
-    const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
+    const result = await db.update(testCases).set(cleanUpdates).where(and(eq(testCases.id, id), eq(testCases.tenantId, tenantId))).returning();
     return result[0];
   }
 
-  async deleteTestCase(id: string): Promise<boolean> {
-    const result = await db.delete(testCases).where(eq(testCases.id, id));
+  async deleteTestCase(id: string, tenantId: string): Promise<boolean> {
+    const result = await db.delete(testCases).where(and(eq(testCases.id, id), eq(testCases.tenantId, tenantId)));
     return (result.rowCount || 0) > 0;
   }
 
