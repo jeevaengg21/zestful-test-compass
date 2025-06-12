@@ -23,27 +23,6 @@ export function useAuth() {
   
   const { data: authData, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
-    queryFn: async (): Promise<AuthResponse> => {
-      if (!token) {
-        throw new Error("No token found");
-      }
-
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem("token");
-          throw new Error("Unauthorized");
-        }
-        throw new Error("Failed to fetch user data");
-      }
-
-      return response.json();
-    },
     enabled: !!token,
     retry: false,
   });

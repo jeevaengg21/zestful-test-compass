@@ -4,6 +4,9 @@ const defaultQueryFn = async ({ queryKey }: { queryKey: any }) => {
   const url = queryKey[0];
   const token = localStorage.getItem('token');
   
+  console.log('Making API request to:', url);
+  console.log('Token present:', !!token);
+  
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -11,10 +14,13 @@ const defaultQueryFn = async ({ queryKey }: { queryKey: any }) => {
     },
   });
 
+  console.log('Response status:', response.status);
+
   if (!response.ok) {
     if (response.status === 401) {
+      console.log('Unauthorized - removing token and redirecting');
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.reload();
     }
     throw new Error(`${response.status}: ${response.statusText}`);
   }

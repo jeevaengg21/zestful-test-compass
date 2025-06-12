@@ -47,12 +47,16 @@ export default function Login() {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('Login successful, setting token:', data.token);
       localStorage.setItem("token", data.token);
       toast({
         title: "Login successful",
         description: `Welcome back, ${data.user.fullName}!`,
       });
-      window.location.href = "/";
+      // Small delay to ensure token is set before reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
