@@ -48,95 +48,114 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Product methods
-  getAllProducts(): Promise<Product[]>;
-  getProduct(id: string): Promise<Product | undefined>;
-  createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product | undefined>;
-  deleteProduct(id: string): Promise<boolean>;
+  // Product methods (tenant-aware)
+  getAllProducts(tenantId: string): Promise<Product[]>;
+  getProduct(id: string, tenantId: string): Promise<Product | undefined>;
+  createProduct(product: InsertProduct, tenantId: string): Promise<Product>;
+  updateProduct(id: string, updates: Partial<InsertProduct>, tenantId: string): Promise<Product | undefined>;
+  deleteProduct(id: string, tenantId: string): Promise<boolean>;
   
-  // Module methods
-  getAllModules(): Promise<Module[]>;
-  getModulesByProduct(productId: string): Promise<Module[]>;
-  getModule(id: string): Promise<Module | undefined>;
-  createModule(module: InsertModule): Promise<Module>;
-  updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined>;
-  deleteModule(id: string): Promise<boolean>;
+  // Module methods (tenant-aware)
+  getAllModules(tenantId: string): Promise<Module[]>;
+  getModulesByProduct(productId: string, tenantId: string): Promise<Module[]>;
+  getModule(id: string, tenantId: string): Promise<Module | undefined>;
+  createModule(module: InsertModule, tenantId: string): Promise<Module>;
+  updateModule(id: string, updates: Partial<InsertModule>, tenantId: string): Promise<Module | undefined>;
+  deleteModule(id: string, tenantId: string): Promise<boolean>;
   
-  // Test Case methods
-  getAllTestCases(options?: {
+  // Test Case methods (tenant-aware)
+  getAllTestCases(tenantId: string, options?: {
     page?: number;
     limit?: number;
     productId?: string;
     moduleId?: string;
     status?: string;
     priority?: string;
-    assignee?: string;
     search?: string;
   }): Promise<{ testCases: TestCase[]; total: number; page: number; limit: number; totalPages: number }>;
-  getTestCasesByProduct(productId: string): Promise<TestCase[]>;
-  getTestCasesByModule(moduleId: string): Promise<TestCase[]>;
-  getTestCase(id: string): Promise<TestCase | undefined>;
-  createTestCase(testCase: InsertTestCase): Promise<TestCase>;
-  updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined>;
-  deleteTestCase(id: string): Promise<boolean>;
+  getTestCasesByProduct(productId: string, tenantId: string): Promise<TestCase[]>;
+  getTestCasesByModule(moduleId: string, tenantId: string): Promise<TestCase[]>;
+  getTestCase(id: string, tenantId: string): Promise<TestCase | undefined>;
+  createTestCase(testCase: InsertTestCase, tenantId: string): Promise<TestCase>;
+  updateTestCase(id: string, updates: Partial<InsertTestCase>, tenantId: string): Promise<TestCase | undefined>;
+  deleteTestCase(id: string, tenantId: string): Promise<boolean>;
   
-  // Test Suite methods
-  getAllTestSuites(): Promise<TestSuite[]>;
-  getTestSuitesByProduct(productId: string): Promise<TestSuite[]>;
-  getTestSuitesByModule(moduleId: string): Promise<TestSuite[]>;
-  getTestSuite(id: string): Promise<TestSuite | undefined>;
-  createTestSuite(testSuite: InsertTestSuite): Promise<TestSuite>;
-  updateTestSuite(id: string, updates: Partial<InsertTestSuite>): Promise<TestSuite | undefined>;
-  deleteTestSuite(id: string): Promise<boolean>;
+  // Test Suite methods (tenant-aware)
+  getAllTestSuites(tenantId: string): Promise<TestSuite[]>;
+  getTestSuitesByProduct(productId: string, tenantId: string): Promise<TestSuite[]>;
+  getTestSuitesByModule(moduleId: string, tenantId: string): Promise<TestSuite[]>;
+  getTestSuite(id: string, tenantId: string): Promise<TestSuite | undefined>;
+  createTestSuite(testSuite: InsertTestSuite, tenantId: string): Promise<TestSuite>;
+  updateTestSuite(id: string, updates: Partial<InsertTestSuite>, tenantId: string): Promise<TestSuite | undefined>;
+  deleteTestSuite(id: string, tenantId: string): Promise<boolean>;
   
-  // Test Plan methods
-  getAllTestPlans(): Promise<TestPlan[]>;
-  getTestPlansByProduct(productId: string): Promise<TestPlan[]>;
-  getTestPlan(id: string): Promise<TestPlan | undefined>;
-  createTestPlan(testPlan: InsertTestPlan): Promise<TestPlan>;
-  updateTestPlan(id: string, updates: Partial<InsertTestPlan>): Promise<TestPlan | undefined>;
-  deleteTestPlan(id: string): Promise<boolean>;
+  // Test Plan methods (tenant-aware)
+  getAllTestPlans(tenantId: string): Promise<TestPlan[]>;
+  getTestPlansByProduct(productId: string, tenantId: string): Promise<TestPlan[]>;
+  getTestPlan(id: string, tenantId: string): Promise<TestPlan | undefined>;
+  createTestPlan(testPlan: InsertTestPlan, tenantId: string): Promise<TestPlan>;
+  updateTestPlan(id: string, updates: Partial<InsertTestPlan>, tenantId: string): Promise<TestPlan | undefined>;
+  deleteTestPlan(id: string, tenantId: string): Promise<boolean>;
   
-  // Test Run methods
-  getAllTestRuns(): Promise<TestRun[]>;
-  getTestRunsByPlan(testPlanId: string): Promise<TestRun[]>;
-  getTestRun(id: string): Promise<TestRun | undefined>;
-  createTestRun(testRun: InsertTestRun): Promise<TestRun>;
-  updateTestRun(id: string, updates: Partial<InsertTestRun>): Promise<TestRun | undefined>;
-  deleteTestRun(id: string): Promise<boolean>;
+  // Test Run methods (tenant-aware)
+  getAllTestRuns(tenantId: string): Promise<TestRun[]>;
+  getTestRunsByPlan(testPlanId: string, tenantId: string): Promise<TestRun[]>;
+  getTestRun(id: string, tenantId: string): Promise<TestRun | undefined>;
+  createTestRun(testRun: InsertTestRun, tenantId: string): Promise<TestRun>;
+  updateTestRun(id: string, updates: Partial<InsertTestRun>, tenantId: string): Promise<TestRun | undefined>;
+  deleteTestRun(id: string, tenantId: string): Promise<boolean>;
   
-  // Test Case Execution methods
-  getAllTestCaseExecutions(): Promise<TestCaseExecution[]>;
-  getTestCaseExecutionsByRun(testRunId: string): Promise<TestCaseExecution[]>;
-  getTestCaseExecution(id: string): Promise<TestCaseExecution | undefined>;
-  createTestCaseExecution(execution: InsertTestCaseExecution): Promise<TestCaseExecution>;
-  updateTestCaseExecution(id: string, updates: Partial<InsertTestCaseExecution>): Promise<TestCaseExecution | undefined>;
+  // Test Case Execution methods (tenant-aware)
+  getAllTestCaseExecutions(tenantId: string): Promise<TestCaseExecution[]>;
+  getTestCaseExecutionsByRun(testRunId: string, tenantId: string): Promise<TestCaseExecution[]>;
+  getTestCaseExecution(id: string, tenantId: string): Promise<TestCaseExecution | undefined>;
+  createTestCaseExecution(execution: InsertTestCaseExecution, tenantId: string): Promise<TestCaseExecution>;
+  updateTestCaseExecution(id: string, updates: Partial<InsertTestCaseExecution>, tenantId: string): Promise<TestCaseExecution | undefined>;
   
-  // Defect methods
-  getAllDefects(): Promise<Defect[]>;
-  getDefectsByTestRun(testRunId: string): Promise<Defect[]>;
-  getDefect(id: string): Promise<Defect | undefined>;
-  createDefect(defect: InsertDefect): Promise<Defect>;
-  updateDefect(id: string, updates: Partial<InsertDefect>): Promise<Defect | undefined>;
+  // Defect methods (tenant-aware)
+  getAllDefects(tenantId: string): Promise<Defect[]>;
+  getDefectsByTestRun(testRunId: string, tenantId: string): Promise<Defect[]>;
+  getDefect(id: string, tenantId: string): Promise<Defect | undefined>;
+  createDefect(defect: InsertDefect, tenantId: string): Promise<Defect>;
+  updateDefect(id: string, updates: Partial<InsertDefect>, tenantId: string): Promise<Defect | undefined>;
   
-  // Test Data methods
-  getAllTestDataSets(): Promise<TestDataSet[]>;
-  getTestDataSetsByProduct(productId: string): Promise<TestDataSet[]>;
-  getTestDataSetsByModule(moduleId: string): Promise<TestDataSet[]>;
-  getTestDataSet(id: string): Promise<TestDataSet | undefined>;
-  createTestDataSet(testDataSet: InsertTestDataSet): Promise<TestDataSet>;
-  updateTestDataSet(id: string, updates: Partial<InsertTestDataSet>): Promise<TestDataSet | undefined>;
-  deleteTestDataSet(id: string): Promise<boolean>;
+  // Test Data methods (tenant-aware)
+  getAllTestDataSets(tenantId: string): Promise<TestDataSet[]>;
+  getTestDataSetsByProduct(productId: string, tenantId: string): Promise<TestDataSet[]>;
+  getTestDataSetsByModule(moduleId: string, tenantId: string): Promise<TestDataSet[]>;
+  getTestDataSet(id: string, tenantId: string): Promise<TestDataSet | undefined>;
+  createTestDataSet(testDataSet: InsertTestDataSet, tenantId: string): Promise<TestDataSet>;
+  updateTestDataSet(id: string, updates: Partial<InsertTestDataSet>, tenantId: string): Promise<TestDataSet | undefined>;
+  deleteTestDataSet(id: string, tenantId: string): Promise<boolean>;
   
-  // Test Case Data Mapping methods
-  getAllTestCaseDataMappings(): Promise<TestCaseDataMapping[]>;
-  getTestCaseDataMappingsByTestCase(testCaseId: string): Promise<TestCaseDataMapping[]>;
-  createTestCaseDataMapping(mapping: InsertTestCaseDataMapping): Promise<TestCaseDataMapping>;
-  deleteTestCaseDataMapping(id: string): Promise<boolean>;
+  // Test Case Data Mapping methods (tenant-aware)
+  getAllTestCaseDataMappings(tenantId: string): Promise<TestCaseDataMapping[]>;
+  getTestCaseDataMappingsByTestCase(testCaseId: string, tenantId: string): Promise<TestCaseDataMapping[]>;
+  createTestCaseDataMapping(mapping: InsertTestCaseDataMapping, tenantId: string): Promise<TestCaseDataMapping>;
+  deleteTestCaseDataMapping(id: string, tenantId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
+  // Tenant methods
+  async getTenant(id: string): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
+    return tenant;
+  }
+
+  async createTenant(tenant: InsertTenant): Promise<Tenant> {
+    const [result] = await db.insert(tenants).values(tenant).returning();
+    return result;
+  }
+
+  async updateTenant(id: string, updates: Partial<InsertTenant>): Promise<Tenant | undefined> {
+    const [result] = await db.update(tenants).set(updates).where(eq(tenants.id, id)).returning();
+    return result;
+  }
+
+  async getAllTenants(): Promise<Tenant[]> {
+    return await db.select().from(tenants);
+  }
+
   // User methods
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
@@ -157,42 +176,43 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  // Product methods
-  async getAllProducts(): Promise<Product[]> {
-    return await db.select().from(products);
+  // Product methods (tenant-aware)
+  async getAllProducts(tenantId: string): Promise<Product[]> {
+    return await db.select().from(products).where(eq(products.tenantId, tenantId));
   }
 
-  async getProduct(id: string): Promise<Product | undefined> {
-    const result = await db.select().from(products).where(eq(products.id, id));
+  async getProduct(id: string, tenantId: string): Promise<Product | undefined> {
+    const result = await db.select().from(products).where(and(eq(products.id, id), eq(products.tenantId, tenantId)));
     return result[0];
   }
 
-  async createProduct(product: InsertProduct): Promise<Product> {
-    const result = await db.insert(products).values(product).returning();
+  async createProduct(product: InsertProduct, tenantId: string): Promise<Product> {
+    const productData = { ...product, tenantId };
+    const result = await db.insert(products).values(productData).returning();
     return result[0];
   }
 
-  async updateProduct(id: string, updates: Partial<InsertProduct>): Promise<Product | undefined> {
-    const result = await db.update(products).set(updates).where(eq(products.id, id)).returning();
+  async updateProduct(id: string, updates: Partial<InsertProduct>, tenantId: string): Promise<Product | undefined> {
+    const result = await db.update(products).set(updates).where(and(eq(products.id, id), eq(products.tenantId, tenantId))).returning();
     return result[0];
   }
 
-  async deleteProduct(id: string): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id));
+  async deleteProduct(id: string, tenantId: string): Promise<boolean> {
+    const result = await db.delete(products).where(and(eq(products.id, id), eq(products.tenantId, tenantId)));
     return (result.rowCount || 0) > 0;
   }
 
-  // Module methods
-  async getAllModules(): Promise<Module[]> {
-    return await db.select().from(modules);
+  // Module methods (tenant-aware)
+  async getAllModules(tenantId: string): Promise<Module[]> {
+    return await db.select().from(modules).where(eq(modules.tenantId, tenantId));
   }
 
-  async getModulesByProduct(productId: string): Promise<Module[]> {
-    return await db.select().from(modules).where(eq(modules.productId, productId));
+  async getModulesByProduct(productId: string, tenantId: string): Promise<Module[]> {
+    return await db.select().from(modules).where(and(eq(modules.productId, productId), eq(modules.tenantId, tenantId)));
   }
 
-  async getModule(id: string): Promise<Module | undefined> {
-    const result = await db.select().from(modules).where(eq(modules.id, id));
+  async getModule(id: string, tenantId: string): Promise<Module | undefined> {
+    const result = await db.select().from(modules).where(and(eq(modules.id, id), eq(modules.tenantId, tenantId)));
     return result[0];
   }
 
