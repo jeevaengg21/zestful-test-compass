@@ -44,20 +44,18 @@ export const modules = pgTable("modules", {
 
 // Test Cases table
 export const testCases = pgTable("test_cases", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   priority: text("priority").notNull(),
-  status: text("status").notNull().default("Not Run"),
-  steps: json("steps").$type<string[]>(),
-  expectedResult: text("expected_result").notNull(),
-  actualResult: text("actual_result"),
-  assignee: uuid("assignee").notNull(),
-  productId: uuid("product_id").notNull(),
-  moduleId: uuid("module_id").notNull(),
+  status: text("status").notNull().default("Draft"),
+  steps: json("steps"),
+  expectedResult: text("expected_result"),
+  productId: uuid("product_id").notNull().references(() => products.id),
+  moduleId: uuid("module_id").references(() => modules.id),
   createdDate: timestamp("created_date").defaultNow(),
   lastRun: timestamp("last_run"),
-  estimatedTime: integer("estimated_time").default(0),
+  estimatedTime: integer("estimated_time"),
 });
 
 // Test Suites table
@@ -134,7 +132,7 @@ export const testRuns = pgTable("test_runs", {
 export const testCaseExecutions = pgTable("test_case_executions", {
   id: text("id").primaryKey(),
   testRunId: text("test_run_id").notNull(),
-  testCaseId: text("test_case_id").notNull(),
+  testCaseId: uuid("test_case_id").notNull().references(() => testCases.id),
   status: text("status").notNull().default("Not Run"),
   executedBy: uuid("executed_by"),
   executedDate: timestamp("executed_date"),
@@ -154,7 +152,7 @@ export const defects = pgTable("defects", {
   priority: text("priority").notNull(),
   status: text("status").notNull().default("Open"),
   testRunId: text("test_run_id"),
-  testCaseId: text("test_case_id"),
+  testCaseId: uuid("test_case_id").references(() => testCases.id),
   reproductionSteps: text("reproduction_steps").notNull(),
   assignedTo: uuid("assigned_to"),
   reportedBy: uuid("reported_by").notNull(),
