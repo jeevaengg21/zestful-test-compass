@@ -516,19 +516,70 @@ export class DatabaseStorage implements IStorage {
 
   async createTestRun(testRun: InsertTestRun): Promise<TestRun> {
     const id = `TR_${crypto.randomUUID()}`;
-    const newTestRun = { ...testRun, id };
-    const result = await db.insert(testRuns).values(newTestRun).returning();
+    
+    const testRunData: typeof testRuns.$inferInsert = {
+      id,
+      name: testRun.name,
+      description: testRun.description,
+      priority: testRun.priority,
+      environment: testRun.environment,
+      createdBy: testRun.createdBy,
+      testPlanId: testRun.testPlanId,
+      assignedTo: testRun.assignedTo,
+      status: testRun.status || 'Not Started',
+      testSuiteIds: testRun.testSuiteIds ? ensureArray<string>(testRun.testSuiteIds) : null,
+      startDate: testRun.startDate || null,
+      endDate: testRun.endDate || null,
+      actualStartDate: testRun.actualStartDate || null,
+      actualEndDate: testRun.actualEndDate || null,
+      progress: testRun.progress || 0,
+      totalTestCases: testRun.totalTestCases || 0,
+      executedTestCases: testRun.executedTestCases || 0,
+      passedTestCases: testRun.passedTestCases || 0,
+      failedTestCases: testRun.failedTestCases || 0,
+      blockedTestCases: testRun.blockedTestCases || 0,
+      skippedTestCases: testRun.skippedTestCases || 0,
+      estimatedHours: testRun.estimatedHours || 0,
+      actualHours: testRun.actualHours || null
+    };
+    const result = await db.insert(testRuns).values(testRunData).returning();
     return result[0];
   }
 
   async updateTestRun(id: string, updates: Partial<InsertTestRun>): Promise<TestRun | undefined> {
-    const result = await db.update(testRuns).set(updates).where(eq(testRuns.id, id)).returning();
+    const cleanUpdates: Partial<typeof testRuns.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.name !== undefined) cleanUpdates.name = updates.name;
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
+    if (updates.environment !== undefined) cleanUpdates.environment = updates.environment;
+    if (updates.createdBy !== undefined) cleanUpdates.createdBy = updates.createdBy;
+    if (updates.testPlanId !== undefined) cleanUpdates.testPlanId = updates.testPlanId;
+    if (updates.assignedTo !== undefined) cleanUpdates.assignedTo = updates.assignedTo;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.testSuiteIds !== undefined) cleanUpdates.testSuiteIds = updates.testSuiteIds ? ensureArray<string>(updates.testSuiteIds) : null;
+    if (updates.startDate !== undefined) cleanUpdates.startDate = updates.startDate;
+    if (updates.endDate !== undefined) cleanUpdates.endDate = updates.endDate;
+    if (updates.actualStartDate !== undefined) cleanUpdates.actualStartDate = updates.actualStartDate;
+    if (updates.actualEndDate !== undefined) cleanUpdates.actualEndDate = updates.actualEndDate;
+    if (updates.progress !== undefined) cleanUpdates.progress = updates.progress;
+    if (updates.totalTestCases !== undefined) cleanUpdates.totalTestCases = updates.totalTestCases;
+    if (updates.executedTestCases !== undefined) cleanUpdates.executedTestCases = updates.executedTestCases;
+    if (updates.passedTestCases !== undefined) cleanUpdates.passedTestCases = updates.passedTestCases;
+    if (updates.failedTestCases !== undefined) cleanUpdates.failedTestCases = updates.failedTestCases;
+    if (updates.blockedTestCases !== undefined) cleanUpdates.blockedTestCases = updates.blockedTestCases;
+    if (updates.skippedTestCases !== undefined) cleanUpdates.skippedTestCases = updates.skippedTestCases;
+    if (updates.estimatedHours !== undefined) cleanUpdates.estimatedHours = updates.estimatedHours;
+    if (updates.actualHours !== undefined) cleanUpdates.actualHours = updates.actualHours;
+    
+    const result = await db.update(testRuns).set(cleanUpdates).where(eq(testRuns.id, id)).returning();
     return result[0];
   }
 
   async deleteTestRun(id: string): Promise<boolean> {
     const result = await db.delete(testRuns).where(eq(testRuns.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Test Case Execution methods
@@ -547,13 +598,36 @@ export class DatabaseStorage implements IStorage {
 
   async createTestCaseExecution(execution: InsertTestCaseExecution): Promise<TestCaseExecution> {
     const id = `TCE_${crypto.randomUUID()}`;
-    const newExecution = { ...execution, id };
-    const result = await db.insert(testCaseExecutions).values([newExecution]).returning();
+    
+    const executionData: typeof testCaseExecutions.$inferInsert = {
+      id,
+      testRunId: execution.testRunId,
+      testCaseId: execution.testCaseId,
+      status: execution.status || 'Not Started',
+      actualResult: execution.actualResult || null,
+      executedBy: execution.executedBy || null,
+      executedDate: execution.executedDate || null,
+      notes: execution.notes || null,
+      attachments: execution.attachments ? ensureArray<string>(execution.attachments) : null
+    };
+    const result = await db.insert(testCaseExecutions).values(executionData).returning();
     return result[0];
   }
 
   async updateTestCaseExecution(id: string, updates: Partial<InsertTestCaseExecution>): Promise<TestCaseExecution | undefined> {
-    const result = await db.update(testCaseExecutions).set(updates).where(eq(testCaseExecutions.id, id)).returning();
+    const cleanUpdates: Partial<typeof testCaseExecutions.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.testRunId !== undefined) cleanUpdates.testRunId = updates.testRunId;
+    if (updates.testCaseId !== undefined) cleanUpdates.testCaseId = updates.testCaseId;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.actualResult !== undefined) cleanUpdates.actualResult = updates.actualResult;
+    if (updates.executedBy !== undefined) cleanUpdates.executedBy = updates.executedBy;
+    if (updates.executedDate !== undefined) cleanUpdates.executedDate = updates.executedDate;
+    if (updates.notes !== undefined) cleanUpdates.notes = updates.notes;
+    if (updates.attachments !== undefined) cleanUpdates.attachments = updates.attachments ? ensureArray<string>(updates.attachments) : null;
+    
+    const result = await db.update(testCaseExecutions).set(cleanUpdates).where(eq(testCaseExecutions.id, id)).returning();
     return result[0];
   }
 
