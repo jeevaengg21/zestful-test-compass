@@ -603,12 +603,14 @@ export class DatabaseStorage implements IStorage {
       id,
       testRunId: execution.testRunId,
       testCaseId: execution.testCaseId,
-      status: execution.status || 'Not Started',
+      status: execution.status || 'Not Run',
       actualResult: execution.actualResult || null,
       executedBy: execution.executedBy || null,
       executedDate: execution.executedDate || null,
+      executionTime: execution.executionTime || null,
       notes: execution.notes || null,
-      attachments: execution.attachments ? ensureArray<string>(execution.attachments) : null
+      defectIds: execution.defectIds ? ensureArray<string>(execution.defectIds) : null,
+      screenshots: execution.screenshots ? ensureArray<string>(execution.screenshots) : null
     };
     const result = await db.insert(testCaseExecutions).values(executionData).returning();
     return result[0];
@@ -625,7 +627,9 @@ export class DatabaseStorage implements IStorage {
     if (updates.executedBy !== undefined) cleanUpdates.executedBy = updates.executedBy;
     if (updates.executedDate !== undefined) cleanUpdates.executedDate = updates.executedDate;
     if (updates.notes !== undefined) cleanUpdates.notes = updates.notes;
-    if (updates.attachments !== undefined) cleanUpdates.attachments = updates.attachments ? ensureArray<string>(updates.attachments) : null;
+    if (updates.executionTime !== undefined) cleanUpdates.executionTime = updates.executionTime;
+    if (updates.defectIds !== undefined) cleanUpdates.defectIds = updates.defectIds ? ensureArray<string>(updates.defectIds) : null;
+    if (updates.screenshots !== undefined) cleanUpdates.screenshots = updates.screenshots ? ensureArray<string>(updates.screenshots) : null;
     
     const result = await db.update(testCaseExecutions).set(cleanUpdates).where(eq(testCaseExecutions.id, id)).returning();
     return result[0];
@@ -647,13 +651,46 @@ export class DatabaseStorage implements IStorage {
 
   async createDefect(defect: InsertDefect): Promise<Defect> {
     const id = `DEF_${crypto.randomUUID()}`;
-    const newDefect = { ...defect, id };
-    const result = await db.insert(defects).values([newDefect]).returning();
+    
+    const defectData: typeof defects.$inferInsert = {
+      id,
+      title: defect.title,
+      description: defect.description,
+      severity: defect.severity,
+      priority: defect.priority,
+      status: defect.status || 'Open',
+      reproductionSteps: defect.reproductionSteps,
+      reportedBy: defect.reportedBy,
+      environment: defect.environment,
+      assignedTo: defect.assignedTo || null,
+      testRunId: defect.testRunId || null,
+      testCaseId: defect.testCaseId || null,
+      attachments: defect.attachments ? ensureArray<string>(defect.attachments) : null,
+      resolvedDate: defect.resolvedDate || null
+    };
+    const result = await db.insert(defects).values(defectData).returning();
     return result[0];
   }
 
   async updateDefect(id: string, updates: Partial<InsertDefect>): Promise<Defect | undefined> {
-    const result = await db.update(defects).set(updates).where(eq(defects.id, id)).returning();
+    const cleanUpdates: Partial<typeof defects.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.title !== undefined) cleanUpdates.title = updates.title;
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.severity !== undefined) cleanUpdates.severity = updates.severity;
+    if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.reproductionSteps !== undefined) cleanUpdates.reproductionSteps = updates.reproductionSteps;
+    if (updates.reportedBy !== undefined) cleanUpdates.reportedBy = updates.reportedBy;
+    if (updates.environment !== undefined) cleanUpdates.environment = updates.environment;
+    if (updates.assignedTo !== undefined) cleanUpdates.assignedTo = updates.assignedTo;
+    if (updates.testRunId !== undefined) cleanUpdates.testRunId = updates.testRunId;
+    if (updates.testCaseId !== undefined) cleanUpdates.testCaseId = updates.testCaseId;
+    if (updates.attachments !== undefined) cleanUpdates.attachments = updates.attachments ? ensureArray<string>(updates.attachments) : null;
+    if (updates.resolvedDate !== undefined) cleanUpdates.resolvedDate = updates.resolvedDate;
+    
+    const result = await db.update(defects).set(cleanUpdates).where(eq(defects.id, id)).returning();
     return result[0];
   }
 
@@ -677,8 +714,17 @@ export class DatabaseStorage implements IStorage {
 
   async createTestDataSet(testDataSet: InsertTestDataSet): Promise<TestDataSet> {
     const id = `TDS_${crypto.randomUUID()}`;
-    const newTestDataSet = { ...testDataSet, id };
-    const result = await db.insert(testDataSets).values([newTestDataSet]).returning();
+    
+    const testDataSetData: typeof testDataSets.$inferInsert = {
+      id,
+      name: testDataSet.name,
+      description: testDataSet.description,
+      productId: testDataSet.productId,
+      moduleId: testDataSet.moduleId,
+      createdBy: testDataSet.createdBy,
+      data: testDataSet.data ? ensureArray<{key: string, value: string, type: string}>(testDataSet.data) : []
+    };
+    const result = await db.insert(testDataSets).values(testDataSetData).returning();
     return result[0];
   }
 
