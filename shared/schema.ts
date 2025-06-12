@@ -57,6 +57,7 @@ export const modules = pgTable("modules", {
   createdDate: timestamp("created_date").defaultNow(),
   status: text("status").notNull().default("Active"),
   productId: uuid("product_id").notNull(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
 });
 
 // Test Cases table
@@ -70,6 +71,7 @@ export const testCases = pgTable("test_cases", {
   expectedResult: text("expected_result"),
   productId: uuid("product_id").notNull().references(() => products.id),
   moduleId: uuid("module_id").references(() => modules.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
   lastRun: timestamp("last_run"),
   estimatedTime: integer("estimated_time"),
@@ -84,6 +86,7 @@ export const testSuites = pgTable("test_suites", {
   moduleId: uuid("module_id").notNull(),
   testCaseIds: json("test_case_ids").$type<string[]>(),
   status: text("status").notNull().default("Active"),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
   lastModified: timestamp("last_modified").defaultNow(),
   owner: uuid("owner").notNull(),
@@ -108,6 +111,7 @@ export const testPlans = pgTable("test_plans", {
   entryExitCriteria: json("entry_exit_criteria").$type<{entryCriteria: string[], exitCriteria: string[]}>(),
   deliverables: json("deliverables").$type<string[]>(),
   risks: json("risks").$type<string[]>(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdBy: uuid("created_by").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
   lastModified: timestamp("last_modified").defaultNow(),
@@ -140,6 +144,7 @@ export const testRuns = pgTable("test_runs", {
   skippedTestCases: integer("skipped_test_cases").default(0),
   estimatedHours: integer("estimated_hours").default(0),
   actualHours: integer("actual_hours"),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdBy: uuid("created_by").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
   lastModified: timestamp("last_modified").defaultNow(),
@@ -158,6 +163,7 @@ export const testCaseExecutions = pgTable("test_case_executions", {
   notes: text("notes"),
   defectIds: json("defect_ids").$type<string[]>(),
   screenshots: json("screenshots").$type<string[]>(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
 });
 
 // Defects table
@@ -174,6 +180,7 @@ export const defects = pgTable("defects", {
   assignedTo: uuid("assigned_to"),
   reportedBy: uuid("reported_by").notNull(),
   environment: text("environment").notNull(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
   resolvedDate: timestamp("resolved_date"),
   attachments: json("attachments").$type<string[]>(),
@@ -187,6 +194,7 @@ export const testDataSets = pgTable("test_data_sets", {
   productId: uuid("product_id").notNull(),
   moduleId: uuid("module_id").notNull(),
   data: json("data").$type<Array<{key: string, value: string, type: string}>>().default([]),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdBy: uuid("created_by").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
   lastModified: timestamp("last_modified").defaultNow(),
