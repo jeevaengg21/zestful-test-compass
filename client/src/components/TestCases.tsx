@@ -443,7 +443,7 @@ export const TestCases = () => {
                 <TableHead>Status</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Module</TableHead>
-                <TableHead>Assignee</TableHead>
+                <TableHead>Estimated Time</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -481,7 +481,7 @@ export const TestCases = () => {
                       </TableCell>
                       <TableCell>{product?.name || "N/A"}</TableCell>
                       <TableCell>{module?.name || "N/A"}</TableCell>
-                      <TableCell>{testCase.assignee || "Unassigned"}</TableCell>
+                      <TableCell>{testCase.estimatedTime || 0} min</TableCell>
                       <TableCell>
                         <Button 
                           variant="ghost" 
