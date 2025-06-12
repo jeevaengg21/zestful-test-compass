@@ -253,15 +253,14 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // Test Case methods with pagination and filtering
-  async getAllTestCases(options?: {
+  // Test Case methods with pagination and filtering (tenant-aware)
+  async getAllTestCases(tenantId: string, options?: {
     page?: number;
     limit?: number;
     productId?: string;
     moduleId?: string;
     status?: string;
     priority?: string;
-    assignee?: string;
     search?: string;
   }): Promise<{ testCases: TestCase[]; total: number; page: number; limit: number; totalPages: number }> {
     try {
@@ -276,9 +275,8 @@ export class DatabaseStorage implements IStorage {
         search 
       } = options || {};
 
-      // For now, get all test cases and filter/paginate in memory
-      // This will be replaced with proper SQL queries once UUID migration is complete
-      let allTestCases = await db.select().from(testCases);
+      // Get test cases filtered by tenant
+      let allTestCases = await db.select().from(testCases).where(eq(testCases.tenantId, tenantId));
       
       // Apply filters
       if (productId) {

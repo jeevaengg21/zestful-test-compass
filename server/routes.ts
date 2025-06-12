@@ -1,11 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { storage } from "./storage";
-import { insertUserSchema } from "@shared/schema";
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+import { authenticateToken, type AuthenticatedRequest } from "./auth";
+import { registerAuthRoutes } from "./authRoutes";
+import { 
+  insertProductSchema, insertModuleSchema, insertTestCaseSchema,
+  insertTestSuiteSchema, insertTestPlanSchema, insertTestRunSchema,
+  insertTestCaseExecutionSchema, insertDefectSchema, insertTestDataSetSchema,
+  insertTestCaseDataMappingSchema
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
