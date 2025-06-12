@@ -64,6 +64,7 @@ export default function Login() {
   });
 
   const onSubmit = (data: LoginForm) => {
+    console.log('Submitting login form:', data);
     setIsLoading(true);
     loginMutation.mutate(data);
   };

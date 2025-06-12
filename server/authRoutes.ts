@@ -9,16 +9,25 @@ export function registerAuthRoutes(app: Express) {
     try {
       const { email, password } = req.body;
 
+      console.log('Login attempt for:', email);
+      console.log('Request body:', req.body);
+      console.log('Password provided:', password ? 'Yes' : 'No');
+
       if (!email || !password) {
+        console.log('Missing email or password');
         return res.status(400).json({ message: 'Email and password required' });
       }
 
       const user = await storage.getUserByEmail(email);
+      console.log('User found:', user ? 'Yes' : 'No');
       if (!user || !user.tenantId) {
+        console.log('User not found or no tenant ID');
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      console.log('Comparing password...');
       const isValidPassword = await comparePassword(password, user.password);
+      console.log('Password valid:', isValidPassword);
       if (!isValidPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
