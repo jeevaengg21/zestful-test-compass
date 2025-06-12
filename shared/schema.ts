@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -15,7 +15,7 @@ export const users = pgTable("users", {
 
 // Products table
 export const products = pgTable("products", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   status: text("status").notNull().default("Active"),
@@ -30,7 +30,7 @@ export const products = pgTable("products", {
 
 // Modules table
 export const modules = pgTable("modules", {
-  id: text("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   moduleOwner: text("module_owner").notNull(),
@@ -39,7 +39,7 @@ export const modules = pgTable("modules", {
   testers: json("testers").$type<string[]>(),
   createdDate: timestamp("created_date").defaultNow(),
   status: text("status").notNull().default("Active"),
-  productId: text("product_id").notNull(),
+  productId: uuid("product_id").notNull(),
 });
 
 // Test Cases table
@@ -53,8 +53,8 @@ export const testCases = pgTable("test_cases", {
   expectedResult: text("expected_result").notNull(),
   actualResult: text("actual_result"),
   assignee: text("assignee").notNull(),
-  productId: text("product_id").notNull(),
-  moduleId: text("module_id").notNull(),
+  productId: uuid("product_id").notNull(),
+  moduleId: uuid("module_id").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
   lastRun: timestamp("last_run"),
   estimatedTime: integer("estimated_time").default(0),
@@ -65,8 +65,8 @@ export const testSuites = pgTable("test_suites", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  productId: text("product_id").notNull(),
-  moduleId: text("module_id").notNull(),
+  productId: uuid("product_id").notNull(),
+  moduleId: uuid("module_id").notNull(),
   testCaseIds: json("test_case_ids").$type<string[]>(),
   status: text("status").notNull().default("Active"),
   createdDate: timestamp("created_date").defaultNow(),
@@ -87,7 +87,7 @@ export const testPlans = pgTable("test_plans", {
   endDate: timestamp("end_date"),
   status: text("status").notNull().default("Draft"),
   priority: text("priority").notNull(),
-  productId: text("product_id").notNull(),
+  productId: uuid("product_id").notNull(),
   environment: text("environment").notNull(),
   testStrategy: text("test_strategy").notNull(),
   entryExitCriteria: json("entry_exit_criteria").$type<{entryCriteria: string[], exitCriteria: string[]}>(),
