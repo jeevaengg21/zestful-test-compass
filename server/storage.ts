@@ -21,6 +21,17 @@ function ensureArray<T>(value: any): T[] {
   return [];
 }
 
+// Helper function to clean objects for Drizzle updates by properly handling array fields
+function cleanObjectForDrizzle(obj: any, arrayFields: string[] = []): any {
+  const cleaned = { ...obj };
+  arrayFields.forEach(field => {
+    if (field in cleaned && cleaned[field] !== undefined) {
+      cleaned[field] = ensureArray(cleaned[field]);
+    }
+  });
+  return cleaned;
+}
+
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
@@ -176,23 +187,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createModule(module: InsertModule): Promise<Module> {
-    const newModule = { 
-      ...module, 
+    const moduleData: typeof modules.$inferInsert = {
+      name: module.name,
+      description: module.description,
+      moduleOwner: module.moduleOwner,
+      manager: module.manager,
+      productId: module.productId,
+      status: module.status || 'Active',
       developers: module.developers ? ensureArray<string>(module.developers) : [],
       testers: module.testers ? ensureArray<string>(module.testers) : []
     };
-    const result = await db.insert(modules).values(newModule).returning();
+    const result = await db.insert(modules).values(moduleData).returning();
     return result[0];
   }
 
   async updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined> {
-    const cleanUpdates = { ...updates };
-    if ('developers' in cleanUpdates && cleanUpdates.developers !== undefined) {
-      cleanUpdates.developers = ensureArray<string>(cleanUpdates.developers);
-    }
-    if ('testers' in cleanUpdates && cleanUpdates.testers !== undefined) {
-      cleanUpdates.testers = ensureArray<string>(cleanUpdates.testers);
-    }
+    const cleanUpdates: Partial<typeof modules.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.name !== undefined) cleanUpdates.name = updates.name;
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.moduleOwner !== undefined) cleanUpdates.moduleOwner = updates.moduleOwner;
+    if (updates.manager !== undefined) cleanUpdates.manager = updates.manager;
+    if (updates.productId !== undefined) cleanUpdates.productId = updates.productId;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.developers !== undefined) cleanUpdates.developers = ensureArray<string>(updates.developers);
+    if (updates.testers !== undefined) cleanUpdates.testers = ensureArray<string>(updates.testers);
+    
     const result = await db.update(modules).set(cleanUpdates).where(eq(modules.id, id)).returning();
     return result[0];
   }
@@ -306,7 +327,7 @@ export class DatabaseStorage implements IStorage {
   async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
     const cleanUpdates = { ...updates };
     if ('steps' in cleanUpdates && cleanUpdates.steps !== undefined) {
-      cleanUpdates.steps = Array.isArray(cleanUpdates.steps) ? cleanUpdates.steps : [];
+      cleanUpdates.steps = ensureArray<string>(cleanUpdates.steps);
     }
     const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];
@@ -340,7 +361,7 @@ export class DatabaseStorage implements IStorage {
     const newTestSuite = { 
       ...testSuite, 
       id,
-      testCaseIds: Array.isArray(testSuite.testCaseIds) ? testSuite.testCaseIds : []
+      testCaseIds: testSuite.testCaseIds ? ensureArray<string>(testSuite.testCaseIds) : []
     };
     const result = await db.insert(testSuites).values(newTestSuite).returning();
     return result[0];
@@ -349,8 +370,8 @@ export class DatabaseStorage implements IStorage {
   async updateTestSuite(id: string, updates: Partial<InsertTestSuite>): Promise<TestSuite | undefined> {
     // Handle array fields properly to ensure proper type compatibility
     const cleanUpdates = { ...updates };
-    if ('testCaseIds' in cleanUpdates && cleanUpdates.testCaseIds) {
-      cleanUpdates.testCaseIds = Array.isArray(cleanUpdates.testCaseIds) ? cleanUpdates.testCaseIds : [];
+    if ('testCaseIds' in cleanUpdates && cleanUpdates.testCaseIds !== undefined) {
+      cleanUpdates.testCaseIds = ensureArray<string>(cleanUpdates.testCaseIds);
     }
     const result = await db.update(testSuites).set(cleanUpdates).where(eq(testSuites.id, id)).returning();
     return result[0];
