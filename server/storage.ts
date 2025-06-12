@@ -14,9 +14,13 @@ import {
 // Helper function to ensure proper array type for Drizzle ORM
 function ensureArray<T>(value: any): T[] {
   if (!value) return [];
-  if (Array.isArray(value)) return value;
+  if (Array.isArray(value)) return value as T[];
   if (typeof value === 'object' && typeof value.length === 'number') {
-    return Array.from(value);
+    // Use spread operator to create a proper array from array-like objects
+    return [...Array.from(value)] as T[];
+  }
+  if (value != null && value !== undefined) {
+    return [value] as T[];
   }
   return [];
 }
@@ -426,17 +430,67 @@ export class DatabaseStorage implements IStorage {
 
   async createTestPlan(testPlan: InsertTestPlan): Promise<TestPlan> {
     const id = `TP_${crypto.randomUUID()}`;
-    const newTestPlan = { ...testPlan, id };
-    const result = await db.insert(testPlans).values(newTestPlan).returning();
+    
+    const testPlanData: typeof testPlans.$inferInsert = {
+      id,
+      name: testPlan.name,
+      description: testPlan.description,
+      productId: testPlan.productId,
+      priority: testPlan.priority,
+      scope: testPlan.scope,
+      environment: testPlan.environment,
+      testStrategy: testPlan.testStrategy,
+      createdBy: testPlan.createdBy,
+      status: testPlan.status || 'Draft',
+      objectives: testPlan.objectives ? ensureArray<string>(testPlan.objectives) : [],
+      testSuiteIds: testPlan.testSuiteIds ? ensureArray<string>(testPlan.testSuiteIds) : [],
+      assignedTeamMembers: testPlan.assignedTeamMembers ? ensureArray<string>(testPlan.assignedTeamMembers) : [],
+      deliverables: testPlan.deliverables ? ensureArray<string>(testPlan.deliverables) : [],
+      risks: testPlan.risks ? ensureArray<string>(testPlan.risks) : [],
+      entryExitCriteria: testPlan.entryExitCriteria ? {
+        entryCriteria: ensureArray<string>(testPlan.entryExitCriteria.entryCriteria),
+        exitCriteria: ensureArray<string>(testPlan.entryExitCriteria.exitCriteria)
+      } : null,
+      startDate: testPlan.startDate || null,
+      endDate: testPlan.endDate || null,
+      estimatedEffort: testPlan.estimatedEffort || 0,
+      actualEffort: testPlan.actualEffort || null,
+      progress: testPlan.progress || 0
+    };
+    const result = await db.insert(testPlans).values([testPlanData]).returning();
     return result[0];
   }
 
   async updateTestPlan(id: string, updates: Partial<InsertTestPlan>): Promise<TestPlan | undefined> {
-    // Handle array fields properly to ensure proper type compatibility
-    const cleanUpdates = { ...updates };
-    if ('testSuiteIds' in cleanUpdates && cleanUpdates.testSuiteIds) {
-      cleanUpdates.testSuiteIds = Array.isArray(cleanUpdates.testSuiteIds) ? cleanUpdates.testSuiteIds : [];
+    const cleanUpdates: Partial<typeof testPlans.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.name !== undefined) cleanUpdates.name = updates.name;
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.productId !== undefined) cleanUpdates.productId = updates.productId;
+    if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
+    if (updates.scope !== undefined) cleanUpdates.scope = updates.scope;
+    if (updates.environment !== undefined) cleanUpdates.environment = updates.environment;
+    if (updates.testStrategy !== undefined) cleanUpdates.testStrategy = updates.testStrategy;
+    if (updates.createdBy !== undefined) cleanUpdates.createdBy = updates.createdBy;
+    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.objectives !== undefined) cleanUpdates.objectives = ensureArray<string>(updates.objectives);
+    if (updates.testSuiteIds !== undefined) cleanUpdates.testSuiteIds = ensureArray<string>(updates.testSuiteIds);
+    if (updates.assignedTeamMembers !== undefined) cleanUpdates.assignedTeamMembers = ensureArray<string>(updates.assignedTeamMembers);
+    if (updates.deliverables !== undefined) cleanUpdates.deliverables = ensureArray<string>(updates.deliverables);
+    if (updates.risks !== undefined) cleanUpdates.risks = ensureArray<string>(updates.risks);
+    if (updates.entryExitCriteria !== undefined) {
+      cleanUpdates.entryExitCriteria = updates.entryExitCriteria ? {
+        entryCriteria: ensureArray<string>(updates.entryExitCriteria.entryCriteria),
+        exitCriteria: ensureArray<string>(updates.entryExitCriteria.exitCriteria)
+      } : null;
     }
+    if (updates.startDate !== undefined) cleanUpdates.startDate = updates.startDate;
+    if (updates.endDate !== undefined) cleanUpdates.endDate = updates.endDate;
+    if (updates.estimatedEffort !== undefined) cleanUpdates.estimatedEffort = updates.estimatedEffort;
+    if (updates.actualEffort !== undefined) cleanUpdates.actualEffort = updates.actualEffort;
+    if (updates.progress !== undefined) cleanUpdates.progress = updates.progress;
+    
     const result = await db.update(testPlans).set(cleanUpdates).where(eq(testPlans.id, id)).returning();
     return result[0];
   }
