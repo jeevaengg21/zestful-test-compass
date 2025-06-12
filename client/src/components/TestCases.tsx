@@ -173,7 +173,9 @@ export const TestCases = () => {
       priority: testCase.priority as "High" | "Medium" | "Low" | "Critical",
       productId: testCase.productId,
       moduleId: testCase.moduleId,
-      steps: Array.isArray(testCase.steps) ? testCase.steps.join('\n') : (testCase.steps || ''),
+      steps: Array.isArray(testCase.steps) 
+        ? testCase.steps.map((step: any) => typeof step === 'object' ? step.action || step.step || JSON.stringify(step) : step).join('\n') 
+        : (testCase.steps || ''),
       expectedResult: testCase.expectedResult,
       estimatedTime: testCase.estimatedTime || 5
     });

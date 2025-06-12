@@ -25,7 +25,7 @@ import {
   ChevronRight,
   Database
 } from "lucide-react";
-import { TestCaseExecution } from "@/store/slices/testRunSlice";
+import type { TestCaseExecution } from "@shared/schema";
 import { useAppSelector } from "@/store/hooks";
 import { selectTestDataSetsForTestCase, selectAllTestCaseDataMappings, selectAllTestDataSets } from "@/store/selectors";
 
@@ -199,12 +199,14 @@ export function TestExecutionDrawer({
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
                   <h4 className="font-semibold text-gray-900 mb-4 text-base select-text">Test Steps</h4>
                   <ol className="space-y-3 select-text">
-                    {selectedTestCase.steps.map((step: string, index: number) => (
+                    {(Array.isArray(selectedTestCase.steps) ? selectedTestCase.steps : []).map((step: any, index: number) => (
                       <li key={index} className="flex gap-3 select-text">
                         <span className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5 select-none">
                           {index + 1}
                         </span>
-                        <span className="text-sm text-gray-800 leading-relaxed select-text">{step}</span>
+                        <span className="text-sm text-gray-800 leading-relaxed select-text">
+                          {typeof step === 'object' ? step.action || step.step || JSON.stringify(step) : step}
+                        </span>
                       </li>
                     ))}
                   </ol>
@@ -231,8 +233,8 @@ export function TestExecutionDrawer({
                         <div key={dataSet.id} className="bg-blue-50 p-4 rounded-lg border border-blue-200 select-text">
                           <div className="font-semibold text-sm text-blue-900 mb-3 select-text">{dataSet.name}</div>
                           <div className="space-y-2 select-text">
-                            {dataSet.items.map((item) => (
-                              <div key={item.id} className="flex justify-between text-sm bg-white p-2 rounded border border-blue-100 select-text">
+                            {(dataSet.data || []).map((item: any, index: number) => (
+                              <div key={index} className="flex justify-between text-sm bg-white p-2 rounded border border-blue-100 select-text">
                                 <span className="font-medium text-gray-800 select-text">{item.key}:</span>
                                 <span className="text-gray-700 ml-2 font-mono select-text">
                                   {item.type === 'password' ? '••••••••' : item.value}
