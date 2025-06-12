@@ -729,13 +729,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTestDataSet(id: string, updates: Partial<InsertTestDataSet>): Promise<TestDataSet | undefined> {
-    const result = await db.update(testDataSets).set(updates).where(eq(testDataSets.id, id)).returning();
+    const cleanUpdates: Partial<typeof testDataSets.$inferInsert> = {};
+    
+    // Only copy defined fields to avoid undefined issues
+    if (updates.name !== undefined) cleanUpdates.name = updates.name;
+    if (updates.description !== undefined) cleanUpdates.description = updates.description;
+    if (updates.productId !== undefined) cleanUpdates.productId = updates.productId;
+    if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
+    if (updates.createdBy !== undefined) cleanUpdates.createdBy = updates.createdBy;
+    if (updates.data !== undefined) cleanUpdates.data = updates.data ? ensureArray<{key: string, value: string, type: string}>(updates.data) : [];
+    
+    const result = await db.update(testDataSets).set(cleanUpdates).where(eq(testDataSets.id, id)).returning();
     return result[0];
   }
 
   async deleteTestDataSet(id: string): Promise<boolean> {
     const result = await db.delete(testDataSets).where(eq(testDataSets.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Test Case Data Mapping methods
@@ -754,7 +764,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTestCaseDataMapping(id: string): Promise<boolean> {
     const result = await db.delete(testCaseDataMappings).where(eq(testCaseDataMappings.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 }
 
