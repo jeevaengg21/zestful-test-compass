@@ -12,11 +12,11 @@ import {
 } from "@shared/schema";
 
 // Helper function to ensure proper array type for Drizzle ORM
-function ensureArray<T>(value: T[] | any): T[] {
+function ensureArray<T>(value: any): T[] {
   if (!value) return [];
-  if (Array.isArray(value)) return value as T[];
+  if (Array.isArray(value)) return value;
   if (typeof value === 'object' && typeof value.length === 'number') {
-    return Array.from(value) as T[];
+    return Array.from(value);
   }
   return [];
 }
@@ -130,7 +130,7 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const userWithDefaults = {
       ...user,
-      roles: Array.isArray(user.roles) ? user.roles : []
+      roles: user.roles ? ensureArray<string>(user.roles) : []
     };
     const result = await db.insert(users).values(userWithDefaults).returning();
     return result[0];
@@ -178,8 +178,8 @@ export class DatabaseStorage implements IStorage {
   async createModule(module: InsertModule): Promise<Module> {
     const newModule = { 
       ...module, 
-      developers: Array.isArray(module.developers) ? module.developers : [],
-      testers: Array.isArray(module.testers) ? module.testers : []
+      developers: module.developers ? ensureArray<string>(module.developers) : [],
+      testers: module.testers ? ensureArray<string>(module.testers) : []
     };
     const result = await db.insert(modules).values(newModule).returning();
     return result[0];
@@ -188,10 +188,10 @@ export class DatabaseStorage implements IStorage {
   async updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined> {
     const cleanUpdates = { ...updates };
     if ('developers' in cleanUpdates && cleanUpdates.developers !== undefined) {
-      cleanUpdates.developers = Array.isArray(cleanUpdates.developers) ? cleanUpdates.developers : [];
+      cleanUpdates.developers = ensureArray<string>(cleanUpdates.developers);
     }
     if ('testers' in cleanUpdates && cleanUpdates.testers !== undefined) {
-      cleanUpdates.testers = Array.isArray(cleanUpdates.testers) ? cleanUpdates.testers : [];
+      cleanUpdates.testers = ensureArray<string>(cleanUpdates.testers);
     }
     const result = await db.update(modules).set(cleanUpdates).where(eq(modules.id, id)).returning();
     return result[0];
@@ -297,7 +297,7 @@ export class DatabaseStorage implements IStorage {
     const newTestCase = { 
       ...testCase, 
       id,
-      steps: Array.isArray(testCase.steps) ? testCase.steps : []
+      steps: testCase.steps ? ensureArray<string>(testCase.steps) : []
     };
     const result = await db.insert(testCases).values(newTestCase).returning();
     return result[0];
@@ -305,8 +305,8 @@ export class DatabaseStorage implements IStorage {
 
   async updateTestCase(id: string, updates: Partial<InsertTestCase>): Promise<TestCase | undefined> {
     const cleanUpdates = { ...updates };
-    if ('steps' in cleanUpdates) {
-      cleanUpdates.steps = cleanUpdates.steps || [];
+    if ('steps' in cleanUpdates && cleanUpdates.steps !== undefined) {
+      cleanUpdates.steps = Array.isArray(cleanUpdates.steps) ? cleanUpdates.steps : [];
     }
     const result = await db.update(testCases).set(cleanUpdates).where(eq(testCases.id, id)).returning();
     return result[0];
@@ -337,7 +337,11 @@ export class DatabaseStorage implements IStorage {
 
   async createTestSuite(testSuite: InsertTestSuite): Promise<TestSuite> {
     const id = `TS_${crypto.randomUUID()}`;
-    const newTestSuite = { ...testSuite, id };
+    const newTestSuite = { 
+      ...testSuite, 
+      id,
+      testCaseIds: Array.isArray(testSuite.testCaseIds) ? testSuite.testCaseIds : []
+    };
     const result = await db.insert(testSuites).values(newTestSuite).returning();
     return result[0];
   }
