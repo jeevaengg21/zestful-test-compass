@@ -11,327 +11,220 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
-  // Authentication routes
-  app.post("/api/auth/signup", async (req, res) => {
+  // Register authentication routes
+  registerAuthRoutes(app);
+
+  // Products routes (tenant-aware)
+  app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { email, password, fullName } = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ error: "User already exists" });
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      // Create user
-      const user = await storage.createUser({
-        email,
-        password: hashedPassword,
-        fullName,
-        roles: ["user"]
-      });
-
-      // Generate JWT token
-      const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
-      
-      res.json({ 
-        user: { id: user.id, email: user.email, fullName: user.fullName, roles: user.roles },
-        token 
-      });
-    } catch (error) {
-      res.status(400).json({ error: "Invalid request data" });
-    }
-  });
-
-  app.post("/api/auth/signin", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      // Find user
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      // Check password
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      // Generate JWT token
-      const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
-      
-      res.json({ 
-        user: { id: user.id, email: user.email, fullName: user.fullName, roles: user.roles },
-        token 
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Server error" });
-    }
-  });
-
-  app.post("/api/auth/signout", (req, res) => {
-    // With JWT, signout is handled client-side by removing the token
-    res.json({ message: "Signed out successfully" });
-  });
-
-  app.get("/api/auth/me", async (req, res) => {
-    try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "No token provided" });
-      }
-
-      const token = authHeader.substring(7);
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
-      
-      const user = await storage.getUser(decoded.userId);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      res.json({ 
-        user: { id: user.id, email: user.email, fullName: user.fullName, roles: user.roles }
-      });
-    } catch (error) {
-      res.status(401).json({ error: "Invalid token" });
-    }
-  });
-
-  // Data API routes
-  app.get("/api/products", async (req, res) => {
-    try {
-      const products = await storage.getAllProducts();
+      const tenantId = req.tenantId!;
+      const products = await storage.getAllProducts(tenantId);
       res.json(products);
     } catch (error) {
+      console.error("Get products error:", error);
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });
 
-  app.post("/api/products", async (req, res) => {
+  app.get("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const productData = req.body;
-      console.log("Received product data:", productData);
-      const newProduct = await storage.createProduct(productData);
-      console.log("Created product:", newProduct);
-      res.json(newProduct);
+      const tenantId = req.tenantId!;
+      const product = await storage.getProduct(req.params.id, tenantId);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json(product);
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Get product error:", error);
+      res.status(500).json({ error: "Failed to fetch product" });
+    }
+  });
+
+  app.post("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct({
+        ...productData,
+        owner: req.user!.id
+      }, tenantId);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Create product error:", error);
       res.status(500).json({ error: "Failed to create product" });
     }
   });
 
-  app.patch("/api/products/:id", async (req, res) => {
+  app.patch("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { id } = req.params;
+      const tenantId = req.tenantId!;
       const updates = req.body;
-      const updatedProduct = await storage.updateProduct(id, updates);
-      if (!updatedProduct) {
+      const product = await storage.updateProduct(req.params.id, updates, tenantId);
+      if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
-      res.json(updatedProduct);
+      res.json(product);
     } catch (error) {
+      console.error("Update product error:", error);
       res.status(500).json({ error: "Failed to update product" });
     }
   });
 
-  app.get("/api/modules", async (req, res) => {
+  app.delete("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { productId } = req.query;
-      const modules = productId 
-        ? await storage.getModulesByProduct(productId as string)
-        : await storage.getAllModules();
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteProduct(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Delete product error:", error);
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  // Modules routes (tenant-aware)
+  app.get("/api/modules", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const modules = await storage.getAllModules(tenantId);
       res.json(modules);
     } catch (error) {
+      console.error("Get modules error:", error);
       res.status(500).json({ error: "Failed to fetch modules" });
     }
   });
 
-  app.post("/api/modules", async (req, res) => {
+  app.get("/api/modules/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const moduleData = req.body;
-      console.log("Received module data:", moduleData);
-      const newModule = await storage.createModule(moduleData);
-      console.log("Created module:", newModule);
-      res.json(newModule);
+      const tenantId = req.tenantId!;
+      const module = await storage.getModule(req.params.id, tenantId);
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      res.json(module);
     } catch (error) {
-      console.error("Error creating module:", error);
+      console.error("Get module error:", error);
+      res.status(500).json({ error: "Failed to fetch module" });
+    }
+  });
+
+  app.post("/api/modules", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const moduleData = insertModuleSchema.parse(req.body);
+      const module = await storage.createModule(moduleData, tenantId);
+      res.status(201).json(module);
+    } catch (error) {
+      console.error("Create module error:", error);
       res.status(500).json({ error: "Failed to create module" });
     }
   });
 
-  app.patch("/api/modules/:id", async (req, res) => {
+  app.patch("/api/modules/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { id } = req.params;
+      const tenantId = req.tenantId!;
       const updates = req.body;
-      console.log("Updating module:", id, "with data:", updates);
-      const updatedModule = await storage.updateModule(id, updates);
-      if (!updatedModule) {
+      const module = await storage.updateModule(req.params.id, updates, tenantId);
+      if (!module) {
         return res.status(404).json({ error: "Module not found" });
       }
-      console.log("Updated module:", updatedModule);
-      res.json(updatedModule);
+      res.json(module);
     } catch (error) {
-      console.error("Error updating module:", error);
+      console.error("Update module error:", error);
       res.status(500).json({ error: "Failed to update module" });
     }
   });
 
-  app.get("/api/test-cases", async (req, res) => {
+  app.delete("/api/modules/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { 
-        productId, 
-        moduleId, 
-        page, 
-        limit, 
-        status, 
-        priority, 
-        assignee, 
-        search 
-      } = req.query;
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteModule(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      res.json({ message: "Module deleted successfully" });
+    } catch (error) {
+      console.error("Delete module error:", error);
+      res.status(500).json({ error: "Failed to delete module" });
+    }
+  });
+
+  // Test Cases routes (tenant-aware)
+  app.get("/api/test-cases", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const options = {
+        page: parseInt(req.query.page as string) || 1,
+        limit: parseInt(req.query.limit as string) || 50,
+        productId: req.query.productId as string,
+        moduleId: req.query.moduleId as string,
+        status: req.query.status as string,
+        priority: req.query.priority as string,
+        search: req.query.search as string
+      };
       
-      const pageNum = page ? parseInt(page as string) : 1;
-      const limitNum = limit ? parseInt(limit as string) : 50;
-      
-      const result = await storage.getAllTestCases({
-        page: pageNum,
-        limit: limitNum,
-        productId: productId as string,
-        moduleId: moduleId as string,
-        status: status as string,
-        priority: priority as string,
-        assignee: assignee as string,
-        search: search as string
-      });
-      
+      const result = await storage.getAllTestCases(tenantId, options);
       res.json(result);
     } catch (error) {
+      console.error("Get test cases error:", error);
       res.status(500).json({ error: "Failed to fetch test cases" });
     }
   });
 
-  app.get("/api/test-cases/:id", async (req, res) => {
+  app.get("/api/test-cases/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { id } = req.params;
-      const testCase = await storage.getTestCase(id);
-      if (testCase) {
-        res.json(testCase);
-      } else {
-        res.status(404).json({ error: "Test case not found" });
+      const tenantId = req.tenantId!;
+      const testCase = await storage.getTestCase(req.params.id, tenantId);
+      if (!testCase) {
+        return res.status(404).json({ error: "Test case not found" });
       }
+      res.json(testCase);
     } catch (error) {
+      console.error("Get test case error:", error);
       res.status(500).json({ error: "Failed to fetch test case" });
     }
   });
 
-  app.patch("/api/test-cases/:id", async (req, res) => {
+  app.post("/api/test-cases", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { id } = req.params;
-      const updates = req.body;
-      const updatedTestCase = await storage.updateTestCase(id, updates);
-      if (updatedTestCase) {
-        res.json(updatedTestCase);
-      } else {
-        res.status(404).json({ error: "Test case not found" });
-      }
+      const tenantId = req.tenantId!;
+      const testCaseData = insertTestCaseSchema.parse(req.body);
+      const testCase = await storage.createTestCase(testCaseData, tenantId);
+      res.status(201).json(testCase);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update test case" });
-    }
-  });
-
-  app.post("/api/test-cases", async (req, res) => {
-    try {
-      const testCaseData = req.body;
-      const newTestCase = await storage.createTestCase(testCaseData);
-      res.status(201).json(newTestCase);
-    } catch (error) {
+      console.error("Create test case error:", error);
       res.status(500).json({ error: "Failed to create test case" });
     }
   });
 
-  app.get("/api/test-suites", async (req, res) => {
+  app.patch("/api/test-cases/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { productId, moduleId } = req.query;
-      let testSuites;
-      if (productId) {
-        testSuites = await storage.getTestSuitesByProduct(productId as string);
-      } else if (moduleId) {
-        testSuites = await storage.getTestSuitesByModule(moduleId as string);
-      } else {
-        testSuites = await storage.getAllTestSuites();
+      const tenantId = req.tenantId!;
+      const updates = req.body;
+      const testCase = await storage.updateTestCase(req.params.id, updates, tenantId);
+      if (!testCase) {
+        return res.status(404).json({ error: "Test case not found" });
       }
-      res.json(testSuites);
+      res.json(testCase);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch test suites" });
+      console.error("Update test case error:", error);
+      res.status(500).json({ error: "Failed to update test case" });
     }
   });
 
-  app.get("/api/test-plans", async (req, res) => {
+  app.delete("/api/test-cases/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { productId } = req.query;
-      const testPlans = productId 
-        ? await storage.getTestPlansByProduct(productId as string)
-        : await storage.getAllTestPlans();
-      res.json(testPlans);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch test plans" });
-    }
-  });
-
-  app.get("/api/test-runs", async (req, res) => {
-    try {
-      const { testPlanId } = req.query;
-      const testRuns = testPlanId 
-        ? await storage.getTestRunsByPlan(testPlanId as string)
-        : await storage.getAllTestRuns();
-      res.json(testRuns);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch test runs" });
-    }
-  });
-
-  app.get("/api/test-case-executions", async (req, res) => {
-    try {
-      const { testRunId } = req.query;
-      const executions = testRunId 
-        ? await storage.getTestCaseExecutionsByRun(testRunId as string)
-        : await storage.getAllTestCaseExecutions();
-      res.json(executions);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch test case executions" });
-    }
-  });
-
-  app.get("/api/defects", async (req, res) => {
-    try {
-      const { testRunId } = req.query;
-      const defects = testRunId 
-        ? await storage.getDefectsByTestRun(testRunId as string)
-        : await storage.getAllDefects();
-      res.json(defects);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch defects" });
-    }
-  });
-
-  app.get("/api/test-data-sets", async (req, res) => {
-    try {
-      const { productId, moduleId } = req.query;
-      let testDataSets;
-      if (productId) {
-        testDataSets = await storage.getTestDataSetsByProduct(productId as string);
-      } else if (moduleId) {
-        testDataSets = await storage.getTestDataSetsByModule(moduleId as string);
-      } else {
-        testDataSets = await storage.getAllTestDataSets();
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteTestCase(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Test case not found" });
       }
-      res.json(testDataSets);
+      res.json({ message: "Test case deleted successfully" });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch test data sets" });
+      console.error("Delete test case error:", error);
+      res.status(500).json({ error: "Failed to delete test case" });
     }
   });
 

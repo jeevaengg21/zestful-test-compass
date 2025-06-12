@@ -271,7 +271,6 @@ export class DatabaseStorage implements IStorage {
         moduleId, 
         status, 
         priority, 
-        assignee,
         search 
       } = options || {};
 
@@ -324,23 +323,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getTestCasesByProduct(productId: string): Promise<TestCase[]> {
-    return await db.select().from(testCases).where(eq(testCases.productId, productId));
+  async getTestCasesByProduct(productId: string, tenantId: string): Promise<TestCase[]> {
+    return await db.select().from(testCases).where(and(eq(testCases.productId, productId), eq(testCases.tenantId, tenantId)));
   }
 
-  async getTestCasesByModule(moduleId: string): Promise<TestCase[]> {
-    return await db.select().from(testCases).where(eq(testCases.moduleId, moduleId));
+  async getTestCasesByModule(moduleId: string, tenantId: string): Promise<TestCase[]> {
+    return await db.select().from(testCases).where(and(eq(testCases.moduleId, moduleId), eq(testCases.tenantId, tenantId)));
   }
 
-  async getTestCase(id: string): Promise<TestCase | undefined> {
-    const result = await db.select().from(testCases).where(eq(testCases.id, id));
+  async getTestCase(id: string, tenantId: string): Promise<TestCase | undefined> {
+    const result = await db.select().from(testCases).where(and(eq(testCases.id, id), eq(testCases.tenantId, tenantId)));
     return result[0];
   }
 
-  async createTestCase(testCase: InsertTestCase): Promise<TestCase> {
-    // Generate UUID-based ID with TC prefix for test case identification
-    const id = `TC_${crypto.randomUUID()}`;
-    
+  async createTestCase(testCase: InsertTestCase, tenantId: string): Promise<TestCase> {
     const testCaseData: typeof testCases.$inferInsert = {
       description: testCase.description,
       productId: testCase.productId,
@@ -350,7 +346,8 @@ export class DatabaseStorage implements IStorage {
       moduleId: testCase.moduleId,
       status: testCase.status || 'Draft',
       steps: testCase.steps ? ensureArray<string>(testCase.steps) : [],
-      estimatedTime: testCase.estimatedTime
+      estimatedTime: testCase.estimatedTime,
+      tenantId
     };
     const result = await db.insert(testCases).values(testCaseData).returning();
     return result[0];
