@@ -1,6 +1,21 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, uuid, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Tenants table for multi-tenancy
+export const tenants = pgTable("tenants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  domain: varchar("domain", { length: 255 }).unique(),
+  subscriptionStatus: varchar("subscription_status", { length: 50 }).notNull().default("active"),
+  subscriptionPlan: varchar("subscription_plan", { length: 50 }).notNull().default("basic"),
+  maxUsers: integer("max_users").default(10),
+  maxProjects: integer("max_projects").default(5),
+  createdDate: timestamp("created_date").defaultNow(),
+  updatedDate: timestamp("updated_date").defaultNow(),
+  createdBy: uuid("created_by"),
+  isActive: boolean("is_active").default(true),
+});
 
 // Auth User table
 export const users = pgTable("users", {
@@ -10,6 +25,7 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   roles: json("roles").$type<string[]>(),
   status: text("status").notNull().default("Active"),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
 });
 
@@ -26,6 +42,7 @@ export const products = pgTable("products", {
   lastActivity: text("last_activity"),
   createdDate: timestamp("created_date").defaultNow(),
   owner: uuid("owner").notNull(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
 });
 
 // Modules table
