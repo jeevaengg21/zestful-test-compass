@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // Auth User table
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
@@ -25,7 +25,7 @@ export const products = pgTable("products", {
   coverage: integer("coverage").default(0),
   lastActivity: text("last_activity"),
   createdDate: timestamp("created_date").defaultNow(),
-  owner: text("owner").notNull(),
+  owner: uuid("owner").notNull(),
 });
 
 // Modules table
@@ -52,7 +52,7 @@ export const testCases = pgTable("test_cases", {
   steps: json("steps").$type<string[]>(),
   expectedResult: text("expected_result").notNull(),
   actualResult: text("actual_result"),
-  assignee: text("assignee").notNull(),
+  assignee: uuid("assignee").notNull(),
   productId: uuid("product_id").notNull(),
   moduleId: uuid("module_id").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
@@ -71,7 +71,7 @@ export const testSuites = pgTable("test_suites", {
   status: text("status").notNull().default("Active"),
   createdDate: timestamp("created_date").defaultNow(),
   lastModified: timestamp("last_modified").defaultNow(),
-  owner: text("owner").notNull(),
+  owner: uuid("owner").notNull(),
 });
 
 // Test Plans table
@@ -93,7 +93,7 @@ export const testPlans = pgTable("test_plans", {
   entryExitCriteria: json("entry_exit_criteria").$type<{entryCriteria: string[], exitCriteria: string[]}>(),
   deliverables: json("deliverables").$type<string[]>(),
   risks: json("risks").$type<string[]>(),
-  createdBy: text("created_by").notNull(),
+  createdBy: uuid("created_by").notNull(),
   createdDate: timestamp("created_date").defaultNow(),
   lastModified: timestamp("last_modified").defaultNow(),
   estimatedEffort: integer("estimated_effort").default(0),
@@ -108,7 +108,7 @@ export const testRuns = pgTable("test_runs", {
   description: text("description").notNull(),
   testPlanId: text("test_plan_id").notNull(),
   testSuiteIds: json("test_suite_ids").$type<string[]>(),
-  assignedTo: text("assigned_to").notNull(),
+  assignedTo: uuid("assigned_to").notNull(),
   status: text("status").notNull().default("Not Started"),
   priority: text("priority").notNull(),
   environment: text("environment").notNull(),
