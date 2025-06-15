@@ -9,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "@/store/store";
+import { fetchProducts } from "@/store/slices/productSlice";
+import { fetchModules } from "@/store/slices/moduleSlice";
+import { fetchUsers } from "@/store/slices/userSlice";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -20,6 +25,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
