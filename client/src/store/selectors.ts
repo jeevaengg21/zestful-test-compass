@@ -100,3 +100,35 @@ export const selectTestCasesUsingTestDataSet = createSelector(
     );
   }
 );
+
+// Lookup selectors
+export const selectAllPriorities = (state: RootState) => state.lookup.priorities;
+export const selectAllStatuses = (state: RootState) => state.lookup.statuses;
+export const selectLookupLoading = (state: RootState) => state.lookup.loading;
+export const selectLookupErrors = (state: RootState) => state.lookup.error;
+export const selectLookupLastFetched = (state: RootState) => state.lookup.lastFetched;
+
+export const selectPriorityById = createSelector(
+  [selectAllPriorities, (state: RootState, id: string) => id],
+  (priorities, id) => priorities.find(priority => priority.id === id)
+);
+
+export const selectStatusById = createSelector(
+  [selectAllStatuses, (state: RootState, id: string) => id],
+  (statuses, id) => statuses.find(status => status.id === id)
+);
+
+export const selectStatusesByCategory = createSelector(
+  [selectAllStatuses, (state: RootState, category: string) => category],
+  (statuses, category) => statuses.filter(status => status.category === category)
+);
+
+export const selectPrioritiesSorted = createSelector(
+  [selectAllPriorities],
+  (priorities) => [...priorities].sort((a, b) => a.level - b.level)
+);
+
+export const selectStatusesSorted = createSelector(
+  [selectAllStatuses],
+  (statuses) => [...statuses].sort((a, b) => a.name.localeCompare(b.name))
+);
