@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Module } from "@shared/schema";
 import { useAppSelector } from "@/store/hooks";
 import { selectModulesByProduct } from "@/store/selectors";
+import { useUserData } from "@/hooks/useUserData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,9 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
   // Use Redux store for modules data instead of individual API call
   const reduxModules = useAppSelector((state) => selectModulesByProduct(state, productId));
   const isLoading = useAppSelector(state => state.modules.loading);
+  
+  // Get user data for resolving usernames
+  const { getUserName, getUserNames } = useUserData();
   
   // Local modules state for immediate UI updates
   const [localModules, setLocalModules] = useState<Module[]>([]);
@@ -382,13 +386,13 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <User className="h-3 w-3 text-blue-600" />
-                        <span className="text-sm">{module.moduleOwner}</span>
+                        <span className="text-sm">{getUserName(module.moduleOwner)}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <UserCheck className="h-3 w-3 text-green-600" />
-                        <span className="text-sm">{module.manager}</span>
+                        <span className="text-sm">{getUserName(module.manager)}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -396,8 +400,8 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
                         <Code className="h-3 w-3 text-purple-600" />
                         <span className="text-sm">{(module.developers || []).length}</span>
                       </div>
-                      <div className="text-xs text-gray-500 max-w-32 truncate" title={(module.developers || []).join(", ")}>
-                        {(module.developers || []).join(", ")}
+                      <div className="text-xs text-gray-500 max-w-32 truncate" title={getUserNames(module.developers || []).join(", ")}>
+                        {getUserNames(module.developers || []).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -405,8 +409,8 @@ export const ModuleManager = ({ productId, productName }: ModuleManagerProps) =>
                         <Bug className="h-3 w-3 text-orange-600" />
                         <span className="text-sm">{(module.testers || []).length}</span>
                       </div>
-                      <div className="text-xs text-gray-500 max-w-32 truncate" title={(module.testers || []).join(", ")}>
-                        {(module.testers || []).join(", ")}
+                      <div className="text-xs text-gray-500 max-w-32 truncate" title={getUserNames(module.testers || []).join(", ")}>
+                        {getUserNames(module.testers || []).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell>
