@@ -9,6 +9,12 @@ import { store } from "@/store/store";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useLookupData } from "@/hooks/useLookupData";
+import { useDispatch } from "react-redux";
+import { useEffect } from "react";
+import type { AppDispatch } from "@/store/store";
+import { fetchProducts } from "@/store/slices/productSlice";
+import { fetchModules } from "@/store/slices/moduleSlice";
+import { fetchUsers } from "@/store/slices/userSlice";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -16,6 +22,16 @@ import NotFound from "./pages/NotFound";
 function AuthenticatedApp() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isLoading: lookupLoading } = useLookupData();
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Immediately fetch Products, Modules, and Users when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      dispatch(fetchProducts());
+      dispatch(fetchModules());
+      dispatch(fetchUsers());
+    }
+  }, [isAuthenticated, isLoading, dispatch]);
 
   if (isLoading) {
     return (

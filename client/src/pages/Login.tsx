@@ -55,11 +55,17 @@ export default function Login() {
     onSuccess: (data) => {
       console.log('Login successful, setting token:', data.token);
       localStorage.setItem("token", data.token);
+      
+      // Immediately fetch Products, Modules, and Users after successful login
+      dispatch(fetchProducts());
+      dispatch(fetchModules());
+      dispatch(fetchUsers());
+      
       toast({
         title: "Login successful",
         description: `Welcome back, ${data.user.fullName}!`,
       });
-      // Small delay to ensure token is set before reload
+      // Small delay to ensure token is set and data is being fetched before reload
       setTimeout(() => {
         window.location.reload();
       }, 100);
