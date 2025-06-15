@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Plus, Edit, Filter, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { useLookupData } from "@/hooks/useLookupData";
+import { fetchProducts } from "@/store/slices/productSlice";
+import { fetchModules } from "@/store/slices/moduleSlice";
 import { selectPriorityById, selectStatusById } from "@/store/selectors";
 import { TestDataMapper } from "./TestDataMapper";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -22,6 +24,7 @@ import type { TestCase, InsertTestCase } from "@shared/schema";
 
 export const TestCases = () => {
   const { toast } = useToast();
+  const dispatch = useAppDispatch();
   
   // Get products and modules from Redux store
   const products = useAppSelector(state => state.products.products);
@@ -29,6 +32,12 @@ export const TestCases = () => {
   
   // Get lookup data from global store
   const { priorities, statuses } = useLookupData();
+
+  // Fetch products and modules on component mount
+  useEffect(() => {
+    dispatch(fetchProducts());
+    dispatch(fetchModules());
+  }, [dispatch]);
 
   // Filter and pagination state
   const [currentPage, setCurrentPage] = useState(1);
