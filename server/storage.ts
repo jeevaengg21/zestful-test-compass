@@ -273,7 +273,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createModule(module: InsertModule): Promise<Module> {
+  async createModule(module: InsertModule, tenantId: string): Promise<Module> {
     const moduleData: typeof modules.$inferInsert = {
       name: module.name,
       description: module.description,
@@ -282,13 +282,14 @@ export class DatabaseStorage implements IStorage {
       productId: module.productId,
       status: module.status || 'Active',
       developers: module.developers ? ensureArray<string>(module.developers) : [],
-      testers: module.testers ? ensureArray<string>(module.testers) : []
+      testers: module.testers ? ensureArray<string>(module.testers) : [],
+      tenantId
     };
     const result = await db.insert(modules).values(moduleData).returning();
     return result[0];
   }
 
-  async updateModule(id: string, updates: Partial<InsertModule>): Promise<Module | undefined> {
+  async updateModule(id: string, updates: Partial<InsertModule>, tenantId: string): Promise<Module | undefined> {
     const cleanUpdates: Partial<typeof modules.$inferInsert> = {};
     
     // Only copy defined fields to avoid undefined issues
@@ -440,10 +441,10 @@ export class DatabaseStorage implements IStorage {
     if (updates.description !== undefined) cleanUpdates.description = updates.description;
     if (updates.productId !== undefined) cleanUpdates.productId = updates.productId;
     if (updates.title !== undefined) cleanUpdates.title = updates.title;
-    if (updates.priority !== undefined) cleanUpdates.priority = updates.priority;
+    if (updates.priorityId !== undefined) cleanUpdates.priorityId = updates.priorityId;
     if (updates.expectedResult !== undefined) cleanUpdates.expectedResult = updates.expectedResult;
     if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
-    if (updates.status !== undefined) cleanUpdates.status = updates.status;
+    if (updates.statusId !== undefined) cleanUpdates.statusId = updates.statusId;
     if (updates.steps !== undefined) cleanUpdates.steps = ensureArray<string>(updates.steps);
     if (updates.estimatedTime !== undefined) cleanUpdates.estimatedTime = updates.estimatedTime;
     
