@@ -4,6 +4,7 @@ import { Product } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAppSelector } from "@/store/hooks";
 import { selectAllProducts } from "@/store/selectors";
+import { useUserData } from "@/hooks/useUserData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,9 @@ export const Products = () => {
   // Use Redux store for products instead of individual API call
   const reduxProducts = useAppSelector(selectAllProducts);
   const isLoading = useAppSelector(state => state.products.loading);
+  
+  // Get user data for resolving usernames
+  const { getUserName } = useUserData();
   
   // Local products state for immediate UI updates
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
@@ -429,7 +433,7 @@ export const Products = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-1">
                           <Users className="h-4 w-4" />
-                          <span>Owner: {product.owner}</span>
+                          <span>Owner: {getUserName(product.owner)}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Clock className="h-4 w-4" />

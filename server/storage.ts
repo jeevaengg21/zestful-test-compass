@@ -181,6 +181,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getUsersByTenant(tenantId: string): Promise<User[]> {
+    const result = await db.select().from(users).where(eq(users.tenantId, tenantId));
+    return result;
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     const userWithDefaults = {
       ...user,
