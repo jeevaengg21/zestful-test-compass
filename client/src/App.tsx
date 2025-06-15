@@ -8,12 +8,14 @@ import { Provider } from "react-redux";
 import { store } from "@/store/store";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useLookupData } from "@/hooks/useLookupData";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 function AuthenticatedApp() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { isLoading: lookupLoading } = useLookupData();
 
   if (isLoading) {
     return (

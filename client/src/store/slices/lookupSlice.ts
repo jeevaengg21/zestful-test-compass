@@ -75,6 +75,7 @@ export const fetchStatuses = createAsyncThunk(
   'lookup/fetchStatuses',
   async (params: { category?: string } | undefined, { rejectWithValue }) => {
     try {
+      const category = params?.category;
       const url = category ? `/api/statuses?category=${category}` : '/api/statuses';
       const response = await fetch(url);
       if (!response.ok) {
@@ -94,7 +95,7 @@ export const refreshLookupData = createAsyncThunk(
   async (_, { dispatch }) => {
     await Promise.all([
       dispatch(fetchPriorities()),
-      dispatch(fetchStatuses())
+      dispatch(fetchStatuses({ category: 'test_case' }))
     ]);
   }
 );

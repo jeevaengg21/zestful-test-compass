@@ -14,6 +14,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Plus, Edit, Filter, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAppSelector } from "@/store/hooks";
+import { useLookupData } from "@/hooks/useLookupData";
+import { selectPriorityById, selectStatusById } from "@/store/selectors";
 import { TestDataMapper } from "./TestDataMapper";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { TestCase, InsertTestCase } from "@shared/schema";
@@ -24,6 +26,9 @@ export const TestCases = () => {
   // Get products and modules from Redux store
   const products = useAppSelector(state => state.products.products);
   const allModules = useAppSelector(state => state.modules.modules);
+  
+  // Get lookup data from global store
+  const { priorities, statuses } = useLookupData();
 
   // Filter and pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,7 +48,8 @@ export const TestCases = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    priority: "Medium" as "High" | "Medium" | "Low" | "Critical",
+    priorityId: "",
+    statusId: "",
     productId: "",
     moduleId: "",
     steps: "",
@@ -152,10 +158,15 @@ export const TestCases = () => {
   };
 
   const resetForm = () => {
+    // Set default priorityId to Medium priority
+    const mediumPriority = priorities.find(p => p.name === 'Medium');
+    const draftStatus = statuses.find(s => s.name === 'Draft');
+    
     setFormData({
       title: "",
       description: "",
-      priority: "Medium",
+      priorityId: mediumPriority?.id || "",
+      statusId: draftStatus?.id || "",
       productId: "",
       moduleId: "",
       steps: "",
