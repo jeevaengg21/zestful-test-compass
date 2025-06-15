@@ -60,13 +60,35 @@ export const modules = pgTable("modules", {
   tenantId: uuid("tenant_id").references(() => tenants.id),
 });
 
+// Priority lookup table
+export const priorities = pgTable("priorities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  level: integer("level").notNull(),
+  color: text("color").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdDate: timestamp("created_date").defaultNow(),
+});
+
+// Status lookup table  
+export const statuses = pgTable("statuses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // 'test_case', 'test_run', etc.
+  color: text("color").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdDate: timestamp("created_date").defaultNow(),
+});
+
 // Test Cases table
 export const testCases = pgTable("test_cases", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  priority: text("priority").notNull(),
-  status: text("status").notNull().default("Draft"),
+  priorityId: uuid("priority_id").references(() => priorities.id),
+  statusId: uuid("status_id").references(() => statuses.id),
   steps: json("steps"),
   expectedResult: text("expected_result"),
   productId: uuid("product_id").notNull().references(() => products.id),
@@ -235,6 +257,16 @@ export const insertModuleSchema = createInsertSchema(modules).omit({
   createdDate: true,
 });
 
+export const insertPrioritySchema = createInsertSchema(priorities).omit({
+  id: true,
+  createdDate: true,
+});
+
+export const insertStatusSchema = createInsertSchema(statuses).omit({
+  id: true,
+  createdDate: true,
+});
+
 export const insertTestCaseSchema = createInsertSchema(testCases).omit({
   id: true,
   createdDate: true,
@@ -280,6 +312,10 @@ export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertModule = z.infer<typeof insertModuleSchema>;
 export type Module = typeof modules.$inferSelect;
+export type InsertPriority = z.infer<typeof insertPrioritySchema>;
+export type Priority = typeof priorities.$inferSelect;
+export type InsertStatus = z.infer<typeof insertStatusSchema>;
+export type Status = typeof statuses.$inferSelect;
 export type InsertTestCase = z.infer<typeof insertTestCaseSchema>;
 export type TestCase = typeof testCases.$inferSelect;
 export type InsertTestSuite = z.infer<typeof insertTestSuiteSchema>;
