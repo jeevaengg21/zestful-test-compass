@@ -67,6 +67,7 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
     req.tenantId = user.tenantId;
     next();
   } catch (error) {
+    console.error('Authentication error:', error);
     return res.status(500).json({ message: 'Authentication error' });
   }
 };

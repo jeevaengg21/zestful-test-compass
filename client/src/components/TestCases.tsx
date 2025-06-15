@@ -57,29 +57,26 @@ export const TestCases = () => {
     estimatedTime: 5
   });
 
+  // Build query parameters
+  const queryParams = new URLSearchParams({
+    page: currentPage.toString(),
+    limit: '50'
+  });
+  if (search) queryParams.append('search', search);
+  if (productFilter && productFilter !== 'all') queryParams.append('productId', productFilter);
+  if (moduleFilter && moduleFilter !== 'all') queryParams.append('moduleId', moduleFilter);
+  if (priorityFilter && priorityFilter !== 'all') queryParams.append('priority', priorityFilter);
+  if (statusFilter && statusFilter !== 'all') queryParams.append('status', statusFilter);
+
   // Fetch test cases with pagination and filters
-  const { data: testCasesData, isLoading } = useQuery({
-    queryKey: ['/api/test-cases', { 
-      page: currentPage, 
-      search, 
-      productId: productFilter, 
-      moduleId: moduleFilter,
-      priority: priorityFilter,
-      status: statusFilter
-    }],
-    queryFn: () => {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '50'
-      });
-      if (search) params.append('search', search);
-      if (productFilter && productFilter !== 'all') params.append('productId', productFilter);
-      if (moduleFilter && moduleFilter !== 'all') params.append('moduleId', moduleFilter);
-      if (priorityFilter && priorityFilter !== 'all') params.append('priority', priorityFilter);
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-      
-      return fetch(`/api/test-cases?${params}`).then(res => res.json());
-    }
+  const { data: testCasesData, isLoading } = useQuery<{
+    testCases: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>({
+    queryKey: [`/api/test-cases?${queryParams.toString()}`]
   });
 
   // Sync local state when API data changes

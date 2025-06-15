@@ -12,12 +12,15 @@ A comprehensive test management system built as a multi-tenant SaaS application 
 
 ## Recent Changes
 
-### June 15, 2025 - Priority and Status Lookup Tables Implementation
+### June 15, 2025 - Priority and Status Lookup Tables Complete Implementation
 - **Completed**: Successfully migrated Priority and Status fields from text to separate lookup tables with UUID references
 - **Database Schema**: Created normalized `priorities` and `statuses` tables with proper foreign key relationships in `test_cases` table
 - **Lookup Data**: Seeded Priority table with Critical, High, Medium, Low levels and Status table with Draft, Ready, Active, Blocked, Deprecated, Review states
 - **API Endpoints**: Added `/api/priorities` and `/api/statuses` endpoints for global lookup data access
 - **Storage Layer**: Updated all storage methods to handle UUID foreign keys instead of text fields
+- **Frontend Integration**: Created Redux slice for global lookup data with automatic 5-minute refresh functionality
+- **UI Components**: Updated TestCases component with Priority and Status dropdowns using lookup data
+- **Authentication Fix**: Resolved token authentication issue causing "No records displaying" after login
 - **Data Integrity**: Preserved existing test case data while normalizing schema structure
 
 ### Previous Implementations
