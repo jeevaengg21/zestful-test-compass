@@ -181,7 +181,8 @@ export const TestCases = () => {
     setFormData({
       title: testCase.title,
       description: testCase.description,
-      priority: testCase.priority as "High" | "Medium" | "Low" | "Critical",
+      priorityId: testCase.priorityId || '',
+      statusId: testCase.statusId || '',
       productId: testCase.productId,
       moduleId: testCase.moduleId || '',
       steps: Array.isArray(testCase.steps) 
@@ -256,18 +257,34 @@ export const TestCases = () => {
                     rows={3}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="priority">Priority</Label>
-                    <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}>
+                    <Select value={formData.priorityId} onValueChange={(value) => setFormData(prev => ({ ...prev, priorityId: value }))}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Critical">Critical</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Low">Low</SelectItem>
+                        {priorities.map((priority) => (
+                          <SelectItem key={priority.id} value={priority.id}>
+                            {priority.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formData.statusId} onValueChange={(value) => setFormData(prev => ({ ...prev, statusId: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statuses.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -417,10 +434,11 @@ export const TestCases = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All priorities</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
+                  {priorities.map((priority) => (
+                    <SelectItem key={priority.id} value={priority.name}>
+                      {priority.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -432,9 +450,11 @@ export const TestCases = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Deprecated">Deprecated</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
+                  {statuses.map((status) => (
+                    <SelectItem key={status.id} value={status.name}>
+                      {status.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -475,19 +495,21 @@ export const TestCases = () => {
                 testCases.map((testCase: TestCase) => {
                   const product = products.find(p => p.id === testCase.productId);
                   const module = allModules.find(m => m.id === testCase.moduleId);
+                  const priority = priorities.find(p => p.id === testCase.priorityId);
+                  const status = statuses.find(s => s.id === testCase.statusId);
                   
                   return (
                     <TableRow key={testCase.id}>
                       <TableCell className="font-mono text-sm">{testCase.id}</TableCell>
                       <TableCell className="font-medium">{testCase.title}</TableCell>
                       <TableCell>
-                        <Badge className={getPriorityColor(testCase.priority)}>
-                          {testCase.priority}
+                        <Badge className={getPriorityColor(priority?.name || "Medium")}>
+                          {priority?.name || "Medium"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(testCase.status || "Active")}>
-                          {testCase.status || "Active"}
+                        <Badge className={getStatusColor(status?.name || "Draft")}>
+                          {status?.name || "Draft"}
                         </Badge>
                       </TableCell>
                       <TableCell>{product?.name || "N/A"}</TableCell>
@@ -541,18 +563,34 @@ export const TestCases = () => {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="edit-priority">Priority</Label>
-                  <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}>
+                  <Select value={formData.priorityId} onValueChange={(value) => setFormData(prev => ({ ...prev, priorityId: value }))}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Critical">Critical</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
+                      {priorities.map((priority) => (
+                        <SelectItem key={priority.id} value={priority.id}>
+                          {priority.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select value={formData.statusId} onValueChange={(value) => setFormData(prev => ({ ...prev, statusId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
