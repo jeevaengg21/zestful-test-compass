@@ -1,11 +1,11 @@
 import { eq, and, sql, like, or } from "drizzle-orm";
 import { db } from "./db";
 import { 
-  tenants, users, products, modules, testCases, testSuites, testPlans, testRuns, 
+  tenants, users, products, modules, priorities, statuses, testCases, testSuites, testPlans, testRuns, 
   testCaseExecutions, defects, testDataSets, testCaseDataMappings,
   type Tenant, type InsertTenant, type User, type InsertUser, type Product, type InsertProduct,
-  type Module, type InsertModule, type TestCase, type InsertTestCase,
-  type TestSuite, type InsertTestSuite, type TestPlan, type InsertTestPlan,
+  type Module, type InsertModule, type Priority, type InsertPriority, type Status, type InsertStatus,
+  type TestCase, type InsertTestCase, type TestSuite, type InsertTestSuite, type TestPlan, type InsertTestPlan,
   type TestRun, type InsertTestRun, type TestCaseExecution, type InsertTestCaseExecution,
   type Defect, type InsertDefect, type TestDataSet, type InsertTestDataSet,
   type TestCaseDataMapping, type InsertTestCaseDataMapping
@@ -47,6 +47,19 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Priority methods (global lookup data)
+  getAllPriorities(): Promise<Priority[]>;
+  getPriority(id: string): Promise<Priority | undefined>;
+  createPriority(priority: InsertPriority): Promise<Priority>;
+  updatePriority(id: string, updates: Partial<InsertPriority>): Promise<Priority | undefined>;
+  
+  // Status methods (global lookup data)
+  getAllStatuses(): Promise<Status[]>;
+  getStatusesByCategory(category: string): Promise<Status[]>;
+  getStatus(id: string): Promise<Status | undefined>;
+  createStatus(status: InsertStatus): Promise<Status>;
+  updateStatus(id: string, updates: Partial<InsertStatus>): Promise<Status | undefined>;
   
   // Product methods (tenant-aware)
   getAllProducts(tenantId: string): Promise<Product[]>;
@@ -174,6 +187,50 @@ export class DatabaseStorage implements IStorage {
     };
     const result = await db.insert(users).values(userWithDefaults).returning();
     return result[0];
+  }
+
+  // Priority methods (global lookup data)
+  async getAllPriorities(): Promise<Priority[]> {
+    return await db.select().from(priorities).where(eq(priorities.isActive, true)).orderBy(priorities.level);
+  }
+
+  async getPriority(id: string): Promise<Priority | undefined> {
+    const [result] = await db.select().from(priorities).where(eq(priorities.id, id));
+    return result;
+  }
+
+  async createPriority(priority: InsertPriority): Promise<Priority> {
+    const [result] = await db.insert(priorities).values(priority).returning();
+    return result;
+  }
+
+  async updatePriority(id: string, updates: Partial<InsertPriority>): Promise<Priority | undefined> {
+    const [result] = await db.update(priorities).set(updates).where(eq(priorities.id, id)).returning();
+    return result;
+  }
+
+  // Status methods (global lookup data)
+  async getAllStatuses(): Promise<Status[]> {
+    return await db.select().from(statuses).where(eq(statuses.isActive, true)).orderBy(statuses.name);
+  }
+
+  async getStatusesByCategory(category: string): Promise<Status[]> {
+    return await db.select().from(statuses).where(and(eq(statuses.category, category), eq(statuses.isActive, true))).orderBy(statuses.name);
+  }
+
+  async getStatus(id: string): Promise<Status | undefined> {
+    const [result] = await db.select().from(statuses).where(eq(statuses.id, id));
+    return result;
+  }
+
+  async createStatus(status: InsertStatus): Promise<Status> {
+    const [result] = await db.insert(statuses).values(status).returning();
+    return result;
+  }
+
+  async updateStatus(id: string, updates: Partial<InsertStatus>): Promise<Status | undefined> {
+    const [result] = await db.update(statuses).set(updates).where(eq(statuses.id, id)).returning();
+    return result;
   }
 
   // Product methods (tenant-aware)
