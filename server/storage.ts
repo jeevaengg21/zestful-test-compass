@@ -331,8 +331,31 @@ export class DatabaseStorage implements IStorage {
         search 
       } = options || {};
 
-      // Get test cases filtered by tenant
-      let allTestCases = await db.select().from(testCases).where(eq(testCases.tenantId, tenantId));
+      // Get test cases with priority and status joined
+      let query = db
+        .select({
+          id: testCases.id,
+          title: testCases.title,
+          description: testCases.description,
+          priorityId: testCases.priorityId,
+          statusId: testCases.statusId,
+          steps: testCases.steps,
+          expectedResult: testCases.expectedResult,
+          productId: testCases.productId,
+          moduleId: testCases.moduleId,
+          tenantId: testCases.tenantId,
+          createdDate: testCases.createdDate,
+          lastRun: testCases.lastRun,
+          estimatedTime: testCases.estimatedTime,
+          priority: priorities.name,
+          status: statuses.name,
+        })
+        .from(testCases)
+        .leftJoin(priorities, eq(testCases.priorityId, priorities.id))
+        .leftJoin(statuses, eq(testCases.statusId, statuses.id))
+        .where(eq(testCases.tenantId, tenantId));
+
+      let allTestCases = await query;
       
       // Apply filters
       if (productId) {
@@ -398,10 +421,10 @@ export class DatabaseStorage implements IStorage {
       description: testCase.description,
       productId: testCase.productId,
       title: testCase.title,
-      priority: testCase.priority,
+      priorityId: testCase.priorityId,
       expectedResult: testCase.expectedResult,
       moduleId: testCase.moduleId,
-      status: testCase.status || 'Draft',
+      statusId: testCase.statusId,
       steps: testCase.steps ? ensureArray<string>(testCase.steps) : [],
       estimatedTime: testCase.estimatedTime,
       tenantId

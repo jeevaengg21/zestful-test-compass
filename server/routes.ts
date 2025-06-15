@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { authenticateToken, type AuthenticatedRequest } from "./auth";
 import { registerAuthRoutes } from "./authRoutes";
 import { 
-  insertProductSchema, insertModuleSchema, insertTestCaseSchema,
+  insertProductSchema, insertModuleSchema, insertPrioritySchema, insertStatusSchema, insertTestCaseSchema,
   insertTestSuiteSchema, insertTestPlanSchema, insertTestRunSchema,
   insertTestCaseExecutionSchema, insertDefectSchema, insertTestDataSetSchema,
   insertTestCaseDataMappingSchema
@@ -148,6 +148,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete module error:", error);
       res.status(500).json({ error: "Failed to delete module" });
+    }
+  });
+
+  // Priority routes (global lookup data)
+  app.get("/api/priorities", async (req, res) => {
+    try {
+      const priorities = await storage.getAllPriorities();
+      res.json(priorities);
+    } catch (error) {
+      console.error("Get priorities error:", error);
+      res.status(500).json({ error: "Failed to fetch priorities" });
+    }
+  });
+
+  app.post("/api/priorities", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const priorityData = insertPrioritySchema.parse(req.body);
+      const priority = await storage.createPriority(priorityData);
+      res.status(201).json(priority);
+    } catch (error) {
+      console.error("Create priority error:", error);
+      res.status(500).json({ error: "Failed to create priority" });
+    }
+  });
+
+  // Status routes (global lookup data)
+  app.get("/api/statuses", async (req, res) => {
+    try {
+      const category = req.query.category as string;
+      const statuses = category 
+        ? await storage.getStatusesByCategory(category)
+        : await storage.getAllStatuses();
+      res.json(statuses);
+    } catch (error) {
+      console.error("Get statuses error:", error);
+      res.status(500).json({ error: "Failed to fetch statuses" });
+    }
+  });
+
+  app.post("/api/statuses", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const statusData = insertStatusSchema.parse(req.body);
+      const status = await storage.createStatus(statusData);
+      res.status(201).json(status);
+    } catch (error) {
+      console.error("Create status error:", error);
+      res.status(500).json({ error: "Failed to create status" });
     }
   });
 
