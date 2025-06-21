@@ -198,6 +198,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Suite routes (tenant-aware)
+  app.get("/api/test-suites", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testSuites = await storage.getAllTestSuites(tenantId);
+      res.json(testSuites);
+    } catch (error) {
+      console.error("Get test suites error:", error);
+      res.status(500).json({ error: "Failed to fetch test suites" });
+    }
+  });
+
+  app.get("/api/test-suites/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testSuite = await storage.getTestSuite(req.params.id, tenantId);
+      if (!testSuite) {
+        return res.status(404).json({ error: "Test suite not found" });
+      }
+      res.json(testSuite);
+    } catch (error) {
+      console.error("Get test suite error:", error);
+      res.status(500).json({ error: "Failed to fetch test suite" });
+    }
+  });
+
+  app.post("/api/test-suites", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testSuite = await storage.createTestSuite(req.body, tenantId);
+      res.status(201).json(testSuite);
+    } catch (error) {
+      console.error("Create test suite error:", error);
+      res.status(500).json({ error: "Failed to create test suite" });
+    }
+  });
+
+  app.patch("/api/test-suites/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testSuite = await storage.updateTestSuite(req.params.id, req.body, tenantId);
+      if (!testSuite) {
+        return res.status(404).json({ error: "Test suite not found" });
+      }
+      res.json(testSuite);
+    } catch (error) {
+      console.error("Update test suite error:", error);
+      res.status(500).json({ error: "Failed to update test suite" });
+    }
+  });
+
+  app.delete("/api/test-suites/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteTestSuite(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Test suite not found" });
+      }
+      res.json({ message: "Test suite deleted successfully" });
+    } catch (error) {
+      console.error("Delete test suite error:", error);
+      res.status(500).json({ error: "Failed to delete test suite" });
+    }
+  });
+
+  // Test Plan routes (tenant-aware)
+  app.get("/api/test-plans", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testPlans = await storage.getAllTestPlans(tenantId);
+      res.json(testPlans);
+    } catch (error) {
+      console.error("Get test plans error:", error);
+      res.status(500).json({ error: "Failed to fetch test plans" });
+    }
+  });
+
+  app.post("/api/test-plans", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testPlan = await storage.createTestPlan(req.body, tenantId);
+      res.status(201).json(testPlan);
+    } catch (error) {
+      console.error("Create test plan error:", error);
+      res.status(500).json({ error: "Failed to create test plan" });
+    }
+  });
+
+  app.patch("/api/test-plans/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testPlan = await storage.updateTestPlan(req.params.id, req.body, tenantId);
+      if (!testPlan) {
+        return res.status(404).json({ error: "Test plan not found" });
+      }
+      res.json(testPlan);
+    } catch (error) {
+      console.error("Update test plan error:", error);
+      res.status(500).json({ error: "Failed to update test plan" });
+    }
+  });
+
+  app.delete("/api/test-plans/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteTestPlan(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Test plan not found" });
+      }
+      res.json({ message: "Test plan deleted successfully" });
+    } catch (error) {
+      console.error("Delete test plan error:", error);
+      res.status(500).json({ error: "Failed to delete test plan" });
+    }
+  });
+
   // Test Cases routes (tenant-aware)
   app.get("/api/test-cases", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
