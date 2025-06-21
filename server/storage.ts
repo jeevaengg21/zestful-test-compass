@@ -463,25 +463,25 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // Test Suite methods
-  async getAllTestSuites(): Promise<TestSuite[]> {
-    return await db.select().from(testSuites);
+  // Test Suite methods (tenant-aware)
+  async getAllTestSuites(tenantId: string): Promise<TestSuite[]> {
+    return await db.select().from(testSuites).where(eq(testSuites.tenantId, tenantId));
   }
 
-  async getTestSuitesByProduct(productId: string): Promise<TestSuite[]> {
-    return await db.select().from(testSuites).where(eq(testSuites.productId, productId));
+  async getTestSuitesByProduct(productId: string, tenantId: string): Promise<TestSuite[]> {
+    return await db.select().from(testSuites).where(and(eq(testSuites.productId, productId), eq(testSuites.tenantId, tenantId)));
   }
 
-  async getTestSuitesByModule(moduleId: string): Promise<TestSuite[]> {
-    return await db.select().from(testSuites).where(eq(testSuites.moduleId, moduleId));
+  async getTestSuitesByModule(moduleId: string, tenantId: string): Promise<TestSuite[]> {
+    return await db.select().from(testSuites).where(and(eq(testSuites.moduleId, moduleId), eq(testSuites.tenantId, tenantId)));
   }
 
-  async getTestSuite(id: string): Promise<TestSuite | undefined> {
-    const result = await db.select().from(testSuites).where(eq(testSuites.id, id));
+  async getTestSuite(id: string, tenantId: string): Promise<TestSuite | undefined> {
+    const result = await db.select().from(testSuites).where(and(eq(testSuites.id, id), eq(testSuites.tenantId, tenantId)));
     return result[0];
   }
 
-  async createTestSuite(testSuite: InsertTestSuite): Promise<TestSuite> {
+  async createTestSuite(testSuite: InsertTestSuite, tenantId: string): Promise<TestSuite> {
     const id = `TS_${crypto.randomUUID()}`;
     
     const testSuiteData: typeof testSuites.$inferInsert = {
@@ -492,13 +492,14 @@ export class DatabaseStorage implements IStorage {
       moduleId: testSuite.moduleId,
       owner: testSuite.owner,
       status: testSuite.status || 'Active',
-      testCaseIds: testSuite.testCaseIds ? ensureArray<string>(testSuite.testCaseIds) : []
+      testCaseIds: testSuite.testCaseIds ? ensureArray<string>(testSuite.testCaseIds) : [],
+      tenantId
     };
     const result = await db.insert(testSuites).values(testSuiteData).returning();
     return result[0];
   }
 
-  async updateTestSuite(id: string, updates: Partial<InsertTestSuite>): Promise<TestSuite | undefined> {
+  async updateTestSuite(id: string, updates: Partial<InsertTestSuite>, tenantId: string): Promise<TestSuite | undefined> {
     const cleanUpdates: Partial<typeof testSuites.$inferInsert> = {};
     
     // Only copy defined fields to avoid undefined issues
@@ -510,12 +511,12 @@ export class DatabaseStorage implements IStorage {
     if (updates.status !== undefined) cleanUpdates.status = updates.status;
     if (updates.testCaseIds !== undefined) cleanUpdates.testCaseIds = ensureArray<string>(updates.testCaseIds);
     
-    const result = await db.update(testSuites).set(cleanUpdates).where(eq(testSuites.id, id)).returning();
+    const result = await db.update(testSuites).set(cleanUpdates).where(and(eq(testSuites.id, id), eq(testSuites.tenantId, tenantId))).returning();
     return result[0];
   }
 
-  async deleteTestSuite(id: string): Promise<boolean> {
-    const result = await db.delete(testSuites).where(eq(testSuites.id, id));
+  async deleteTestSuite(id: string, tenantId: string): Promise<boolean> {
+    const result = await db.delete(testSuites).where(and(eq(testSuites.id, id), eq(testSuites.tenantId, tenantId)));
     return (result.rowCount || 0) > 0;
   }
 
@@ -605,21 +606,21 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // Test Run methods
-  async getAllTestRuns(): Promise<TestRun[]> {
-    return await db.select().from(testRuns);
+  // Test Run methods (tenant-aware)
+  async getAllTestRuns(tenantId: string): Promise<TestRun[]> {
+    return await db.select().from(testRuns).where(eq(testRuns.tenantId, tenantId));
   }
 
-  async getTestRunsByPlan(testPlanId: string): Promise<TestRun[]> {
-    return await db.select().from(testRuns).where(eq(testRuns.testPlanId, testPlanId));
+  async getTestRunsByPlan(testPlanId: string, tenantId: string): Promise<TestRun[]> {
+    return await db.select().from(testRuns).where(and(eq(testRuns.testPlanId, testPlanId), eq(testRuns.tenantId, tenantId)));
   }
 
-  async getTestRun(id: string): Promise<TestRun | undefined> {
-    const result = await db.select().from(testRuns).where(eq(testRuns.id, id));
+  async getTestRun(id: string, tenantId: string): Promise<TestRun | undefined> {
+    const result = await db.select().from(testRuns).where(and(eq(testRuns.id, id), eq(testRuns.tenantId, tenantId)));
     return result[0];
   }
 
-  async createTestRun(testRun: InsertTestRun): Promise<TestRun> {
+  async createTestRun(testRun: InsertTestRun, tenantId: string): Promise<TestRun> {
     const id = `TR_${crypto.randomUUID()}`;
     
     const testRunData: typeof testRuns.$inferInsert = {
@@ -645,13 +646,14 @@ export class DatabaseStorage implements IStorage {
       blockedTestCases: testRun.blockedTestCases || 0,
       skippedTestCases: testRun.skippedTestCases || 0,
       estimatedHours: testRun.estimatedHours || 0,
-      actualHours: testRun.actualHours || null
+      actualHours: testRun.actualHours || null,
+      tenantId
     };
     const result = await db.insert(testRuns).values(testRunData).returning();
     return result[0];
   }
 
-  async updateTestRun(id: string, updates: Partial<InsertTestRun>): Promise<TestRun | undefined> {
+  async updateTestRun(id: string, updates: Partial<InsertTestRun>, tenantId: string): Promise<TestRun | undefined> {
     const cleanUpdates: Partial<typeof testRuns.$inferInsert> = {};
     
     // Only copy defined fields to avoid undefined issues
@@ -678,12 +680,12 @@ export class DatabaseStorage implements IStorage {
     if (updates.estimatedHours !== undefined) cleanUpdates.estimatedHours = updates.estimatedHours;
     if (updates.actualHours !== undefined) cleanUpdates.actualHours = updates.actualHours;
     
-    const result = await db.update(testRuns).set(cleanUpdates).where(eq(testRuns.id, id)).returning();
+    const result = await db.update(testRuns).set(cleanUpdates).where(and(eq(testRuns.id, id), eq(testRuns.tenantId, tenantId))).returning();
     return result[0];
   }
 
-  async deleteTestRun(id: string): Promise<boolean> {
-    const result = await db.delete(testRuns).where(eq(testRuns.id, id));
+  async deleteTestRun(id: string, tenantId: string): Promise<boolean> {
+    const result = await db.delete(testRuns).where(and(eq(testRuns.id, id), eq(testRuns.tenantId, tenantId)));
     return (result.rowCount || 0) > 0;
   }
 
