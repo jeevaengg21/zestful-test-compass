@@ -3,8 +3,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -53,14 +66,14 @@ export default function Login() {
       return response.json();
     },
     onSuccess: (data) => {
-      console.log('Login successful, setting token:', data.token);
+      console.log("Login successful, setting token:", data.token);
       localStorage.setItem("token", data.token);
-      
+
       // Immediately fetch Products, Modules, and Users after successful login
       dispatch(fetchProducts());
       dispatch(fetchModules());
       dispatch(fetchUsers());
-      
+
       toast({
         title: "Login successful",
         description: `Welcome back, ${data.user.fullName}!`,
@@ -80,7 +93,7 @@ export default function Login() {
   });
 
   const onSubmit = (data: LoginForm) => {
-    console.log('Submitting login form:', data);
+    console.log("Submitting login form:", data);
     setIsLoading(true);
     loginMutation.mutate(data);
   };
@@ -136,21 +149,29 @@ export default function Login() {
                 className="w-full"
                 disabled={isLoading || loginMutation.isPending}
               >
-                {isLoading || loginMutation.isPending ? "Signing in..." : "Sign In"}
+                {isLoading || loginMutation.isPending
+                  ? "Signing in..."
+                  : "Sign In"}
               </Button>
             </form>
           </Form>
-          
+
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <p className="font-medium text-sm text-gray-900 dark:text-white mb-2">Demo Accounts:</p>
+            <p className="font-medium text-sm text-gray-900 dark:text-white mb-2">
+              Demo Accounts:
+            </p>
             <div className="space-y-3">
               <div className="p-2 bg-white dark:bg-gray-700 rounded border">
-                <p className="font-medium text-blue-600 dark:text-blue-400">TechCorp Inc</p>
+                <p className="font-medium text-blue-600 dark:text-blue-400">
+                  TechCorp Inc
+                </p>
                 <p className="text-sm">Email: admin@techcorp.com</p>
                 <p className="text-xs text-gray-500">Password: password123</p>
               </div>
               <div className="p-2 bg-white dark:bg-gray-700 rounded border">
-                <p className="font-medium text-green-600 dark:text-green-400">StartupLabs</p>
+                <p className="font-medium text-green-600 dark:text-green-400">
+                  StartupLabs
+                </p>
                 <p className="text-sm">Email: admin@startup.com</p>
                 <p className="text-xs text-gray-500">Password: password123</p>
               </div>
