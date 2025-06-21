@@ -15,6 +15,7 @@ import type { AppDispatch } from "@/store/store";
 import { fetchProducts } from "@/store/slices/productSlice";
 import { fetchModules } from "@/store/slices/moduleSlice";
 import { fetchUsers } from "@/store/slices/userSlice";
+import { fetchTestSuites } from "@/store/slices/testSlice";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -24,12 +25,13 @@ function AuthenticatedApp() {
   const { isLoading: lookupLoading } = useLookupData();
   const dispatch = useDispatch<AppDispatch>();
 
-  // Immediately fetch Products, Modules, and Users when authenticated
+  // Immediately fetch Products, Modules, Users, and Test Suites when authenticated
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       dispatch(fetchProducts());
       dispatch(fetchModules());
       dispatch(fetchUsers());
+      dispatch(fetchTestSuites());
     }
   }, [isAuthenticated, isLoading, dispatch]);
 

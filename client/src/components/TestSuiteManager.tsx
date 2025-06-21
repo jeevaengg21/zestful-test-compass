@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestSuite, updateTestSuite, TestSuite } from "@/store/slices/testSlice";
+import { createTestSuiteAsync, updateTestSuiteAsync, deleteTestSuiteAsync, TestSuite } from "@/store/slices/testSlice";
 import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectAllModules } from "@/store/selectors";
 import { 
   Plus, 
@@ -164,7 +164,7 @@ export const TestSuiteManager = () => {
     return null;
   };
 
-  const handleCreateTestSuite = () => {
+  const handleCreateTestSuite = async () => {
     const error = validateForm();
     if (error) {
       alert(error); // In a real app, use proper toast notifications
@@ -172,18 +172,23 @@ export const TestSuiteManager = () => {
     }
 
     console.log("Creating test suite:", formData);
-    dispatch(addTestSuite({
-      name: formData.name,
-      description: formData.description,
-      productId: formData.productId,
-      moduleId: formData.moduleId,
-      testCaseIds: [],
-      status: formData.status,
-      owner: formData.owner
-    }));
-    
-    setIsCreateDialogOpen(false);
-    resetForm();
+    try {
+      await dispatch(createTestSuiteAsync({
+        name: formData.name,
+        description: formData.description,
+        productId: formData.productId,
+        moduleId: formData.moduleId,
+        testCaseIds: [],
+        status: formData.status,
+        owner: formData.owner
+      })).unwrap();
+      
+      setIsCreateDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to create test suite:', error);
+      alert('Failed to create test suite. Please try again.');
+    }
   };
 
   const handleEditTestSuite = (suite: TestSuite) => {
@@ -231,27 +236,37 @@ export const TestSuiteManager = () => {
     setIsManageTestCasesOpen(true);
   };
 
-  const handleAddTestCase = (testCaseId: string) => {
+  const handleAddTestCase = async (testCaseId: string) => {
     if (!currentSelectedSuite) return;
     const updatedTestCaseIds = [...currentSelectedSuite.testCaseIds, testCaseId];
     console.log("Adding test case:", testCaseId, "Updated IDs:", updatedTestCaseIds);
-    dispatch(updateTestSuite({ 
-      id: currentSelectedSuite.id, 
-      updates: { testCaseIds: updatedTestCaseIds } 
-    }));
+    
+    try {
+      await dispatch(updateTestSuiteAsync({ 
+        id: currentSelectedSuite.id, 
+        updates: { testCaseIds: updatedTestCaseIds } 
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to add test case to suite:', error);
+    }
   };
 
-  const handleRemoveTestCase = (testCaseId: string) => {
+  const handleRemoveTestCase = async (testCaseId: string) => {
     if (!currentSelectedSuite) return;
     const updatedTestCaseIds = currentSelectedSuite.testCaseIds.filter(id => id !== testCaseId);
     console.log("Removing test case:", testCaseId, "Updated IDs:", updatedTestCaseIds);
-    dispatch(updateTestSuite({ 
-      id: currentSelectedSuite.id, 
-      updates: { testCaseIds: updatedTestCaseIds } 
-    }));
+    
+    try {
+      await dispatch(updateTestSuiteAsync({ 
+        id: currentSelectedSuite.id, 
+        updates: { testCaseIds: updatedTestCaseIds } 
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to remove test case from suite:', error);
+    }
   };
 
-  const handleMoveUp = (testCaseId: string) => {
+  const handleMoveUp = async (testCaseId: string) => {
     if (!currentSelectedSuite) return;
     const currentIndex = currentSelectedSuite.testCaseIds.indexOf(testCaseId);
     if (currentIndex > 0) {
@@ -259,14 +274,18 @@ export const TestSuiteManager = () => {
       [updatedTestCaseIds[currentIndex - 1], updatedTestCaseIds[currentIndex]] = 
       [updatedTestCaseIds[currentIndex], updatedTestCaseIds[currentIndex - 1]];
       
-      dispatch(updateTestSuite({ 
-        id: currentSelectedSuite.id, 
-        updates: { testCaseIds: updatedTestCaseIds } 
-      }));
+      try {
+        await dispatch(updateTestSuiteAsync({ 
+          id: currentSelectedSuite.id, 
+          updates: { testCaseIds: updatedTestCaseIds } 
+        })).unwrap();
+      } catch (error) {
+        console.error('Failed to reorder test cases:', error);
+      }
     }
   };
 
-  const handleMoveDown = (testCaseId: string) => {
+  const handleMoveDown = async (testCaseId: string) => {
     if (!currentSelectedSuite) return;
     const currentIndex = currentSelectedSuite.testCaseIds.indexOf(testCaseId);
     if (currentIndex < currentSelectedSuite.testCaseIds.length - 1) {
@@ -274,10 +293,14 @@ export const TestSuiteManager = () => {
       [updatedTestCaseIds[currentIndex], updatedTestCaseIds[currentIndex + 1]] = 
       [updatedTestCaseIds[currentIndex + 1], updatedTestCaseIds[currentIndex]];
       
-      dispatch(updateTestSuite({ 
-        id: currentSelectedSuite.id, 
-        updates: { testCaseIds: updatedTestCaseIds } 
-      }));
+      try {
+        await dispatch(updateTestSuiteAsync({ 
+          id: currentSelectedSuite.id, 
+          updates: { testCaseIds: updatedTestCaseIds } 
+        })).unwrap();
+      } catch (error) {
+        console.error('Failed to reorder test cases:', error);
+      }
     }
   };
 
