@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, uuid, varchar, sql } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -106,7 +106,7 @@ export const testSuites = pgTable("test_suites", {
   description: text("description").notNull(),
   productId: uuid("product_id").notNull(),
   moduleId: uuid("module_id").notNull(),
-  testCaseIds: text("test_case_ids").array().default(sql`'{}'::text[]`),
+  testCaseIds: text("test_case_ids").array().default([]),
   status: text("status").notNull().default("Active"),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
