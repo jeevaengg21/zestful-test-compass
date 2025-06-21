@@ -106,7 +106,7 @@ export const testSuites = pgTable("test_suites", {
   description: text("description").notNull(),
   productId: uuid("product_id").notNull(),
   moduleId: uuid("module_id").notNull(),
-  testCaseIds: json("test_case_ids").$type<string[]>(),
+  testCaseIds: text("test_case_ids").array().default(sql`'{}'::text[]`),
   status: text("status").notNull().default("Active"),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),

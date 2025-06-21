@@ -484,6 +484,9 @@ export class DatabaseStorage implements IStorage {
   async createTestSuite(testSuite: InsertTestSuite, tenantId: string): Promise<TestSuite> {
     const id = `TS_${crypto.randomUUID()}`;
     
+    // Ensure testCaseIds is properly handled as an array
+    const testCaseIds = Array.isArray(testSuite.testCaseIds) ? testSuite.testCaseIds : [];
+    
     const testSuiteData: typeof testSuites.$inferInsert = {
       id,
       name: testSuite.name,
@@ -492,7 +495,7 @@ export class DatabaseStorage implements IStorage {
       moduleId: testSuite.moduleId,
       owner: testSuite.owner,
       status: testSuite.status || 'Active',
-      testCaseIds: testSuite.testCaseIds ? ensureArray<string>(testSuite.testCaseIds) : [],
+      testCaseIds: testCaseIds,
       tenantId
     };
     const result = await db.insert(testSuites).values(testSuiteData).returning();
@@ -509,7 +512,9 @@ export class DatabaseStorage implements IStorage {
     if (updates.moduleId !== undefined) cleanUpdates.moduleId = updates.moduleId;
     if (updates.owner !== undefined) cleanUpdates.owner = updates.owner;
     if (updates.status !== undefined) cleanUpdates.status = updates.status;
-    if (updates.testCaseIds !== undefined) cleanUpdates.testCaseIds = ensureArray<string>(updates.testCaseIds);
+    if (updates.testCaseIds !== undefined) {
+      cleanUpdates.testCaseIds = Array.isArray(updates.testCaseIds) ? updates.testCaseIds : [];
+    }
     
     const result = await db.update(testSuites).set(cleanUpdates).where(and(eq(testSuites.id, id), eq(testSuites.tenantId, tenantId))).returning();
     return result[0];
