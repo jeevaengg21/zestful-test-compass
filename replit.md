@@ -12,13 +12,15 @@ A comprehensive test management system built as a multi-tenant SaaS application 
 
 ## Recent Changes
 
-### June 22, 2025 - Critical Tenant Isolation Security Fix
+### June 22, 2025 - Critical Tenant Isolation Security Fix & Test Suite Persistence
 - **Security Enhancement**: Fixed critical tenant isolation vulnerability in Test Suite, Test Plan, Test Run, and related storage methods
 - **Storage Layer Updates**: All test-related storage methods now enforce strict tenant filtering using `AND` conditions with `tenantId`
 - **Method Updates**: Updated 40+ storage methods to include `tenantId` parameters and proper `WHERE` clause filtering
 - **Data Protection**: Ensured Test Suites, Plans, Runs, Executions, Defects, and Test Data are completely isolated between tenants
 - **API Security**: All CRUD operations now require `tenantId` verification preventing cross-tenant data access
-- **Global Store Integration**: Products and Modules automatically fetched after login and available in Redux store
+- **Test Suite Database Fix**: Resolved test suite creation persistence issue by adding missing API routes and fixing database schema alignment
+- **API Integration**: Added complete CRUD API endpoints for test suites with proper async Redux integration
+- **Global Store Integration**: Products, Modules, Users, and Test Suites automatically fetched after login and available in Redux store
 - **User Management**: Implemented comprehensive user data resolution displaying actual usernames instead of UUIDs
 
 ### June 15, 2025 - Priority and Status Lookup Tables Complete Implementation
