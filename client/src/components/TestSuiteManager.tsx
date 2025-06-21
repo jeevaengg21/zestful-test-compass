@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { createTestSuiteAsync, updateTestSuiteAsync, deleteTestSuiteAsync, TestSuite } from "@/store/slices/testSlice";
-import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectAllModules } from "@/store/selectors";
+import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectAllModules, selectAllUsers } from "@/store/selectors";
 import { 
   Plus, 
   Search, 
@@ -36,6 +36,7 @@ export const TestSuiteManager = () => {
   const testCases = useAppSelector(selectAllTestCases);
   const products = useAppSelector(selectAllProducts);
   const allModules = useAppSelector(selectAllModules);
+  const users = useAppSelector(selectAllUsers);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -407,12 +408,18 @@ export const TestSuiteManager = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="suiteOwner">Owner *</Label>
-                    <Input
-                      id="suiteOwner"
-                      value={formData.owner}
-                      onChange={(e) => handleInputChange("owner", e.target.value)}
-                      placeholder="Enter suite owner name"
-                    />
+                    <Select value={formData.owner} onValueChange={(value) => handleInputChange("owner", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select owner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.fullName || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="suiteStatus">Status</Label>
@@ -509,12 +516,18 @@ export const TestSuiteManager = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="editSuiteOwner">Owner *</Label>
-                <Input
-                  id="editSuiteOwner"
-                  value={formData.owner}
-                  onChange={(e) => handleInputChange("owner", e.target.value)}
-                  placeholder="Enter suite owner name"
-                />
+                <Select value={formData.owner} onValueChange={(value) => handleInputChange("owner", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select owner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName || user.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="editSuiteStatus">Status</Label>
