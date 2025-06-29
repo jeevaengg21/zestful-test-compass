@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -163,6 +162,53 @@ export function TestExecutionDrawer({
           </div>
         </DrawerHeader>
         
+        {!selectedTestCase && selectedExecution && (
+          <div className="flex-1 overflow-y-auto bg-gray-50/30 p-6">
+            <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-6 text-center">
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">Test Case Not Found</h3>
+              <p className="text-sm text-yellow-700 mb-4">
+                Could not find details for test case with ID: <span className="font-mono">{selectedExecution.testCaseId}</span>
+              </p>
+              <div className="bg-white rounded-lg border border-yellow-200 p-4 mt-4 text-left">
+                <h4 className="text-sm font-medium text-yellow-800 mb-2">Test Case Execution Record:</h4>
+                <pre className="text-xs text-gray-600 overflow-auto max-h-40 whitespace-pre-wrap">
+                  {JSON.stringify(selectedExecution, null, 2)}
+                </pre>
+              </div>
+              <div className="mt-6">
+                <p className="text-sm text-gray-600 mb-2">You can still record results for this test:</p>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    onClick={() => onExecutionUpdate(selectedExecution.id, "Passed")}
+                    variant="outline"
+                    className="border-green-500 text-green-600 hover:bg-green-50"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Pass
+                  </Button>
+                  <Button
+                    onClick={() => onExecutionUpdate(selectedExecution.id, "Failed")}
+                    variant="outline"
+                    className="border-red-500 text-red-600 hover:bg-red-50"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Fail
+                  </Button>
+                  <Button
+                    onClick={() => onExecutionUpdate(selectedExecution.id, "Skipped")}
+                    variant="outline"
+                    className="border-gray-500 text-gray-600 hover:bg-gray-50"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Skip
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {selectedTestCase && selectedExecution && (
           <div className="flex-1 overflow-y-auto bg-gray-50/30 select-text">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
@@ -170,54 +216,76 @@ export function TestExecutionDrawer({
               <div className="space-y-6 select-text">
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
                   <div className="flex items-center gap-3 mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 select-text">{selectedTestCase.title}</h3>
-                    <Badge className={`${getPriorityColor(selectedTestCase.priority)} border font-medium select-text`}>
-                      {selectedTestCase.priority}
+                    <h3 className="text-lg font-semibold text-gray-900 select-text">
+                      {selectedTestCase.title || 'Untitled Test Case'}
+                    </h3>
+                    <Badge className={`${getPriorityColor(selectedTestCase.priority || 'Medium')} border font-medium select-text`}>
+                      {selectedTestCase.priority || 'Medium'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-700 mb-6 leading-relaxed select-text">{selectedTestCase.description}</p>
+                  <p className="text-sm text-gray-700 mb-6 leading-relaxed select-text">
+                    {selectedTestCase.description || 'No description provided.'}
+                  </p>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm select-text">
                     <div className="flex items-center gap-2 select-text">
                       <Timer className="h-4 w-4 text-gray-600" />
                       <span className="text-gray-900 font-medium select-text">Est. Time:</span>
-                      <span className="text-gray-700 select-text">{selectedTestCase.estimatedTime}m</span>
+                      <span className="text-gray-700 select-text">{selectedTestCase.estimatedTime || 'N/A'}m</span>
                     </div>
                     <div className="flex items-center gap-2 select-text">
                       <Calendar className="h-4 w-4 text-gray-600" />
                       <span className="text-gray-900 font-medium select-text">Created:</span>
-                      <span className="text-gray-700 select-text">{selectedTestCase.createdDate}</span>
+                      <span className="text-gray-700 select-text">{selectedTestCase.createdDate || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2 select-text">
                       <Play className="h-4 w-4 text-gray-600" />
                       <span className="text-gray-900 font-medium select-text">Last Run:</span>
-                      <span className="text-gray-700 select-text">{selectedTestCase.lastRun}</span>
+                      <span className="text-gray-700 select-text">{selectedTestCase.lastRun || 'Never'}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
                   <h4 className="font-semibold text-gray-900 mb-4 text-base select-text">Test Steps</h4>
-                  <ol className="space-y-3 select-text">
-                    {(Array.isArray(selectedTestCase.steps) ? selectedTestCase.steps : []).map((step: any, index: number) => (
-                      <li key={index} className="flex gap-3 select-text">
-                        <span className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5 select-none">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm text-gray-800 leading-relaxed select-text">
-                          {typeof step === 'object' ? step.action || step.step || JSON.stringify(step) : step}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
+                  
+                  {/* Show message if no steps available */}
+                  {(!selectedTestCase.steps || !Array.isArray(selectedTestCase.steps) || selectedTestCase.steps.length === 0) ? (
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 select-text">
+                      <p className="text-sm text-gray-500 italic">No test steps defined for this test case.</p>
+                    </div>
+                  ) : (
+                    <ol className="space-y-3 select-text">
+                      {selectedTestCase.steps.map((step: any, index: number) => (
+                        <li key={index} className="flex gap-3 select-text">
+                          <span className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5 select-none">
+                            {index + 1}
+                          </span>
+                          <span className="text-sm text-gray-800 leading-relaxed select-text">
+                            {typeof step === 'object' ? step.action || step.step || JSON.stringify(step) : step}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm select-text">
                   <h4 className="font-semibold text-gray-900 mb-4 text-base select-text">Expected Result</h4>
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200 select-text">
                     <p className="text-sm text-green-800 leading-relaxed font-medium select-text">
-                      {selectedTestCase.expectedResult}
+                      {selectedTestCase.expectedResult || 'No expected result defined.'}
                     </p>
+                  </div>
+                </div>
+
+                {/* Debug section to show raw test case data */}
+                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 select-text">
+                  <h4 className="font-semibold text-gray-700 mb-2 text-xs select-text">Test Case Data</h4>
+                  <div className="overflow-auto max-h-32">
+                    <pre className="text-xs text-gray-600 whitespace-pre-wrap break-all select-text">
+                      {JSON.stringify(selectedTestCase, null, 2)}
+                    </pre>
                   </div>
                 </div>
 
@@ -249,21 +317,6 @@ export function TestExecutionDrawer({
                           )}
                         </div>
                       ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Debug info when no test data */}
-                {testDataSets.length === 0 && selectedTestCase && (
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 select-text">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Database className="h-4 w-4 text-yellow-600" />
-                      <h4 className="font-semibold text-yellow-800 select-text">No Test Data Found</h4>
-                    </div>
-                    <div className="text-xs text-yellow-700 space-y-1 font-medium select-text">
-                      <p className="select-text">Test Case ID: {selectedTestCase.id}</p>
-                      <p className="select-text">Available mappings: {allMappings.filter(m => m.testCaseId === selectedTestCase.id).length}</p>
-                      <p className="select-text">To add test data, use the Test Data Mapper in the test case details.</p>
                     </div>
                   </div>
                 )}

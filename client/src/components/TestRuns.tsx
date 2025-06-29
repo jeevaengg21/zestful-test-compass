@@ -22,7 +22,15 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAllTestRuns, selectAllUsers, selectAllTestPlans } from "@/store/selectors";
-import { startTestRun, pauseTestRun, completeTestRun, fetchTestRuns } from "@/store/slices/testRunSlice";
+import { 
+  startTestRun, 
+  pauseTestRun, 
+  completeTestRun, 
+  fetchTestRuns, 
+  fetchTestCaseExecutions, 
+  fetchTestCasesForSuite,
+  generateTestCaseExecutionsAsync 
+} from "@/store/slices/testRunSlice";
 import { TestRunForm } from "./TestRunForm";
 import { TestRunEditForm } from "./TestRunEditForm";
 
@@ -43,7 +51,15 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
   const [selectedTestRun, setSelectedTestRun] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchTestRuns());
+    console.log("TestRuns component mounted, dispatching fetchTestRuns");
+    dispatch(fetchTestRuns())
+      .unwrap()
+      .then(response => {
+        console.log("Test runs fetched successfully:", response);
+      })
+      .catch(error => {
+        console.error("Error fetching test runs:", error);
+      });
   }, [dispatch]);
 
   const getStatusColor = (status: string) => {
@@ -101,8 +117,67 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
     }
   });
 
-  const handleStartRun = (runId: string) => {
-    dispatch(startTestRun(runId));
+  const handleStartRun = async (runId: string) => {
+    try {
+      // First, get the test run object
+      const testRun = testRuns.find(run => run.id === runId);
+      if (!testRun) {
+        console.error("Test run not found:", runId);
+        return;
+      }
+
+      console.log("Starting test run:", testRun);
+
+      // Check if test case executions already exist for this run
+      const existingExecutions = await dispatch(fetchTestCaseExecutions(runId)).unwrap();
+      console.log("Existing executions:", existingExecutions);
+      
+      // Only generate executions if none exist
+      if (existingExecutions.length === 0) {
+        console.log("No existing executions found, generating new ones");
+        
+        // Get all test cases from the test suites in this test run
+        let allTestCases: any[] = [];
+        
+        for (const suiteId of testRun.testSuiteIds) {
+          try {
+            // Fetch test cases for this suite
+            console.log(`Fetching test cases for suite ${suiteId}`);
+            const suiteCases = await dispatch(fetchTestCasesForSuite(suiteId)).unwrap();
+            console.log(`Got ${suiteCases.length} test cases for suite ${suiteId}:`, suiteCases);
+            allTestCases = [...allTestCases, ...suiteCases];
+          } catch (error) {
+            console.error(`Error fetching test cases for suite ${suiteId}:`, error);
+          }
+        }
+
+        console.log(`Collected ${allTestCases.length} test cases for execution:`, allTestCases);
+
+        // Create test case execution records if we have test cases
+        if (allTestCases.length > 0) {
+          try {
+            console.log("Generating test case executions");
+            await dispatch(generateTestCaseExecutionsAsync({
+              testRunId: runId,
+              testCases: allTestCases
+            })).unwrap();
+            console.log("Successfully generated test case executions");
+          } catch (error) {
+            console.error("Error generating test case executions:", error);
+          }
+        } else {
+          console.warn("No test cases found to generate executions for");
+        }
+      } else {
+        console.log(`Found ${existingExecutions.length} existing executions, not generating new ones`);
+      }
+      
+      // Finally mark the test run as started
+      dispatch(startTestRun(runId));
+      
+    } catch (error) {
+      console.error("Error starting test run:", error);
+    }
   };
 
   const handlePauseRun = (runId: string) => {

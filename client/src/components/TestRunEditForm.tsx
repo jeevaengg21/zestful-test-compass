@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAllTestPlans, selectAllUsers, selectAllTestSuites, selectAllTestCases } from "@/store/selectors";
-import { updateTestRun, TestRun } from "@/store/slices/testRunSlice";
+import { updateTestRunAsync, TestRun } from "@/store/slices/testRunSlice";
 
 interface TestRunEditFormProps {
   testRun: TestRun;
@@ -76,7 +76,7 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
     return testCaseIds;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const totalTestCases = calculateTotalTestCases();
@@ -104,7 +104,7 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
     // Get test case IDs if test suites changed
     const testCaseIds = testSuitesChanged ? getTestCaseIdsFromSuites() : undefined;
 
-    dispatch(updateTestRun({ 
+    await dispatch(updateTestRunAsync({ 
       id: testRun.id, 
       updates,
       testCaseIds 
@@ -292,7 +292,7 @@ export function TestRunEditForm({ testRun, onClose }: TestRunEditFormProps) {
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!formData.testPlanId || formData.testSuiteIds.length === 0}>
+        <Button type="submit" disabled={!formData.testPlanId}>
           Update Test Run
         </Button>
       </div>

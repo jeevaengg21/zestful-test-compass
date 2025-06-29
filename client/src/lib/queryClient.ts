@@ -45,13 +45,21 @@ export async function apiRequest(
   const token = localStorage.getItem('token');
   
   console.log(`[API Request] ${options.method || 'GET'} ${url}`);
-  if (options.body) {
-    console.log('[API Request] Request body:', options.body);
+  
+  // Create a new options object to avoid modifying the original
+  const requestOptions = { ...options };
+  
+  // If there's a body and it's not already a string, stringify it
+  if (requestOptions.body && typeof requestOptions.body !== 'string') {
+    console.log('[API Request] Stringifying request body:', requestOptions.body);
+    requestOptions.body = JSON.stringify(requestOptions.body);
+  } else if (requestOptions.body) {
+    console.log('[API Request] Request body is already a string');
   }
   
   try {
     const response = await fetch(url, {
-      ...options,
+      ...requestOptions,
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),

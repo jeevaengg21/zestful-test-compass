@@ -781,6 +781,346 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  /**
+   * @swagger
+   * /api/test-runs:
+   *   get:
+   *     summary: Get all test runs for the tenant
+   *     tags: [Test Runs]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: A list of test runs
+   *       500:
+   *         description: Server error
+   */
+  app.get("/api/test-runs", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      console.log(`Fetching test runs for tenant: ${tenantId}`);
+      const testRuns = await storage.getAllTestRuns(tenantId);
+      console.log(`Found ${testRuns.length} test runs for tenant ${tenantId}`);
+      res.json(testRuns);
+    } catch (error) {
+      console.error("Get test runs error:", error);
+      res.status(500).json({ error: "Failed to fetch test runs" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/test-runs/{id}:
+   *   get:
+   *     summary: Get a single test run by ID
+   *     tags: [Test Runs]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID of the test run
+   *     responses:
+   *       200:
+   *         description: Test run details
+   *       404:
+   *         description: Test run not found
+   *       500:
+   *         description: Server error
+   */
+  app.get("/api/test-runs/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testRun = await storage.getTestRun(req.params.id, tenantId);
+      if (!testRun) {
+        return res.status(404).json({ error: "Test run not found" });
+      }
+      res.json(testRun);
+    } catch (error) {
+      console.error("Get test run error:", error);
+      res.status(500).json({ error: "Failed to fetch test run" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/test-runs:
+   *   post:
+   *     summary: Create a new test run
+   *     tags: [Test Runs]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *     responses:
+   *       201:
+   *         description: Test run created successfully
+   *       500:
+   *         description: Server error
+   */
+  app.post("/api/test-runs", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      console.log("Creating test run with data:", req.body);
+      
+      // Make a copy of the request body to avoid modifying it directly
+      const testRunData = { ...req.body };
+      
+      // Process date fields to ensure they are valid Date objects for the database
+      if (testRunData.startDate) {
+        // If it's already a Date object, keep it, otherwise create a new Date object
+        if (!(testRunData.startDate instanceof Date)) {
+          console.log(`Converting startDate from ${typeof testRunData.startDate}:`, testRunData.startDate);
+          testRunData.startDate = new Date(testRunData.startDate);
+          console.log("Converted startDate to Date object:", testRunData.startDate);
+        }
+      }
+      
+      if (testRunData.endDate) {
+        // If it's already a Date object, keep it, otherwise create a new Date object
+        if (!(testRunData.endDate instanceof Date)) {
+          console.log(`Converting endDate from ${typeof testRunData.endDate}:`, testRunData.endDate);
+          testRunData.endDate = new Date(testRunData.endDate);
+          console.log("Converted endDate to Date object:", testRunData.endDate);
+        }
+      }
+      
+      // Handle any other date fields if present
+      if (testRunData.actualStartDate && !(testRunData.actualStartDate instanceof Date)) {
+        testRunData.actualStartDate = new Date(testRunData.actualStartDate);
+      }
+      
+      if (testRunData.actualEndDate && !(testRunData.actualEndDate instanceof Date)) {
+        testRunData.actualEndDate = new Date(testRunData.actualEndDate);
+      }
+      
+      // Always use the authenticated user's UUID from the token for createdBy
+      // This ensures data integrity and security
+      testRunData.createdBy = req.user!.id;
+      console.log(`Setting createdBy to authenticated user ID: ${testRunData.createdBy}`);
+      
+      console.log("Processed test run data for database:", testRunData);
+      const testRun = await storage.createTestRun(testRunData, tenantId);
+      console.log("Test run created successfully:", testRun);
+      res.status(201).json(testRun);
+    } catch (error) {
+      console.error("Create test run error:", error);
+      res.status(500).json({ error: `Failed to create test run: ${error.message}` });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/test-runs/{id}:
+   *   patch:
+   *     summary: Update an existing test run
+   *     tags: [Test Runs]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID of the test run to update
+   *     requestBody:
+   *       required: true
+   *     responses:
+   *       200:
+   *         description: Test run updated successfully
+   *       404:
+   *         description: Test run not found
+   *       500:
+   *         description: Server error
+   */
+  app.patch("/api/test-runs/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const { updates, testCaseIds } = req.body;
+      const testRun = await storage.updateTestRun(req.params.id, updates || req.body, tenantId);
+      if (!testRun) {
+        return res.status(404).json({ error: "Test run not found" });
+      }
+      
+      // Handle related test case executions if test suites changed
+      // This would be implemented in a more complete solution
+      
+      res.json(testRun);
+    } catch (error) {
+      console.error("Update test run error:", error);
+      res.status(500).json({ error: "Failed to update test run" });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/test-runs/{id}:
+   *   delete:
+   *     summary: Delete a test run
+   *     tags: [Test Runs]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID of the test run to delete
+   *     responses:
+   *       200:
+   *         description: Test run deleted successfully
+   *       404:
+   *         description: Test run not found
+   *       500:
+   *         description: Server error
+   */
+  app.delete("/api/test-runs/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteTestRun(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Test run not found" });
+      }
+      res.json({ message: "Test run deleted successfully" });
+    } catch (error) {
+      console.error("Delete test run error:", error);
+      res.status(500).json({ error: "Failed to delete test run" });
+    }
+  });
+
+  // Test case execution routes
+  app.get("/api/test-case-executions", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testRunId = req.query.testRunId as string;
+      
+      let executions;
+      if (testRunId) {
+        executions = await storage.getTestCaseExecutionsByRun(testRunId, tenantId);
+      } else {
+        executions = await storage.getAllTestCaseExecutions(tenantId);
+      }
+      
+      res.json(executions);
+    } catch (error) {
+      console.error("Get test case executions error:", error);
+      res.status(500).json({ error: "Failed to fetch test case executions" });
+    }
+  });
+
+  app.post("/api/test-case-executions", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const executionData = req.body;
+      const execution = await storage.createTestCaseExecution(executionData, tenantId);
+      res.status(201).json(execution);
+    } catch (error) {
+      console.error("Create test case execution error:", error);
+      res.status(500).json({ error: "Failed to create test case execution" });
+    }
+  });
+
+  app.post("/api/test-case-executions/batch", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const { executions } = req.body;
+      
+      console.log(`Creating ${executions.length} test case executions in batch`);
+      
+      if (!Array.isArray(executions)) {
+        return res.status(400).json({ error: "Executions must be an array" });
+      }
+      
+      // Create all executions in a batch operation
+      const createdExecutions = [];
+      for (const executionData of executions) {
+        // Generate a UUID for each execution
+        executionData.id = crypto.randomUUID();
+        
+        // Set initial status if not provided
+        if (!executionData.status) {
+          executionData.status = 'Not Executed';
+        }
+        
+        // Add creation timestamp
+        executionData.createdAt = new Date();
+        
+        const execution = await storage.createTestCaseExecution(executionData, tenantId);
+        createdExecutions.push(execution);
+      }
+      
+      console.log(`Successfully created ${createdExecutions.length} test case executions`);
+      res.status(201).json(createdExecutions);
+    } catch (error) {
+      console.error("Create test case executions batch error:", error);
+      res.status(500).json({ error: "Failed to create test case executions batch" });
+    }
+  });
+  
+  app.patch("/api/test-case-executions/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      
+      // Make a copy of the request body to avoid modifying it directly
+      const updates = { ...req.body };
+      
+      // Always use the authenticated user's ID from the token for executedBy
+      // This ensures data integrity and security
+      if (updates.status && updates.status !== 'Not Run' && updates.status !== 'Not Executed') {
+        updates.executedBy = req.user!.id;
+        console.log(`Setting executedBy to authenticated user ID: ${updates.executedBy}`);
+        
+        // If execution status is being updated, also set the execution date to now if not provided
+        if (!updates.executedDate) {
+          updates.executedDate = new Date();
+        }
+      }
+      
+      const execution = await storage.updateTestCaseExecution(req.params.id, updates, tenantId);
+      if (!execution) {
+        return res.status(404).json({ error: "Test case execution not found" });
+      }
+      res.json(execution);
+    } catch (error) {
+      console.error("Update test case execution error:", error);
+      res.status(500).json({ error: "Failed to update test case execution" });
+    }
+  });
+
+  // Endpoint to get test cases for a specific test suite
+  app.get("/api/test-suites/:id/test-cases", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const suiteId = req.params.id;
+      
+      // Get the test suite to find its test case IDs
+      const testSuite = await storage.getTestSuite(suiteId, tenantId);
+      
+      if (!testSuite) {
+        return res.status(404).json({ error: "Test suite not found" });
+      }
+      
+      // If the suite has no test case IDs, return empty array
+      if (!testSuite.testCaseIds || testSuite.testCaseIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get all the test cases for this suite
+      const testCases = [];
+      for (const testCaseId of testSuite.testCaseIds) {
+        const testCase = await storage.getTestCase(testCaseId, tenantId);
+        if (testCase) {
+          testCases.push(testCase);
+        }
+      }
+      
+      console.log(`Found ${testCases.length} test cases for suite ${suiteId}`);
+      res.json(testCases);
+    } catch (error) {
+      console.error(`Error fetching test cases for suite ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch test cases for test suite" });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

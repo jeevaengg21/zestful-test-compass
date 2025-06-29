@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAllTestPlans, selectAllUsers, selectAllTestSuites, selectTestCasesInSuite } from "@/store/selectors";
-import { addTestRun, TestRun } from "@/store/slices/testRunSlice";
+import { createTestRunAsync, TestRun } from "@/store/slices/testRunSlice";
 
 interface TestRunFormProps {
   onClose: () => void;
@@ -59,7 +59,7 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
     }, 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const totalTestCases = calculateTotalTestCases();
@@ -74,11 +74,19 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
       failedTestCases: 0,
       blockedTestCases: 0,
       skippedTestCases: 0,
-      createdBy: "USR001" // Should be current user
+      // Use the current user from Auth context when available
+      createdBy: "USR001" 
     };
 
-    dispatch(addTestRun(testRunData));
-    onClose();
+    try {
+      // Use the async thunk to persist to database
+      await dispatch(createTestRunAsync(testRunData)).unwrap();
+      console.log("Test run created successfully");
+      onClose();
+    } catch (error) {
+      console.error("Failed to create test run:", error);
+      // Add error handling/notification here
+    }
   };
 
   return (
@@ -261,7 +269,7 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!formData.testPlanId || formData.testSuiteIds.length === 0}>
+        <Button type="submit" disabled={!formData.testPlanId}>
           Create Test Run
         </Button>
       </div>

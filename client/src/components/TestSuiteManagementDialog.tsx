@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, X, ChevronUp, ChevronDown } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { TestPlan, updateTestPlan } from "@/store/slices/testPlanSlice";
+import { TestPlan, updateTestPlanAsync } from "@/store/slices/testPlanSlice";
 import { selectAllTestSuites, selectAllUsers } from "@/store/selectors";
 
 interface TestSuiteManagementDialogProps {
@@ -44,7 +44,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   const handleAddTestSuite = (suiteId: string) => {
     console.log("Adding test suite:", suiteId);
     const updatedSuiteIds = [...currentTestPlan.testSuiteIds, suiteId];
-    dispatch(updateTestPlan({
+    dispatch(updateTestPlanAsync({
       id: currentTestPlan.id,
       updates: { testSuiteIds: updatedSuiteIds }
     }));
@@ -53,7 +53,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
   const handleRemoveTestSuite = (suiteId: string) => {
     console.log("Removing test suite:", suiteId);
     const updatedSuiteIds = currentTestPlan.testSuiteIds.filter(id => id !== suiteId);
-    dispatch(updateTestPlan({
+    dispatch(updateTestPlanAsync({
       id: currentTestPlan.id,
       updates: { testSuiteIds: updatedSuiteIds }
     }));
@@ -64,7 +64,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     if (index > 0) {
       const updatedSuiteIds = [...currentTestPlan.testSuiteIds];
       [updatedSuiteIds[index], updatedSuiteIds[index - 1]] = [updatedSuiteIds[index - 1], updatedSuiteIds[index]];
-      dispatch(updateTestPlan({
+      dispatch(updateTestPlanAsync({
         id: currentTestPlan.id,
         updates: { testSuiteIds: updatedSuiteIds }
       }));
@@ -76,7 +76,7 @@ export function TestSuiteManagementDialog({ testPlan, open, onOpenChange }: Test
     if (index < currentTestPlan.testSuiteIds.length - 1) {
       const updatedSuiteIds = [...currentTestPlan.testSuiteIds];
       [updatedSuiteIds[index], updatedSuiteIds[index + 1]] = [updatedSuiteIds[index + 1], updatedSuiteIds[index]];
-      dispatch(updateTestPlan({
+      dispatch(updateTestPlanAsync({
         id: currentTestPlan.id,
         updates: { testSuiteIds: updatedSuiteIds }
       }));

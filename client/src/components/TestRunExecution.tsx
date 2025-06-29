@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/sonner";
 import { Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   selectTestRunById, 
   selectTestCaseExecutionsByRun, 
@@ -12,7 +13,16 @@ import {
   selectTestCasesInSuite,
   selectAllTestPlans
 } from "@/store/selectors";
-import { updateTestCaseExecution, addDefect, TestCaseExecution } from "@/store/slices/testRunSlice";
+import { 
+  fetchTestCaseExecutions, 
+  fetchTestCasesForSuite,
+  generateTestCaseExecutionsAsync, 
+  updateTestCaseExecution, 
+  updateTestCaseExecutionAsync,
+  addDefect, 
+  TestCaseExecution 
+} from "@/store/slices/testRunSlice";
+import { addTestCase } from "@/store/slices/testSlice"; // Add this import
 import { TestCaseExecutionTable } from "./TestCaseExecutionTable";
 import { TestExecutionDrawer } from "./TestExecutionDrawer";
 import { DefectCreationDialog } from "./DefectCreationDialog";
@@ -178,19 +188,109 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     }
   }, [selectedExecutionIndex, currentPage]);
 
-  if (!testRun) {
-    return <div>Test run not found</div>;
-  }
+  // Fetch test case executions and test case details when component mounts
+  useEffect(() => {
+    const loadExecutions = async () => {
+      try {
+        // Fetch existing executions
+        const executions = await dispatch(fetchTestCaseExecutions(testRunId)).unwrap();
+        console.log(`Fetched ${executions.length} test case executions for run ${testRunId}`);
+        
+        // If no executions found and we have test suites, try to generate them
+        if (executions.length === 0 && testRun?.testSuiteIds?.length > 0) {
+          console.log("No executions found, will attempt to generate them");
+          
+          // Get all test cases from the test suites in this test run
+          let allTestCases: any[] = [];
+          
+          for (const suiteId of testRun.testSuiteIds) {
+            try {
+              // Fetch test cases for this suite
+              console.log(`Fetching test cases for suite ${suiteId}`);
+              const suiteCases = await dispatch(fetchTestCasesForSuite(suiteId)).unwrap();
+              console.log(`Got ${suiteCases.length} test cases for suite ${suiteId}`);
+              allTestCases = [...allTestCases, ...suiteCases];
+            } catch (error) {
+              console.error(`Error fetching test cases for suite ${suiteId}:`, error);
+            }
+          }
+          
+          console.log(`Collected ${allTestCases.length} test cases for execution`);
+          
+          // Create test case execution records if we have test cases
+          if (allTestCases.length > 0) {
+            try {
+              console.log("Generating test case executions");
+              await dispatch(generateTestCaseExecutionsAsync({
+                testRunId,
+                testCases: allTestCases
+              })).unwrap();
+              console.log("Test case executions generated, reloading...");
+              
+              // Reload executions after generation
+              dispatch(fetchTestCaseExecutions(testRunId));
+            } catch (error) {
+              console.error("Error generating test case executions:", error);
+            }
+          } else {
+            console.warn("No test cases found to generate executions for");
+          }
+        } else {
+          // Executions exist but we need to make sure we have the test case details
+          console.log("Fetching test case details for existing executions...");
+          
+          // Extract unique test case IDs from executions
+          const testCaseIds = [...new Set(executions.map(exec => exec.testCaseId))];
+          console.log(`Need to fetch details for ${testCaseIds.length} unique test cases`);
+          
+          // For each test case ID in the executions, try to fetch the test case details
+          for (const testCaseId of testCaseIds) {
+            try {
+              // First check if we already have this test case loaded
+              const existingTestCase = allTestCases.find(tc => tc.id === testCaseId);
+              if (!existingTestCase) {
+                console.log(`Fetching test case details for ID: ${testCaseId}`);
+                // Fetch the test case directly using the API
+                const testCaseDetails = await apiRequest(`/api/test-cases/${testCaseId}`);
+                if (testCaseDetails) {
+                  console.log(`Successfully fetched test case: ${testCaseDetails.title}`);
+                  // Dispatch the proper action creator instead of a raw action
+                  dispatch(addTestCase(testCaseDetails));
+                }
+              }
+            } catch (error) {
+              console.error(`Error fetching test case ${testCaseId}:`, error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading test case executions:", error);
+      }
+    };
+    
+    loadExecutions();
+  }, [dispatch, testRunId, testRun, allTestCases]);
 
   // Improved function to get test case details by checking both direct ID lookup and suite mappings
   const getTestCaseDetails = (testCaseId: string) => {
+    console.log('Getting test case details for ID:', testCaseId);
+    
     // First try direct lookup from all test cases
     const directMatch = allTestCases.find(tc => tc.id === testCaseId);
-    if (directMatch) return directMatch;
+    if (directMatch) {
+      console.log('Found direct match for test case:', directMatch);
+      return directMatch;
+    }
     
     // If not found directly, check if it's in any of the test suites for this run
     const testCaseInSuites = testSuiteTestCases.find(tc => tc.id === testCaseId);
-    return testCaseInSuites || null;
+    if (testCaseInSuites) {
+      console.log('Found test case in suites:', testCaseInSuites);
+      return testCaseInSuites;
+    }
+    
+    console.warn('Test case not found for ID:', testCaseId);
+    return null;
   };
 
   const selectedExecution = selectedExecutionIndex !== null ? executions[selectedExecutionIndex] : null;
@@ -243,40 +343,47 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
 
     const updates = {
       status,
-      executedBy: "USR001", // Should be current user
+      // No need to send executedBy - server will get it from auth token
       executedDate: new Date().toISOString().split('T')[0],
       actualResult: actualResult || undefined,
       notes: executionNotes || undefined
     };
     
-    dispatch(updateTestCaseExecution({ id: executionId, updates }));
-    
-    // Enhanced toast notification with progress info
-    const currentNumber = selectedExecutionIndex !== null ? selectedExecutionIndex + 1 : 0;
-    const progress = Math.round((currentNumber / executions.length) * 100);
-    const remainingTests = executions.length - currentNumber;
-    
-    const statusMessages = {
-      'Passed': `✅ Test ${currentNumber}/${executions.length} passed! (${progress}% complete)`,
-      'Failed': `❌ Test ${currentNumber}/${executions.length} failed! (${progress}% complete)`,
-      'Blocked': `⚠️ Test ${currentNumber}/${executions.length} blocked! (${progress}% complete)`,
-      'Skipped': `⏭️ Test ${currentNumber}/${executions.length} skipped! (${progress}% complete)`
-    };
-    
-    const nextTestInfo = remainingTests > 0 ? ` | ${remainingTests} tests remaining` : ' | All tests completed!';
-    
-    toast.success(statusMessages[status] + nextTestInfo, {
-      duration: autoNavigationEnabled ? 3000 : 5000,
-    });
-    
-    // Clear form data
-    setExecutionNotes("");
-    setActualResult("");
-    
-    // Start auto-navigation if enabled and there are more tests
-    if (autoNavigationEnabled && remainingTests > 0) {
-      startAutoNavigation();
-    }
+    // Use the async thunk for updating the execution in the database
+    dispatch(updateTestCaseExecutionAsync({ id: executionId, updates }))
+      .unwrap()
+      .then(() => {
+        // Enhanced toast notification with progress info
+        const currentNumber = selectedExecutionIndex !== null ? selectedExecutionIndex + 1 : 0;
+        const progress = Math.round((currentNumber / executions.length) * 100);
+        const remainingTests = executions.length - currentNumber;
+        
+        const statusMessages = {
+          'Passed': `✅ Test ${currentNumber}/${executions.length} passed! (${progress}% complete)`,
+          'Failed': `❌ Test ${currentNumber}/${executions.length} failed! (${progress}% complete)`,
+          'Blocked': `⚠️ Test ${currentNumber}/${executions.length} blocked! (${progress}% complete)`,
+          'Skipped': `⏭️ Test ${currentNumber}/${executions.length} skipped! (${progress}% complete)`
+        };
+        
+        const nextTestInfo = remainingTests > 0 ? ` | ${remainingTests} tests remaining` : ' | All tests completed!';
+        
+        toast.success(statusMessages[status] + nextTestInfo, {
+          duration: autoNavigationEnabled ? 3000 : 5000,
+        });
+        
+        // Clear form data
+        setExecutionNotes("");
+        setActualResult("");
+        
+        // Start auto-navigation if enabled and there are more tests
+        if (autoNavigationEnabled && remainingTests > 0) {
+          startAutoNavigation();
+        }
+      })
+      .catch(error => {
+        console.error("Failed to update test case execution:", error);
+        toast.error(`Failed to update test: ${error.message || 'Unknown error'}`);
+      });
   };
 
   const handleCreateDefect = () => {
@@ -292,7 +399,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       status: "Open" as const,
       testRunId,
       testCaseExecutionId: selectedExecution.id,
-      reportedBy: "USR001", // Should be current user
+      // reportedBy will be set by the server from auth token when API is implemented
       reportedDate: new Date().toISOString().split('T')[0],
       reproductionSteps: defectData.reproductionSteps.split('\n').filter(step => step.trim()),
       expectedResult: testCase?.expectedResult || "",
@@ -334,13 +441,28 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     cancelAutoNavigation();
   };
 
-  const navigateToPrevious = () => {
+  const navigateToPrevious = async () => {
     if (selectedExecutionIndex !== null && selectedExecutionIndex > 0) {
       const newIndex = selectedExecutionIndex - 1;
       setSelectedExecutionIndex(newIndex);
       
-      // Update form data for the new execution
+      // Get the execution record for the new index
       const execution = executions[newIndex];
+      
+      // Fetch fresh test case details for this execution
+      try {
+        console.log(`Fetching fresh test case details for ID: ${execution.testCaseId}`);
+        const testCaseDetails = await apiRequest(`/api/test-cases/${execution.testCaseId}`);
+        if (testCaseDetails) {
+          console.log(`Successfully fetched test case: ${testCaseDetails.title}`);
+          // Use the proper action creator
+          dispatch(addTestCase(testCaseDetails));
+        }
+      } catch (error) {
+        console.error(`Error fetching test case ${execution.testCaseId}:`, error);
+      }
+      
+      // Update form data for the new execution
       setActualResult(execution.actualResult || "");
       setExecutionNotes(execution.notes || "");
       
@@ -355,13 +477,28 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     }
   };
 
-  const navigateToNext = () => {
+  const navigateToNext = async () => {
     if (selectedExecutionIndex !== null && selectedExecutionIndex < executions.length - 1) {
       const newIndex = selectedExecutionIndex + 1;
       setSelectedExecutionIndex(newIndex);
       
-      // Update form data for the new execution
+      // Get the execution record for the new index
       const execution = executions[newIndex];
+      
+      // Fetch fresh test case details for this execution
+      try {
+        console.log(`Fetching fresh test case details for ID: ${execution.testCaseId}`);
+        const testCaseDetails = await apiRequest(`/api/test-cases/${execution.testCaseId}`);
+        if (testCaseDetails) {
+          console.log(`Successfully fetched test case: ${testCaseDetails.title}`);
+          // Use the proper action creator
+          dispatch(addTestCase(testCaseDetails));
+        }
+      } catch (error) {
+        console.error(`Error fetching test case ${execution.testCaseId}:`, error);
+      }
+      
+      // Update form data for the new execution
       setActualResult(execution.actualResult || "");
       setExecutionNotes(execution.notes || "");
       

@@ -749,13 +749,35 @@ export class DatabaseStorage implements IStorage {
     if (updates.status !== undefined) cleanUpdates.status = updates.status;
     if (updates.actualResult !== undefined) cleanUpdates.actualResult = updates.actualResult;
     if (updates.executedBy !== undefined) cleanUpdates.executedBy = updates.executedBy;
-    if (updates.executedDate !== undefined) cleanUpdates.executedDate = updates.executedDate;
+    
+    // Handle the date conversion properly
+    if (updates.executedDate !== undefined) {
+      if (updates.executedDate instanceof Date) {
+        cleanUpdates.executedDate = updates.executedDate;
+      } else if (updates.executedDate) {
+        try {
+          cleanUpdates.executedDate = new Date(updates.executedDate);
+        } catch (error) {
+          console.warn(`Invalid date format for executedDate: ${updates.executedDate}`);
+          cleanUpdates.executedDate = null;
+        }
+      } else {
+        cleanUpdates.executedDate = null;
+      }
+    }
+    
     if (updates.notes !== undefined) cleanUpdates.notes = updates.notes;
     if (updates.executionTime !== undefined) cleanUpdates.executionTime = updates.executionTime;
     if (updates.defectIds !== undefined) cleanUpdates.defectIds = updates.defectIds ? ensureArray<string>(updates.defectIds) : null;
     if (updates.screenshots !== undefined) cleanUpdates.screenshots = updates.screenshots ? ensureArray<string>(updates.screenshots) : null;
     
-    const result = await db.update(testCaseExecutions).set(cleanUpdates).where(and(eq(testCaseExecutions.id, id), eq(testCaseExecutions.tenantId, tenantId))).returning();
+    console.log(`Updating test case execution ${id} with:`, cleanUpdates);
+    
+    const result = await db.update(testCaseExecutions)
+      .set(cleanUpdates)
+      .where(and(eq(testCaseExecutions.id, id), eq(testCaseExecutions.tenantId, tenantId)))
+      .returning();
+      
     return result[0];
   }
 
