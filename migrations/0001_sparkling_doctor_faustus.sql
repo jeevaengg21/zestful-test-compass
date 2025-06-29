@@ -1,0 +1,1 @@
+ALTER TABLE "test_cases" ADD COLUMN "last_modified" timestamp DEFAULT now();
