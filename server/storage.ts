@@ -915,6 +915,96 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(testCaseDataMappings).where(and(eq(testCaseDataMappings.id, id), eq(testCaseDataMappings.tenantId, tenantId)));
     return (result.rowCount || 0) > 0;
   }
+
+  // New method to update test run statistics based on execution data
+  async updateTestRunStatistics(testRunId: string, tenantId: string): Promise<TestRun | undefined> {
+    try {
+      console.log(`Updating statistics for test run: ${testRunId}`);
+      
+      // Get all executions for this test run
+      const executions = await this.getTestCaseExecutionsByRun(testRunId, tenantId);
+      
+      if (!executions.length) {
+        console.log(`No executions found for test run ${testRunId}`);
+        return undefined;
+      }
+      
+      // Calculate statistics
+      const totalTestCases = executions.length;
+      const executedTestCases = executions.filter(e => 
+        e.status !== 'Not Run' && e.status !== 'Not Executed').length;
+      const passedTestCases = executions.filter(e => e.status === 'Passed').length;
+      const failedTestCases = executions.filter(e => e.status === 'Failed').length;
+      const blockedTestCases = executions.filter(e => e.status === 'Blocked').length;
+      const skippedTestCases = executions.filter(e => e.status === 'Skipped').length;
+      
+      // Calculate progress percentage
+      const progress = totalTestCases > 0 
+        ? Math.round((executedTestCases / totalTestCases) * 100) 
+        : 0;
+      
+      console.log(`Test run statistics calculated: 
+        Total: ${totalTestCases}, 
+        Executed: ${executedTestCases}, 
+        Passed: ${passedTestCases}, 
+        Failed: ${failedTestCases}, 
+        Blocked: ${blockedTestCases}, 
+        Skipped: ${skippedTestCases}, 
+        Progress: ${progress}%`);
+      
+      // Determine overall status
+      let status = 'In Progress';
+      if (executedTestCases === 0) {
+        status = 'Not Started';
+      } else if (executedTestCases === totalTestCases) {
+        status = 'Completed';
+      }
+      
+      // Set actual start/end dates
+      let actualStartDate = null;
+      let actualEndDate = null;
+      
+      // If any test has been executed, set start date to the earliest execution date
+      const executedTests = executions.filter(e => e.executedDate);
+      if (executedTests.length > 0) {
+        actualStartDate = executedTests.reduce((earliest, current) => {
+          const currentDate = new Date(current.executedDate);
+          return earliest && earliest < currentDate ? earliest : currentDate;
+        }, null);
+      }
+      
+      // If all tests have been executed, set end date to the latest execution date
+      if (executedTestCases === totalTestCases && executedTestCases > 0) {
+        actualEndDate = executedTests.reduce((latest, current) => {
+          const currentDate = new Date(current.executedDate);
+          return latest && latest > currentDate ? latest : currentDate;
+        }, null);
+      }
+      
+      // Update the test run with new statistics
+      const updates = {
+        totalTestCases,
+        executedTestCases,
+        passedTestCases,
+        failedTestCases,
+        blockedTestCases,
+        skippedTestCases,
+        progress,
+        status,
+        actualStartDate,
+        actualEndDate,
+        lastModified: new Date()
+      };
+      
+      console.log(`Updating test run ${testRunId} with new statistics:`, updates);
+      
+      const updatedTestRun = await this.updateTestRun(testRunId, updates, tenantId);
+      return updatedTestRun;
+    } catch (error) {
+      console.error(`Error updating test run statistics for ${testRunId}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

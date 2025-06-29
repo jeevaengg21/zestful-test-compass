@@ -1075,10 +1075,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Get the existing execution to find out its test run ID
+      const existingExecution = await storage.getTestCaseExecution(req.params.id, tenantId);
+      if (!existingExecution) {
+        return res.status(404).json({ error: "Test case execution not found" });
+      }
+      
+      // Update the execution
       const execution = await storage.updateTestCaseExecution(req.params.id, updates, tenantId);
       if (!execution) {
         return res.status(404).json({ error: "Test case execution not found" });
       }
+      
+      // After updating the execution, recalculate test run statistics
+      try {
+        console.log(`Recalculating statistics for test run: ${execution.testRunId}`);
+        const updatedTestRun = await storage.updateTestRunStatistics(execution.testRunId, tenantId);
+        console.log(`Updated test run statistics:`, updatedTestRun);
+      } catch (error) {
+        // Log the error but don't fail the request
+        console.error(`Error updating test run statistics: ${error.message}`);
+      }
+      
       res.json(execution);
     } catch (error) {
       console.error("Update test case execution error:", error);
