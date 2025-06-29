@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { createTestSuiteAsync, updateTestSuiteAsync, deleteTestSuiteAsync, TestSuite } from "@/store/slices/testSlice";
+import { createTestSuiteAsync, updateTestSuiteAsync, deleteTestSuiteAsync, TestSuite, fetchTestSuites, fetchTestCases } from "@/store/slices/testSlice";
 import { selectAllProducts, selectAllTestSuites, selectAllTestCases, selectModulesByProduct, selectAllModules, selectAllUsers } from "@/store/selectors";
 import { 
   Plus, 
@@ -79,13 +79,27 @@ export const TestSuiteManager = () => {
   });
   
   // Get available test cases (not mapped and matching search)
-  const availableTestCases = testCases.filter(testCase => 
-    !currentSelectedSuite?.testCaseIds.includes(testCase.id) &&
-    testCase.productId === currentSelectedSuite?.productId &&
-    testCase.moduleId === currentSelectedSuite?.moduleId &&
-    (testCase.title.toLowerCase().includes(testCaseSearchTerm.toLowerCase()) ||
-     testCase.description.toLowerCase().includes(testCaseSearchTerm.toLowerCase()))
-  );
+  const availableTestCases = testCases.filter(testCase => {
+    // Don't show test cases that are already in the suite
+    if (currentSelectedSuite?.testCaseIds.includes(testCase.id)) return false;
+    
+    // Must match the product
+    if (testCase.productId !== currentSelectedSuite?.productId) return false;
+    
+    // If suite has a module ID, and the test case has a moduleId, they should match
+    // Otherwise, if the suite has a moduleId, but the test case doesn't, don't filter it out
+    if (currentSelectedSuite?.moduleId && testCase.moduleId && 
+        testCase.moduleId !== currentSelectedSuite.moduleId) return false;
+    
+    // Match search term if provided
+    if (testCaseSearchTerm && 
+        !testCase.title.toLowerCase().includes(testCaseSearchTerm.toLowerCase()) && 
+        !testCase.description.toLowerCase().includes(testCaseSearchTerm.toLowerCase())) {
+      return false;
+    }
+    
+    return true;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -230,10 +244,14 @@ export const TestSuiteManager = () => {
     }
   };
 
-  const handleManageTestCases = (suite: TestSuite) => {
+  const handleManageTestCases = async (suite: TestSuite) => {
     console.log("Managing test cases for suite:", suite.id, "Current test case IDs:", suite.testCaseIds);
     setSelectedSuite(suite);
     setTestCaseSearchTerm("");
+    
+    // Fetch test cases on demand when the dialog is opened
+    await dispatch(fetchTestCases());
+    
     setIsManageTestCasesOpen(true);
   };
 
@@ -329,6 +347,17 @@ export const TestSuiteManager = () => {
     const module = allModules.find(m => m.id === moduleId);
     return module?.name || "Unknown Module";
   };
+
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user ? (user.fullName || user.email) : "Unknown User";
+  };
+
+  // Load test suites when the component mounts
+  useEffect(() => {
+    // Only fetch test suites on component load, test cases will be loaded on-demand
+    dispatch(fetchTestSuites());
+  }, [dispatch]);
 
   return (
     <div className="p-6 space-y-6">
@@ -812,7 +841,7 @@ export const TestSuiteManager = () => {
                   <TableCell>
                     <div className="flex items-center space-x-1">
                       <Users className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm">{suite.owner}</span>
+                      <span className="text-sm">{getUserName(suite.owner)}</span>
                     </div>
                   </TableCell>
                   <TableCell>

@@ -474,13 +474,13 @@ export const TestCases = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Module</TableHead>
                 <TableHead>Estimated Time</TableHead>
+                <TableHead>Last Modified</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -506,7 +506,6 @@ export const TestCases = () => {
                   
                   return (
                     <TableRow key={testCase.id}>
-                      <TableCell className="font-mono text-sm">{testCase.id}</TableCell>
                       <TableCell className="font-medium">{testCase.title}</TableCell>
                       <TableCell>
                         <Badge className={getPriorityColor(priority?.name || "Medium")}>
@@ -521,6 +520,15 @@ export const TestCases = () => {
                       <TableCell>{product?.name || "N/A"}</TableCell>
                       <TableCell>{module?.name || "N/A"}</TableCell>
                       <TableCell>{testCase.estimatedTime || 0} min</TableCell>
+                      <TableCell>{testCase.lastModified ? 
+                        new Date(testCase.lastModified).toLocaleString(undefined, { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : "N/A"}
+                      </TableCell>
                       <TableCell>
                         <Button 
                           variant="ghost" 

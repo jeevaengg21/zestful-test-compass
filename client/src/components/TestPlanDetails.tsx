@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Edit } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { selectAllProducts, selectAllTestSuites, selectAllUsers } from "@/store/selectors";
-import { TestPlan, updateTestPlan } from "@/store/slices/testPlanSlice";
+import { TestPlan, updateTestPlanAsync } from "@/store/slices/testPlanSlice";
 import { TestPlanForm } from "./TestPlanForm";
+import { toast } from "@/components/ui/sonner";
 
 interface TestPlanDetailsProps {
   testPlan: TestPlan;
@@ -30,12 +31,48 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
     state.testPlans.testPlans.find(plan => plan.id === testPlan.id)
   ) || testPlan;
 
-  const handleEditSubmit = (updatedTestPlan: Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>) => {
-    dispatch(updateTestPlan({ 
-      id: currentTestPlan.id, 
-      updates: updatedTestPlan 
-    }));
-    setIsEditing(false);
+  // Helper function to format dates for display
+  const formatDate = (dateValue: any): string => {
+    if (!dateValue) return "Not set";
+    
+    // If it's already a string, return it
+    if (typeof dateValue === 'string') {
+      // If it's an ISO string, format it
+      if (dateValue.includes('T')) {
+        const date = new Date(dateValue);
+        return date.toLocaleDateString();
+      }
+      return dateValue;
+    }
+    
+    // If it's a Date object, format it
+    if (dateValue instanceof Date) {
+      return dateValue.toLocaleDateString();
+    }
+    
+    // Fallback
+    return "Invalid date";
+  };
+
+  const handleEditSubmit = async (updatedTestPlan: Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>) => {
+    try {
+      await dispatch(updateTestPlanAsync({ 
+        id: currentTestPlan.id, 
+        updates: updatedTestPlan 
+      })).unwrap();
+      toast({
+        title: "Success",
+        description: "Test plan updated successfully",
+      });
+      setIsEditing(false);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to update test plan",
+        variant: "destructive",
+      });
+      console.error("Failed to update test plan:", err);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -295,25 +332,25 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
                   <Label className="text-sm font-medium">Start Date</Label>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {currentTestPlan.startDate}
+                    {formatDate(currentTestPlan.startDate)}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">End Date</Label>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    {currentTestPlan.endDate}
+                    {formatDate(currentTestPlan.endDate)}
                   </p>
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <Label className="text-sm font-medium">Created Date</Label>
-                  <p className="text-sm text-muted-foreground">{currentTestPlan.createdDate}</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(currentTestPlan.createdDate)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Last Modified</Label>
-                  <p className="text-sm text-muted-foreground">{currentTestPlan.lastModified}</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(currentTestPlan.lastModified)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Created By</Label>
@@ -408,9 +445,9 @@ export function TestPlanDetails({ testPlan, onClose }: TestPlanDetailsProps) {
                       <TableCell>{getUserName(execution.assignedTo)}</TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{new Date(execution.scheduledStart).toLocaleDateString()}</div>
+                          <div>{formatDate(execution.scheduledStart)}</div>
                           <div className="text-muted-foreground">
-                            to {new Date(execution.scheduledEnd).toLocaleDateString()}
+                            to {formatDate(execution.scheduledEnd)}
                           </div>
                         </div>
                       </TableCell>

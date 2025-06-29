@@ -1,17 +1,36 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { TestRun, TestCaseExecution, Defect } from '@shared/schema';
+import { apiRequest } from '@/lib/queryClient';
 
 interface TestRunState {
   testRuns: TestRun[];
   testCaseExecutions: TestCaseExecution[];
   defects: Defect[];
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: TestRunState = {
   testRuns: [],
   testCaseExecutions: [],
-  defects: []
+  defects: [],
+  loading: false,
+  error: null
 };
+
+// Async thunk for fetching all test runs
+export const fetchTestRuns = createAsyncThunk(
+  'testRuns/fetchTestRuns',
+  async () => {
+    try {
+      const response = await apiRequest('/api/test-runs');
+      return response;
+    } catch (error) {
+      console.error("fetchTestRuns - error:", error);
+      throw error;
+    }
+  }
+);
 
 const testRunSlice = createSlice({
   name: 'testRuns',
@@ -78,6 +97,21 @@ const testRunSlice = createSlice({
         state.defects[index] = { ...state.defects[index], ...updates };
       }
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTestRuns.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTestRuns.fulfilled, (state, action) => {
+        state.loading = false;
+        state.testRuns = action.payload;
+      })
+      .addCase(fetchTestRuns.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch test runs';
+      });
   }
 });
 

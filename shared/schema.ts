@@ -2,6 +2,209 @@ import { pgTable, text, serial, integer, boolean, timestamp, json, uuid, varchar
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Product:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         name:
+ *           type: string
+ *         description:
+ *           type: string
+ *         status:
+ *           type: string
+ *         testCases:
+ *           type: integer
+ *         testRuns:
+ *           type: integer
+ *         teamMembers:
+ *           type: integer
+ *         coverage:
+ *           type: integer
+ *         lastActivity:
+ *           type: string
+ *         createdDate:
+ *           type: string
+ *           format: date-time
+ *         owner:
+ *           type: string
+ *           format: uuid
+ *         tenantId:
+ *           type: string
+ *           format: uuid
+ *       required:
+ *         - id
+ *         - name
+ *         - description
+ *         - status
+ *         - owner
+ *         - tenantId
+ *
+ *     TestCase:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         title:
+ *           type: string
+ *         description:
+ *           type: string
+ *         priorityId:
+ *           type: string
+ *           format: uuid
+ *         statusId:
+ *           type: string
+ *           format: uuid
+ *         steps:
+ *           type: array
+ *           items:
+ *             type: object
+ *         expectedResult:
+ *           type: string
+ *         productId:
+ *           type: string
+ *           format: uuid
+ *         moduleId:
+ *           type: string
+ *           format: uuid
+ *         tenantId:
+ *           type: string
+ *           format: uuid
+ *         createdDate:
+ *           type: string
+ *           format: date-time
+ *         lastRun:
+ *           type: string
+ *           format: date-time
+ *         estimatedTime:
+ *           type: integer
+ *       required:
+ *         - id
+ *         - title
+ *         - description
+ *         - productId
+ *         - tenantId
+ *
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         email:
+ *           type: string
+ *           format: email
+ *         fullName:
+ *           type: string
+ *         roles:
+ *           type: array
+ *           items:
+ *             type: string
+ *         status:
+ *           type: string
+ *         tenantId:
+ *           type: string
+ *           format: uuid
+ *         createdDate:
+ *           type: string
+ *           format: date-time
+ *       required:
+ *         - id
+ *         - email
+ *         - fullName
+ *         - status
+ *
+ *     Tenant:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         name:
+ *           type: string
+ *         domain:
+ *           type: string
+ *         subscriptionStatus:
+ *           type: string
+ *         subscriptionPlan:
+ *           type: string
+ *         maxUsers:
+ *           type: integer
+ *         maxProjects:
+ *           type: integer
+ *         createdDate:
+ *           type: string
+ *           format: date-time
+ *         updatedDate:
+ *           type: string
+ *           format: date-time
+ *         createdBy:
+ *           type: string
+ *           format: uuid
+ *         isActive:
+ *           type: boolean
+ *       required:
+ *         - id
+ *         - name
+ *         - subscriptionStatus
+ *         - subscriptionPlan
+ *         - isActive
+ *
+ *     TestPlan:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         description:
+ *           type: string
+ *         objectives:
+ *           type: array
+ *           items:
+ *             type: string
+ *         scope:
+ *           type: string
+ *         testSuiteIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *         assignedTeamMembers:
+ *           type: array
+ *           items:
+ *             type: string
+ *         startDate:
+ *           type: string
+ *           format: date-time
+ *         endDate:
+ *           type: string
+ *           format: date-time
+ *         status:
+ *           type: string
+ *         priority:
+ *           type: string
+ *         productId:
+ *           type: string
+ *           format: uuid
+ *         tenantId:
+ *           type: string
+ *           format: uuid
+ *       required:
+ *         - id
+ *         - name
+ *         - description
+ *         - scope
+ *         - status
+ *         - priority
+ *         - productId
+ */
+
 // Tenants table for multi-tenancy
 export const tenants = pgTable("tenants", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -95,6 +298,7 @@ export const testCases = pgTable("test_cases", {
   moduleId: uuid("module_id").references(() => modules.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdDate: timestamp("created_date").defaultNow(),
+  lastModified: timestamp("last_modified").defaultNow(),
   lastRun: timestamp("last_run"),
   estimatedTime: integer("estimated_time"),
 });
@@ -270,6 +474,7 @@ export const insertStatusSchema = createInsertSchema(statuses).omit({
 export const insertTestCaseSchema = createInsertSchema(testCases).omit({
   id: true,
   createdDate: true,
+  lastModified: true,
   lastRun: true,
 });
 

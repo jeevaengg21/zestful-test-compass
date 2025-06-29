@@ -44,22 +44,41 @@ export async function apiRequest(
 ): Promise<any> {
   const token = localStorage.getItem('token');
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    throw new Error(`${response.status}: ${response.statusText}`);
+  console.log(`[API Request] ${options.method || 'GET'} ${url}`);
+  if (options.body) {
+    console.log('[API Request] Request body:', options.body);
   }
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
+    });
 
-  return response.json();
+    console.log(`[API Response] Status: ${response.status} for ${url}`);
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.log('[API Response] Unauthorized - removing token and redirecting');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      
+      const errorText = await response.text();
+      console.error(`[API Error] ${response.status}: ${response.statusText}`, errorText);
+      throw new Error(`${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(`[API Response] Data for ${url}:`, data);
+    
+    return data;
+  } catch (error) {
+    console.error(`[API Error] Request to ${url} failed:`, error);
+    throw error;
+  }
 }

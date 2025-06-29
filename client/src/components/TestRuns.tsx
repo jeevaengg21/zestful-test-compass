@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAllTestRuns, selectAllUsers, selectAllTestPlans } from "@/store/selectors";
-import { startTestRun, pauseTestRun, completeTestRun } from "@/store/slices/testRunSlice";
+import { startTestRun, pauseTestRun, completeTestRun, fetchTestRuns } from "@/store/slices/testRunSlice";
 import { TestRunForm } from "./TestRunForm";
 import { TestRunEditForm } from "./TestRunEditForm";
 
@@ -32,7 +32,7 @@ interface TestRunsProps {
 
 export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
+  const [location, setLocation] = useLocation();
   const testRuns = useAppSelector(selectAllTestRuns);
   const users = useAppSelector(selectAllUsers);
   const testPlans = useAppSelector(selectAllTestPlans);
@@ -41,6 +41,10 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTestRun, setSelectedTestRun] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchTestRuns());
+  }, [dispatch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -111,7 +115,12 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
 
   const handleExecuteRun = (runId: string) => {
     if (onExecuteTestRun) {
+      // Use the callback if provided
       onExecuteTestRun(runId);
+    } else {
+      // Otherwise navigate directly to the execution page
+      console.log("Navigating to test run execution page:", runId);
+      setLocation(`/test-run-execution?id=${runId}`);
     }
   };
 

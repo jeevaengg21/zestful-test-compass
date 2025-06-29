@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,9 +29,10 @@ import { selectTestRunById, selectTestCaseExecutionsByRun, selectAllTestCases } 
 import { updateTestCaseExecution, addDefect, TestCaseExecution } from "@/store/slices/testRunSlice";
 
 export default function TestRunExecutionPage() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const testRunId = searchParams.get('id');
+  // Get the ID from the query parameters
+  const [location, setLocation] = useLocation();
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const testRunId = urlParams.get('id');
   
   const dispatch = useAppDispatch();
   const testRun = useAppSelector(state => testRunId ? selectTestRunById(state, testRunId) : null);
@@ -59,7 +59,7 @@ export default function TestRunExecutionPage() {
       <div className="p-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900">Test run not found</h2>
-          <Button onClick={() => navigate('/')} className="mt-4">
+          <Button onClick={() => setLocation('/')} className="mt-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -193,7 +193,7 @@ export default function TestRunExecutionPage() {
       <div className="flex justify-between items-start">
         <div>
           <div className="flex items-center gap-4 mb-2">
-            <Button variant="outline" onClick={() => navigate('/')}>
+            <Button variant="outline" onClick={() => setLocation('/')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Test Runs
             </Button>

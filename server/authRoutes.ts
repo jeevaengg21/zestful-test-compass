@@ -4,7 +4,69 @@ import { generateToken, comparePassword, hashPassword, authenticateToken, requir
 import { insertUserSchema, insertTenantSchema } from '@shared/schema';
 
 export function registerAuthRoutes(app: Express) {
-  // Login route
+  /**
+   * @swagger
+   * /api/auth/login:
+   *   post:
+   *     summary: Login to the application
+   *     tags: [Authentication]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *               password:
+   *                 type: string
+   *                 format: password
+   *     responses:
+   *       200:
+   *         description: Successful login
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 token:
+   *                   type: string
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     email:
+   *                       type: string
+   *                     fullName:
+   *                       type: string
+   *                     roles:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     tenantId:
+   *                       type: string
+   *                     tenant:
+   *                       type: object
+   *                       properties:
+   *                         name:
+   *                           type: string
+   *                         subscriptionPlan:
+   *                           type: string
+   *       400:
+   *         description: Missing email or password
+   *       401:
+   *         description: Invalid credentials
+   *       403:
+   *         description: Account suspended or subscription inactive
+   *       500:
+   *         description: Server error
+   */
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -60,7 +122,69 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Register route (requires tenant invitation or super admin)
+  /**
+   * @swagger
+   * /api/auth/register:
+   *   post:
+   *     summary: Register a new user
+   *     tags: [Authentication]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *               - fullName
+   *               - tenantId
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *               password:
+   *                 type: string
+   *                 format: password
+   *                 minLength: 8
+   *               fullName:
+   *                 type: string
+   *               tenantId:
+   *                 type: string
+   *               roles:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *     responses:
+   *       201:
+   *         description: User registered successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 token:
+   *                   type: string
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     email:
+   *                       type: string
+   *                     fullName:
+   *                       type: string
+   *                     roles:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     tenantId:
+   *                       type: string
+   *       400:
+   *         description: User already exists or invalid tenant
+   *       500:
+   *         description: Server error
+   */
   app.post('/api/auth/register', async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
@@ -105,7 +229,51 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Get current user
+  /**
+   * @swagger
+   * /api/auth/me:
+   *   get:
+   *     summary: Get current user information
+   *     tags: [Authentication]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Current user information
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 user:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     email:
+   *                       type: string
+   *                     fullName:
+   *                       type: string
+   *                     roles:
+   *                       type: array
+   *                       items:
+   *                         type: string
+   *                     tenantId:
+   *                       type: string
+   *                     tenant:
+   *                       type: object
+   *                       properties:
+   *                         name:
+   *                           type: string
+   *                         subscriptionPlan:
+   *                           type: string
+   *                         maxUsers:
+   *                           type: integer
+   *                         maxProjects:
+   *                           type: integer
+   *       500:
+   *         description: Server error
+   */
   app.get('/api/auth/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const user = req.user!;
@@ -132,7 +300,45 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Super admin routes for tenant management
+  /**
+   * @swagger
+   * /api/admin/tenants:
+   *   post:
+   *     summary: Create a new tenant (SuperAdmin only)
+   *     tags: [Tenant Management]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - name
+   *             properties:
+   *               name:
+   *                 type: string
+   *               isActive:
+   *                 type: boolean
+   *               subscriptionPlan:
+   *                 type: string
+   *               subscriptionStatus:
+   *                 type: string
+   *               maxUsers:
+   *                 type: integer
+   *               maxProjects:
+   *                 type: integer
+   *     responses:
+   *       201:
+   *         description: Tenant created successfully
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden - Not a SuperAdmin
+   *       500:
+   *         description: Server error
+   */
   app.post('/api/admin/tenants', authenticateToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const tenantData = insertTenantSchema.parse(req.body);
@@ -144,6 +350,30 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  /**
+   * @swagger
+   * /api/admin/tenants:
+   *   get:
+   *     summary: Get all tenants (SuperAdmin only)
+   *     tags: [Tenant Management]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of all tenants
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/Tenant'
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden - Not a SuperAdmin
+   *       500:
+   *         description: Server error
+   */
   app.get('/api/admin/tenants', authenticateToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const tenants = await storage.getAllTenants();
@@ -154,6 +384,52 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  /**
+   * @swagger
+   * /api/admin/tenants/{id}:
+   *   patch:
+   *     summary: Update a tenant (SuperAdmin only)
+   *     tags: [Tenant Management]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         schema:
+   *           type: string
+   *         required: true
+   *         description: ID of the tenant to update
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               isActive:
+   *                 type: boolean
+   *               subscriptionPlan:
+   *                 type: string
+   *               subscriptionStatus:
+   *                 type: string
+   *               maxUsers:
+   *                 type: integer
+   *               maxProjects:
+   *                 type: integer
+   *     responses:
+   *       200:
+   *         description: Tenant updated successfully
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden - Not a SuperAdmin
+   *       404:
+   *         description: Tenant not found
+   *       500:
+   *         description: Server error
+   */
   app.patch('/api/admin/tenants/:id', authenticateToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;

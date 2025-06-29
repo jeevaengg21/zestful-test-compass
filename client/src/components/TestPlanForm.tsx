@@ -20,6 +20,23 @@ interface TestPlanFormProps {
 export function TestPlanForm({ onSubmit, onCancel, initialData, isEditing = false }: TestPlanFormProps) {
   const products = useAppSelector(selectAllProducts);
 
+  // Convert dates to string format for form inputs if they exist
+  const formatDateForInput = (dateValue: any): string => {
+    if (!dateValue) return "";
+    if (dateValue instanceof Date) {
+      // Format Date object to YYYY-MM-DD
+      return dateValue.toISOString().split('T')[0];
+    }
+    // Handle string date (could be ISO or YYYY-MM-DD format)
+    if (typeof dateValue === 'string') {
+      if (dateValue.includes('T')) {
+        return dateValue.split('T')[0];
+      }
+      return dateValue;
+    }
+    return "";
+  };
+
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     description: initialData?.description || "",
@@ -27,8 +44,8 @@ export function TestPlanForm({ onSubmit, onCancel, initialData, isEditing = fals
     scope: initialData?.scope || "",
     testSuiteIds: initialData?.testSuiteIds || [],
     assignedTeamMembers: initialData?.assignedTeamMembers || [],
-    startDate: initialData?.startDate || "",
-    endDate: initialData?.endDate || "",
+    startDate: formatDateForInput(initialData?.startDate),
+    endDate: formatDateForInput(initialData?.endDate),
     status: initialData?.status || "Draft" as TestPlan['status'],
     priority: initialData?.priority || "Medium" as TestPlan['priority'],
     productId: initialData?.productId || "",
@@ -67,8 +84,15 @@ export function TestPlanForm({ onSubmit, onCancel, initialData, isEditing = fals
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Create JavaScript Date objects from the string dates for proper database handling
+    // This is the critical fix for the "value.toISOString is not a function" error
+    const startDate = formData.startDate ? new Date(formData.startDate) : null;
+    const endDate = formData.endDate ? new Date(formData.endDate) : null;
+    
     const testPlanData = {
       ...formData,
+      startDate,
+      endDate,
       entryExitCriteria: {
         entryCriteria: formData.entryCriteria.filter(item => item.trim() !== ""),
         exitCriteria: formData.exitCriteria.filter(item => item.trim() !== "")

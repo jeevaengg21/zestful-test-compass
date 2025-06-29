@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,16 +8,19 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Calendar, Users, FileText, AlertTriangle, CheckCircle, Clock, Pause } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { TestPlan, addTestPlan, updateTestPlan, deleteTestPlan } from "@/store/slices/testPlanSlice";
+import { TestPlan, createTestPlanAsync, updateTestPlan, deleteTestPlan, fetchTestPlans } from "@/store/slices/testPlanSlice";
 import { selectAllProducts, selectAllTestSuites } from "@/store/selectors";
 import { TestPlanForm } from "./TestPlanForm";
 import { TestPlanDetails } from "./TestPlanDetails";
 import { TestSuiteManagementDialog } from "./TestSuiteManagementDialog";
 import { TeamManagementDialog } from "./TeamManagementDialog";
+import { toast } from "@/components/ui/sonner";
 
 export function TestPlanManager() {
   const dispatch = useAppDispatch();
   const testPlans = useAppSelector(state => state.testPlans.testPlans);
+  const loading = useAppSelector(state => state.testPlans.loading);
+  const error = useAppSelector(state => state.testPlans.error);
   const products = useAppSelector(selectAllProducts);
   const testSuites = useAppSelector(selectAllTestSuites);
   
@@ -30,6 +32,39 @@ export function TestPlanManager() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isTestSuiteDialogOpen, setIsTestSuiteDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+
+  // Fetch test plans on component mount
+  useEffect(() => {
+    dispatch(fetchTestPlans());
+  }, [dispatch]);
+
+  // Helper function to format dates for display
+  const formatDate = (dateValue: any): string => {
+    if (!dateValue) return "Not set";
+    
+    // If it's already a string, return it
+    if (typeof dateValue === 'string') {
+      // If it's an ISO string, format it
+      if (dateValue.includes('T')) {
+        const date = new Date(dateValue);
+        return date.toLocaleDateString();
+      }
+      return dateValue;
+    }
+    
+    // If it's a Date object, format it
+    if (dateValue instanceof Date) {
+      return dateValue.toLocaleDateString();
+    }
+    
+    // Fallback
+    return "Invalid date";
+  };
+
+  // Add debugging logs for testPlans state
+  useEffect(() => {
+    console.log("Current test plans state:", testPlans);
+  }, [testPlans]);
 
   const filteredTestPlans = testPlans.filter(plan => {
     const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,9 +112,32 @@ export function TestPlanManager() {
     return product?.name || "Unknown Product";
   };
 
-  const handleCreateTestPlan = (testPlanData: Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>) => {
-    dispatch(addTestPlan(testPlanData));
-    setIsCreateDialogOpen(false);
+  const handleCreateTestPlan = async (testPlanData: Omit<TestPlan, 'id' | 'createdDate' | 'lastModified' | 'progress'>) => {
+    try {
+      console.log("Creating test plan with data:", testPlanData);
+      
+      // Log the date types to debug date issues
+      console.log("Start date type:", testPlanData.startDate ? typeof testPlanData.startDate : "undefined", 
+                  "Value:", testPlanData.startDate);
+      console.log("End date type:", testPlanData.endDate ? typeof testPlanData.endDate : "undefined", 
+                  "Value:", testPlanData.endDate);
+      
+      const result = await dispatch(createTestPlanAsync(testPlanData)).unwrap();
+      console.log("Test plan creation successful, received:", result);
+      
+      // toast({
+      //   title: "Success",
+      //   description: "Test plan created successfully",
+      // });
+      setIsCreateDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to create test plan:", err);
+      toast({
+        title: "Error",
+        description: "Failed to create test plan",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewDetails = (testPlan: TestPlan) => {
@@ -268,8 +326,8 @@ export function TestPlanManager() {
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{plan.startDate}</div>
-                      <div className="text-muted-foreground">to {plan.endDate}</div>
+                      <div>{formatDate(plan.startDate)}</div>
+                      <div className="text-muted-foreground">to {formatDate(plan.endDate)}</div>
                     </div>
                   </TableCell>
                   <TableCell>

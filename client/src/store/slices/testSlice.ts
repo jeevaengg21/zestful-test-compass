@@ -12,6 +12,15 @@ const initialState: TestState = {
   testSuites: []
 };
 
+// Async thunks for test cases
+export const fetchTestCases = createAsyncThunk(
+  'tests/fetchTestCases',
+  async () => {
+    const response = await apiRequest('/api/test-cases');
+    return response.testCases || response;
+  }
+);
+
 // Async thunks for test suites
 export const fetchTestSuites = createAsyncThunk(
   'tests/fetchTestSuites',
@@ -92,6 +101,9 @@ const testSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchTestCases.fulfilled, (state, action) => {
+        state.testCases = action.payload;
+      })
       .addCase(fetchTestSuites.fulfilled, (state, action) => {
         state.testSuites = action.payload;
       })

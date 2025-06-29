@@ -352,6 +352,7 @@ export class DatabaseStorage implements IStorage {
           moduleId: testCases.moduleId,
           tenantId: testCases.tenantId,
           createdDate: testCases.createdDate,
+          lastModified: testCases.lastModified,
           lastRun: testCases.lastRun,
           estimatedTime: testCases.estimatedTime,
           priority: priorities.name,
@@ -454,6 +455,9 @@ export class DatabaseStorage implements IStorage {
     if (updates.steps !== undefined) cleanUpdates.steps = ensureArray<string>(updates.steps);
     if (updates.estimatedTime !== undefined) cleanUpdates.estimatedTime = updates.estimatedTime;
     
+    // Always update the lastModified timestamp whenever a test case is updated
+    cleanUpdates.lastModified = new Date();
+    
     const result = await db.update(testCases).set(cleanUpdates).where(and(eq(testCases.id, id), eq(testCases.tenantId, tenantId))).returning();
     return result[0];
   }
@@ -540,7 +544,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTestPlan(testPlan: InsertTestPlan, tenantId: string): Promise<TestPlan> {
-    const id = `TP_${crypto.randomUUID()}`;
+    const id = `${crypto.randomUUID()}`;
+    
+    // Helper function to handle UUID fields - prevents empty strings
+    const sanitizeUUID = (value: string | null | undefined): string | null => {
+      if (!value || value === '') return null;
+      return value;
+    };
     
     const testPlanData: typeof testPlans.$inferInsert = {
       id,
@@ -548,14 +558,14 @@ export class DatabaseStorage implements IStorage {
       description: testPlan.description,
       productId: testPlan.productId,
       priority: testPlan.priority,
-      scope: testPlan.scope,
+      scope: testPlan.scope || '',
       environment: testPlan.environment,
-      testStrategy: testPlan.testStrategy,
-      createdBy: testPlan.createdBy,
+      testStrategy: testPlan.testStrategy || '',
+      createdBy: sanitizeUUID(testPlan.createdBy),
       status: testPlan.status || 'Draft',
       objectives: testPlan.objectives ? ensureArray<string>(testPlan.objectives) : [],
       testSuiteIds: testPlan.testSuiteIds ? ensureArray<string>(testPlan.testSuiteIds) : [],
-      assignedTeamMembers: testPlan.assignedTeamMembers ? ensureArray<string>(testPlan.assignedTeamMembers) : [],
+      assignedTeamMembers: testPlan.assignedTeamMembers ? ensureArray<string>(testPlan.assignedTeamMembers).filter(id => id && id !== '') : [],
       deliverables: testPlan.deliverables ? ensureArray<string>(testPlan.deliverables) : [],
       risks: testPlan.risks ? ensureArray<string>(testPlan.risks) : [],
       entryExitCriteria: testPlan.entryExitCriteria ? {
