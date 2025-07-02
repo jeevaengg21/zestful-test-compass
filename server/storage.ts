@@ -867,9 +867,10 @@ export class DatabaseStorage implements IStorage {
       name: testDataSet.name,
       description: testDataSet.description,
       productId: testDataSet.productId,
-      moduleId: testDataSet.moduleId,
-      createdBy: testDataSet.createdBy,
-      data: testDataSet.data ? ensureArray<{key: string, value: string, type: string}>(testDataSet.data) : [],
+      moduleId: testDataSet.moduleId || null,
+      createdBy: testDataSet.createdBy || 'Anonymous',
+      data: Array.isArray(testDataSet.data) ? testDataSet.data : [],
+      isActive: testDataSet.isActive !== undefined ? testDataSet.isActive : true,
       tenantId
     };
     const result = await db.insert(testDataSets).values(testDataSetData).returning();

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addTestDataItem, updateTestDataItem, deleteTestDataItem } from "@/store/slices/testDataSlice";
 import { selectTestDataSetById, selectTestCasesUsingTestDataSet, selectAllProducts } from "@/store/selectors";
-import { TestDataItem } from "@/store/slices/testDataSlice";
 import { 
   Plus, 
   Edit, 
@@ -20,6 +18,28 @@ import {
   EyeOff
 } from "lucide-react";
 
+// Define the TestDataItem interface locally
+interface TestDataItem {
+  id: string;
+  key: string;
+  value: string;
+  type: 'string' | 'number' | 'boolean' | 'email' | 'url' | 'password';
+  description?: string;
+}
+
+// Define TestDataSet interface to match the structure from the error messages
+interface TestDataSet {
+  id: string;
+  name: string;
+  description?: string;
+  productId: string;
+  createdBy: string;
+  lastModified?: string | number | Date;
+  isActive: boolean;
+  items?: TestDataItem[];
+  data?: TestDataItem[];
+}
+
 interface TestDataViewerProps {
   testDataSetId: string;
   onEdit: () => void;
@@ -28,7 +48,7 @@ interface TestDataViewerProps {
 
 export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewerProps) => {
   const dispatch = useAppDispatch();
-  const testDataSet = useAppSelector((state) => selectTestDataSetById(state, testDataSetId));
+  const testDataSet = useAppSelector((state) => selectTestDataSetById(state, testDataSetId)) as TestDataSet | undefined;
   const testCasesUsing = useAppSelector((state) => selectTestCasesUsingTestDataSet(state, testDataSetId));
   const products = useAppSelector(selectAllProducts);
 
@@ -42,6 +62,14 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
     description: ""
   });
 
+  // Safely access test data items regardless of whether they're in 'items' or 'data' property
+  const testDataItems = useMemo(() => {
+    if (!testDataSet) return [];
+    if (Array.isArray(testDataSet.data)) return testDataSet.data;
+    if (Array.isArray(testDataSet.items)) return testDataSet.items;
+    return [];
+  }, [testDataSet]);
+  
   if (!testDataSet) {
     return <div>Test data set not found</div>;
   }
@@ -148,7 +176,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
             <span className="font-medium">Created by:</span> {testDataSet.createdBy}
           </div>
           <div>
-            <span className="font-medium">Last modified:</span> {testDataSet.lastModified}
+            <span className="font-medium">Last modified:</span> {testDataSet.lastModified ? new Date(testDataSet.lastModified).toLocaleString() : 'N/A'}
           </div>
         </div>
 
@@ -169,7 +197,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
       {/* Test Data Items */}
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h4 className="text-md font-semibold">Test Data Items ({testDataSet.items.length})</h4>
+          <h4 className="text-md font-semibold">Test Data Items ({testDataItems.length})</h4>
           <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -308,7 +336,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
             </TableRow>
           </TableHeader>
           <TableBody>
-            {testDataSet.items.map((item) => (
+            {testDataItems.map((item: TestDataItem) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.key}</TableCell>
                 <TableCell>{renderValue(item)}</TableCell>
@@ -348,7 +376,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
           </TableBody>
         </Table>
 
-        {testDataSet.items.length === 0 && (
+        {testDataItems.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             No test data items yet. Click "Add Item" to get started.
           </div>

@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestDataSet, updateTestDataSet } from "@/store/slices/testDataSlice";
+import { addTestDataSetAsync, updateTestDataSetAsync } from "@/store/slices/testDataSlice";
 import { selectAllProducts, selectModulesByProduct, selectTestDataSetById } from "@/store/selectors";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TestDataFormProps {
   testDataSetId?: string;
@@ -18,19 +18,28 @@ interface TestDataFormProps {
 
 export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFormProps) => {
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
   const products = useAppSelector(selectAllProducts);
   const existingTestDataSet = testDataSetId ? useAppSelector((state) => selectTestDataSetById(state, testDataSetId)) : null;
+  const isMountedRef = useRef(true);
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     productId: "",
     moduleId: "",
-    isActive: true,
-    createdBy: "Current User" // In a real app, this would come from auth
+    isActive: true
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const modules = useAppSelector((state) => selectModulesByProduct(state, formData.productId));
+
+  // Set isMounted to false when component unmounts
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (existingTestDataSet) {
@@ -40,7 +49,6 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
         productId: existingTestDataSet.productId,
         moduleId: existingTestDataSet.moduleId || "",
         isActive: existingTestDataSet.isActive,
-        createdBy: existingTestDataSet.createdBy
       });
     }
   }, [existingTestDataSet]);
@@ -49,31 +57,66 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (formData.name && formData.productId) {
-      if (testDataSetId) {
-        dispatch(updateTestDataSet({
-          id: testDataSetId,
-          updates: {
+      setIsSubmitting(true);
+      
+      try {
+        if (testDataSetId) {
+          const result = await dispatch(updateTestDataSetAsync({
+            id: testDataSetId,
+            updates: {
+              name: formData.name,
+              description: formData.description,
+              productId: formData.productId,
+              moduleId: formData.moduleId || undefined,
+              isActive: formData.isActive
+            }
+          })).unwrap();
+          
+          if (isMountedRef.current) {
+            toast({
+              title: "Test data set updated",
+              description: "Your test data set has been updated successfully.",
+            });
+            
+            // Call onSuccess directly - no need for setTimeout
+            onSuccess();
+          }
+        } else {
+          const result = await dispatch(addTestDataSetAsync({
             name: formData.name,
             description: formData.description,
             productId: formData.productId,
             moduleId: formData.moduleId || undefined,
+            data: [], // Use data property instead of items
             isActive: formData.isActive
+          })).unwrap();
+          
+          if (isMountedRef.current) {
+            toast({
+              title: "Test data set created",
+              description: "Your test data set has been created successfully.",
+            });
+            
+            // Call onSuccess directly - no need for setTimeout
+            onSuccess();
           }
-        }));
-      } else {
-        dispatch(addTestDataSet({
-          name: formData.name,
-          description: formData.description,
-          productId: formData.productId,
-          moduleId: formData.moduleId || undefined,
-          items: [],
-          createdBy: formData.createdBy,
-          isActive: formData.isActive
-        }));
+        }
+      } catch (error) {
+        if (isMountedRef.current) {
+          console.error("Error submitting test data set:", error);
+          toast({
+            title: "Error",
+            description: `Failed to ${testDataSetId ? "update" : "create"} test data set. Please try again.`,
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsSubmitting(false);
+        }
       }
-      onSuccess();
     }
   };
 
@@ -147,7 +190,7 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit}>
+        <Button onClick={handleSubmit} disabled={isSubmitting}>
           {testDataSetId ? "Update" : "Create"} Test Data Set
         </Button>
       </div>

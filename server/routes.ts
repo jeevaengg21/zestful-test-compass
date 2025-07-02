@@ -1139,6 +1139,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Test Data Set routes (tenant-aware)
+  app.get("/api/test-data-sets", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testDataSets = await storage.getAllTestDataSets(tenantId);
+      res.json(testDataSets);
+    } catch (error) {
+      console.error("Get test data sets error:", error);
+      res.status(500).json({ error: "Failed to fetch test data sets" });
+    }
+  });
+
+  app.get("/api/test-data-sets/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testDataSet = await storage.getTestDataSet(req.params.id, tenantId);
+      if (!testDataSet) {
+        return res.status(404).json({ error: "Test data set not found" });
+      }
+      res.json(testDataSet);
+    } catch (error) {
+      console.error("Get test data set error:", error);
+      res.status(500).json({ error: "Failed to fetch test data set" });
+    }
+  });
+
+  app.post("/api/test-data-sets", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      console.log("Creating test data set with data:", req.body);
+      
+      // Always use the authenticated user's ID from the token
+      const testDataSetWithUser = {
+        ...req.body,
+        createdBy: req.user!.id
+      };
+      
+      // Make sure data is initialized properly
+      if (!testDataSetWithUser.data) {
+        testDataSetWithUser.data = [];
+      }
+      
+      const testDataSet = await storage.createTestDataSet(testDataSetWithUser, tenantId);
+      console.log("Test data set created successfully:", testDataSet);
+      res.status(201).json(testDataSet);
+    } catch (error) {
+      console.error("Create test data set error:", error);
+      res.status(500).json({ error: `Failed to create test data set: ${error.message}` });
+    }
+  });
+
+  app.patch("/api/test-data-sets/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const updates = req.body;
+      
+      console.log(`Updating test data set ${req.params.id} with:`, updates);
+      
+      const testDataSet = await storage.updateTestDataSet(req.params.id, updates, tenantId);
+      if (!testDataSet) {
+        return res.status(404).json({ error: "Test data set not found" });
+      }
+      res.json(testDataSet);
+    } catch (error) {
+      console.error("Update test data set error:", error);
+      res.status(500).json({ error: "Failed to update test data set" });
+    }
+  });
+
+  app.delete("/api/test-data-sets/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteTestDataSet(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Test data set not found" });
+      }
+      res.json({ message: "Test data set deleted successfully" });
+    } catch (error) {
+      console.error("Delete test data set error:", error);
+      res.status(500).json({ error: "Failed to delete test data set" });
+    }
+  });
+
+  // Test Case Data Mapping routes (tenant-aware)
+  app.get("/api/test-case-data-mappings", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testCaseId = req.query.testCaseId as string;
+      
+      let mappings;
+      if (testCaseId) {
+        mappings = await storage.getTestCaseDataMappingsByTestCase(testCaseId, tenantId);
+      } else {
+        mappings = await storage.getAllTestCaseDataMappings(tenantId);
+      }
+      
+      res.json(mappings);
+    } catch (error) {
+      console.error("Get test case data mappings error:", error);
+      res.status(500).json({ error: "Failed to fetch test case data mappings" });
+    }
+  });
+
+  app.post("/api/test-case-data-mappings", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const mappingData = req.body;
+      
+      // Generate a unique ID for the mapping if not provided
+      if (!mappingData.id) {
+        mappingData.id = `TCDM_${crypto.randomUUID()}`;
+      }
+      
+      const mapping = await storage.createTestCaseDataMapping(mappingData, tenantId);
+      res.status(201).json(mapping);
+    } catch (error) {
+      console.error("Create test case data mapping error:", error);
+      res.status(500).json({ error: "Failed to create test case data mapping" });
+    }
+  });
+
+  app.delete("/api/test-case-data-mappings/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const success = await storage.deleteTestCaseDataMapping(req.params.id, tenantId);
+      if (!success) {
+        return res.status(404).json({ error: "Test case data mapping not found" });
+      }
+      res.json({ message: "Test case data mapping deleted successfully" });
+    } catch (error) {
+      console.error("Delete test case data mapping error:", error);
+      res.status(500).json({ error: "Failed to delete test case data mapping" });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }
