@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestDataItem, updateTestDataItem, deleteTestDataItem } from "@/store/slices/testDataSlice";
+import { addTestDataItem, updateTestDataItem, deleteTestDataItem, addTestDataItemAsync, updateTestDataItemAsync, deleteTestDataItemAsync } from "@/store/slices/testDataSlice";
 import { selectTestDataSetById, selectTestCasesUsingTestDataSet, selectAllProducts } from "@/store/selectors";
 import { 
   Plus, 
@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Define the TestDataItem interface locally
 interface TestDataItem {
@@ -51,6 +52,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
   const testDataSet = useAppSelector((state) => selectTestDataSetById(state, testDataSetId)) as TestDataSet | undefined;
   const testCasesUsing = useAppSelector((state) => selectTestCasesUsingTestDataSet(state, testDataSetId));
   const products = useAppSelector(selectAllProducts);
+  const { toast } = useToast();
 
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TestDataItem | null>(null);
@@ -79,36 +81,93 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
     return product ? product.name : "Unknown Product";
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (newItem.key && newItem.value) {
-      dispatch(addTestDataItem({
-        testDataSetId,
-        item: {
-          key: newItem.key,
-          value: newItem.value,
-          type: newItem.type,
-          description: newItem.description
-        }
-      }));
-      setNewItem({ key: "", value: "", type: "string", description: "" });
-      setIsAddItemDialogOpen(false);
+      try {
+        // Use the async thunk that performs an API call instead of the local action
+        await dispatch(addTestDataItemAsync({
+          testDataSetId,
+          item: {
+            key: newItem.key,
+            value: newItem.value,
+            type: newItem.type,
+            description: newItem.description
+          }
+        })).unwrap();
+        
+        // Show success toast message
+        toast({
+          title: "Success",
+          description: "Test data item added successfully",
+        });
+        
+        // Reset form and close dialog
+        setNewItem({ key: "", value: "", type: "string", description: "" });
+        setIsAddItemDialogOpen(false);
+      } catch (error) {
+        // Show error toast message
+        toast({
+          title: "Error",
+          description: "Failed to add test data item. Please try again.",
+          variant: "destructive",
+        });
+        console.error("Error adding test data item:", error);
+      }
     }
   };
 
-  const handleUpdateItem = () => {
+  const handleUpdateItem = async () => {
     if (editingItem) {
-      dispatch(updateTestDataItem({
-        testDataSetId,
-        itemId: editingItem.id,
-        updates: editingItem
-      }));
-      setEditingItem(null);
+      try {
+        // Use the async thunk that performs an API call
+        await dispatch(updateTestDataItemAsync({
+          testDataSetId,
+          itemId: editingItem.id,
+          updates: editingItem
+        })).unwrap();
+        
+        // Show success toast message
+        toast({
+          title: "Success",
+          description: "Test data item updated successfully",
+        });
+        
+        setEditingItem(null);
+      } catch (error) {
+        // Show error toast message
+        toast({
+          title: "Error",
+          description: "Failed to update test data item. Please try again.",
+          variant: "destructive",
+        });
+        console.error("Error updating test data item:", error);
+      }
     }
   };
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
     if (window.confirm("Are you sure you want to delete this test data item?")) {
-      dispatch(deleteTestDataItem({ testDataSetId, itemId }));
+      try {
+        // Use the async thunk that performs an API call
+        await dispatch(deleteTestDataItemAsync({ 
+          testDataSetId, 
+          itemId 
+        })).unwrap();
+        
+        // Show success toast message
+        toast({
+          title: "Success",
+          description: "Test data item deleted successfully",
+        });
+      } catch (error) {
+        // Show error toast message
+        toast({
+          title: "Error",
+          description: "Failed to delete test data item. Please try again.",
+          variant: "destructive",
+        });
+        console.error("Error deleting test data item:", error);
+      }
     }
   };
 

@@ -5,13 +5,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestCaseDataMapping, removeTestCaseDataMapping } from "@/store/slices/testDataSlice";
+import { addTestCaseDataMapping, removeTestCaseDataMapping, addTestCaseDataMappingAsync, removeTestCaseDataMappingAsync } from "@/store/slices/testDataSlice";
 import { selectTestDataSetsForTestCase, selectAllTestDataSets, selectAllTestCaseDataMappings } from "@/store/selectors";
 import { 
   Link,
   Unlink,
   Database
 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Add debug logging
 const debugLog = (message: string, data?: any) => {
@@ -27,6 +28,7 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
   debugLog('Component rendering', { testCaseId, testCaseTitle });
   
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
   
   // Add try-catch blocks around all useAppSelector calls
   let mappedTestDataSets = [];
@@ -97,47 +99,69 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
     }
   };
 
-  const handleSaveMappings = () => {
+  const handleSaveMappings = async () => {
     try {
       debugLog('Saving mappings', { selectedDataSets });
       const currentMappings = mappedTestDataSets.map(set => set.id);
       
       // Remove mappings that are no longer selected
-      currentMappings.forEach(dataSetId => {
+      await Promise.all(currentMappings.map(async dataSetId => {
         if (!selectedDataSets.includes(dataSetId)) {
           const mapping = allMappings.find(m => m.testCaseId === testCaseId && m.testDataSetId === dataSetId);
           if (mapping) {
-            dispatch(removeTestCaseDataMapping(mapping.id));
+            await dispatch(removeTestCaseDataMappingAsync(mapping.id));
+            debugLog('Removed mapping', mapping);
           }
         }
-      });
+      }));
 
       // Add new mappings
-      selectedDataSets.forEach(dataSetId => {
+      await Promise.all(selectedDataSets.map(async dataSetId => {
         if (!currentMappings.includes(dataSetId)) {
-          dispatch(addTestCaseDataMapping({
+          await dispatch(addTestCaseDataMappingAsync({
             testCaseId,
             testDataSetId: dataSetId,
             isDefault: selectedDataSets.length === 1 // Make it default if it's the only one
           }));
+          debugLog('Added mapping', { testCaseId, dataSetId });
         }
-      });
+      }));
 
       setIsMapperDialogOpen(false);
+      toast({
+        title: "Mappings saved",
+        description: "The test data mappings have been updated successfully.",
+        variant: "success",
+      });
     } catch (err) {
       debugLog('Error saving mappings', err);
+      toast({
+        title: "Error saving mappings",
+        description: "There was an error updating the test data mappings. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleUnmapDataSet = (dataSetId: string) => {
+  const handleUnmapDataSet = async (dataSetId: string) => {
     try {
       debugLog('Unmapping data set', { dataSetId });
       const mapping = allMappings.find(m => m.testCaseId === testCaseId && m.testDataSetId === dataSetId);
       if (mapping) {
-        dispatch(removeTestCaseDataMapping(mapping.id));
+        await dispatch(removeTestCaseDataMappingAsync(mapping.id)).unwrap();
+        toast({
+          title: "Mapping removed",
+          description: "The test data mapping has been removed successfully.",
+        });
+        debugLog('Removed mapping', mapping);
       }
     } catch (err) {
       debugLog('Error unmapping data set', err);
+      toast({
+        title: "Error removing mapping",
+        description: "There was an error removing the test data mapping. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
