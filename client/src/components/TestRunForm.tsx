@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,9 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectAllTestPlans, selectAllUsers, selectAllTestSuites, selectTestCasesInSuite } from "@/store/selectors";
+import { selectAllUsers, selectAllProducts } from "@/store/selectors";
 import { createTestRunAsync, TestRun } from "@/store/slices/testRunSlice";
+import { apiRequest } from "@/lib/queryClient";
+import { TestPlan, TestSuite } from "@shared/schema";
 
 interface TestRunFormProps {
   onClose: () => void;
@@ -16,11 +19,19 @@ interface TestRunFormProps {
 
 export function TestRunForm({ onClose }: TestRunFormProps) {
   const dispatch = useAppDispatch();
-  const testPlans = useAppSelector(selectAllTestPlans);
   const users = useAppSelector(selectAllUsers);
-  const testSuites = useAppSelector(selectAllTestSuites);
+  const products = useAppSelector(selectAllProducts);
+
+  // State for API-fetched data
+  const [productTestPlans, setProductTestPlans] = useState<TestPlan[]>([]);
+  const [testPlanTestSuites, setTestPlanTestSuites] = useState<TestSuite[]>([]);
+  
+  // Loading states
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isLoadingSuites, setIsLoadingSuites] = useState(false);
 
   const [formData, setFormData] = useState({
+    productId: "",
     name: "",
     description: "",
     testPlanId: "",
@@ -33,10 +44,76 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
     estimatedHours: 0
   });
 
-  const selectedTestPlan = testPlans.find(plan => plan.id === formData.testPlanId);
-  const availableTestSuites = selectedTestPlan 
-    ? testSuites.filter(suite => selectedTestPlan.testSuiteIds.includes(suite.id))
-    : [];
+  // Fetch test plans when product is selected
+  useEffect(() => {
+    const fetchTestPlansForProduct = async () => {
+      if (!formData.productId) {
+        setProductTestPlans([]);
+        return;
+      }
+
+      try {
+        setIsLoadingPlans(true);
+        // Fetch test plans for the selected product from API
+        const response = await apiRequest(`/api/test-plans?productId=${formData.productId}`);
+        setProductTestPlans(response);
+        console.log(`Loaded ${response.length} test plans for product ${formData.productId}`);
+      } catch (error) {
+        console.error("Failed to fetch test plans for product:", error);
+        setProductTestPlans([]);
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    };
+
+    fetchTestPlansForProduct();
+  }, [formData.productId]);
+
+  // Fetch test suites when test plan is selected
+  useEffect(() => {
+    const fetchTestSuitesForTestPlan = async () => {
+      if (!formData.testPlanId) {
+        setTestPlanTestSuites([]);
+        return;
+      }
+
+      try {
+        setIsLoadingSuites(true);
+        // Fetch test suites for the selected test plan from API
+        const response = await apiRequest(`/api/test-plans/${formData.testPlanId}/test-suites`);
+        setTestPlanTestSuites(response);
+        console.log(`Loaded ${response.length} test suites for test plan ${formData.testPlanId}`);
+      } catch (error) {
+        console.error("Failed to fetch test suites for test plan:", error);
+        setTestPlanTestSuites([]);
+      } finally {
+        setIsLoadingSuites(false);
+      }
+    };
+
+    fetchTestSuitesForTestPlan();
+  }, [formData.testPlanId]);
+
+  // When product changes, reset test plan and test suite selections
+  const handleProductChange = (productId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      productId,
+      testPlanId: "",
+      testSuiteIds: []
+    }));
+  };
+
+  // When test plan changes, reset test suite selections
+  const handleTestPlanChange = (testPlanId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      testPlanId,
+      testSuiteIds: []
+    }));
+  };
+
+  const selectedTestPlan = productTestPlans.find(plan => plan.id === formData.testPlanId);
 
   const handleTestSuiteChange = (suiteId: string, checked: boolean) => {
     if (checked) {
@@ -54,8 +131,8 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
 
   const calculateTotalTestCases = () => {
     return formData.testSuiteIds.reduce((total, suiteId) => {
-      const suite = testSuites.find(s => s.id === suiteId);
-      return total + (suite?.testCaseIds.length || 0);
+      const suite = testPlanTestSuites.find(s => s.id === suiteId);
+      return total + (suite?.testCaseIds?.length || 0);
     }, 0);
   };
 
@@ -114,20 +191,53 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
           </div>
 
           <div>
+            <Label htmlFor="productId">Product *</Label>
+            <Select 
+              value={formData.productId} 
+              onValueChange={handleProductChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select product" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label htmlFor="testPlanId">Test Plan *</Label>
             <Select 
               value={formData.testPlanId} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, testPlanId: value, testSuiteIds: [] }))}
+              onValueChange={handleTestPlanChange}
+              disabled={!formData.productId || isLoadingPlans}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select test plan" />
+                {isLoadingPlans ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <span>Loading plans...</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder={formData.productId ? "Select test plan" : "Select a product first"} />
+                )}
               </SelectTrigger>
               <SelectContent>
-                {testPlans.map((plan) => (
-                  <SelectItem key={plan.id} value={plan.id}>
-                    {plan.name}
+                {productTestPlans.length > 0 ? (
+                  productTestPlans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-plans" disabled>
+                    {formData.productId ? "No test plans found for this product" : "Select a product first"}
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -237,23 +347,34 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {availableTestSuites.map((suite) => (
-              <div key={suite.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={suite.id}
-                  checked={formData.testSuiteIds.includes(suite.id)}
-                  onCheckedChange={(checked) => handleTestSuiteChange(suite.id, checked as boolean)}
-                />
-                <Label htmlFor={suite.id} className="flex-1">
-                  <div>
-                    <div className="font-medium">{suite.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {suite.testCaseIds.length} test cases
-                    </div>
-                  </div>
-                </Label>
+            {isLoadingSuites ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 mr-2 animate-spin text-blue-500" />
+                <span>Loading test suites...</span>
               </div>
-            ))}
+            ) : testPlanTestSuites.length === 0 ? (
+              <div className="text-center py-6 text-gray-500">
+                No test suites found for this test plan.
+              </div>
+            ) : (
+              testPlanTestSuites.map((suite) => (
+                <div key={suite.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={suite.id}
+                    checked={formData.testSuiteIds.includes(suite.id)}
+                    onCheckedChange={(checked) => handleTestSuiteChange(suite.id, checked as boolean)}
+                  />
+                  <Label htmlFor={suite.id} className="flex-1">
+                    <div>
+                      <div className="font-medium">{suite.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {suite.testCaseIds?.length || 0} test cases
+                      </div>
+                    </div>
+                  </Label>
+                </div>
+              ))
+            )}
             {formData.testSuiteIds.length > 0 && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm font-medium text-blue-900">
@@ -269,7 +390,7 @@ export function TestRunForm({ onClose }: TestRunFormProps) {
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!formData.testPlanId}>
+        <Button type="submit" disabled={!formData.testPlanId || !formData.productId}>
           Create Test Run
         </Button>
       </div>

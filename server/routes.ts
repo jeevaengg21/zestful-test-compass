@@ -1274,6 +1274,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get test suites for a specific test plan
+  app.get("/api/test-plans/:id/test-suites", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testPlanId = req.params.id;
+      
+      // Get the test plan to find its test suite IDs
+      const testPlan = await storage.getTestPlan(testPlanId, tenantId);
+      
+      if (!testPlan) {
+        return res.status(404).json({ error: "Test plan not found" });
+      }
+      
+      // If the test plan has no test suite IDs, return empty array
+      if (!testPlan.testSuiteIds || testPlan.testSuiteIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get all the test suites for this test plan
+      const testSuites = [];
+      for (const testSuiteId of testPlan.testSuiteIds) {
+        const testSuite = await storage.getTestSuite(testSuiteId, tenantId);
+        if (testSuite) {
+          testSuites.push(testSuite);
+        }
+      }
+      
+      console.log(`Found ${testSuites.length} test suites for test plan ${testPlanId}`);
+      res.json(testSuites);
+    } catch (error) {
+      console.error(`Error fetching test suites for test plan ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch test suites for test plan" });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }
