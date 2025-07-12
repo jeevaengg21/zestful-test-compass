@@ -149,6 +149,27 @@ export const removeTestCaseDataMappingAsync = createAsyncThunk(
   }
 );
 
+// NEW OPTIMIZED ACTION: Fetch test data sets for a specific test case
+export const fetchTestDataSetsForTestCase = createAsyncThunk(
+  'testData/fetchTestDataSetsForTestCase',
+  async (testCaseId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/test-cases/${testCaseId}/test-data-sets`, {
+        headers: getAuthHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch test data sets for test case');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching test data sets for test case:', error);
+      throw error;
+    }
+  }
+);
+
 export const addTestDataItemAsync = createAsyncThunk(
   'testData/addTestDataItemAsync',
   async ({ testDataSetId, item }: { testDataSetId: string; item: { key: string; value: string; type: string; description?: string } }) => {
@@ -431,6 +452,20 @@ const testDataSlice = createSlice({
       if (dataSet && dataSet.data) {
         dataSet.data = dataSet.data.filter((item: any) => item.id !== itemId);
       }
+    });
+
+    // Fetch Test Data Sets For Test Case
+    builder.addCase(fetchTestDataSetsForTestCase.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchTestDataSetsForTestCase.fulfilled, (state, action) => {
+      state.testDataSets = action.payload;
+      state.loading = false;
+    });
+    builder.addCase(fetchTestDataSetsForTestCase.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.error.message || 'Failed to fetch test data sets for test case';
     });
   }
 });

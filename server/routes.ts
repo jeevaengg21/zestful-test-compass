@@ -1309,6 +1309,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // NEW OPTIMIZED ENDPOINT: Get test data sets for a specific test case
+  app.get("/api/test-cases/:testCaseId/test-data-sets", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const tenantId = req.tenantId!;
+      const testCaseId = req.params.testCaseId;
+      
+      console.log(`Fetching test data sets for test case: ${testCaseId}, tenant: ${tenantId}`);
+      
+      // Use the new optimized method that joins mappings with test data sets in one query
+      const testDataSets = await storage.getTestDataSetsForTestCase(testCaseId, tenantId);
+      
+      console.log(`Found ${testDataSets.length} test data sets mapped to test case ${testCaseId}`);
+      res.json(testDataSets);
+    } catch (error) {
+      console.error("Get test data sets for test case error:", error);
+      res.status(500).json({ error: "Failed to fetch test data sets for test case" });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

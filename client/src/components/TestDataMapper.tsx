@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addTestCaseDataMapping, removeTestCaseDataMapping, addTestCaseDataMappingAsync, removeTestCaseDataMappingAsync } from "@/store/slices/testDataSlice";
+import { addTestCaseDataMapping, removeTestCaseDataMapping, addTestCaseDataMappingAsync, removeTestCaseDataMappingAsync, fetchTestDataSets, fetchTestCaseDataMappings, fetchTestDataSetsForTestCase } from "@/store/slices/testDataSlice";
 import { selectTestDataSetsForTestCase, selectAllTestDataSets, selectAllTestCaseDataMappings } from "@/store/selectors";
 import { 
   Link,
@@ -30,17 +30,34 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   
-  // Add try-catch blocks around all useAppSelector calls
-  let mappedTestDataSets = [];
-  try {
-    const sets = useAppSelector((state) => selectTestDataSetsForTestCase(state, testCaseId || ""));
-    debugLog('Mapped test data sets loaded', sets);
-    mappedTestDataSets = sets;
-  } catch (err) {
-    debugLog('Error loading mapped test data sets', err);
-    mappedTestDataSets = [];
-  }
+  // Local state to store the mapped test data sets for this specific test case
+  const [mappedTestDataSets, setMappedTestDataSets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   
+  // Fetch data when component mounts or testCaseId changes
+  useEffect(() => {
+    if (testCaseId) {
+      debugLog('Fetching test data sets for testCaseId:', testCaseId);
+      setLoading(true);
+      
+      // Use the new optimized action to fetch only mapped test data sets for this test case
+      dispatch(fetchTestDataSetsForTestCase(testCaseId))
+        .unwrap()
+        .then((dataSets) => {
+          debugLog('Successfully fetched mapped test data sets', dataSets);
+          setMappedTestDataSets(dataSets);
+        })
+        .catch((error) => {
+          debugLog('Error fetching mapped test data sets', error);
+          setMappedTestDataSets([]);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [dispatch, testCaseId]);
+  
+  // Get all test data sets for the mapping dialog (only when dialog opens)
   let allTestDataSets = [];
   try {
     const sets = useAppSelector(selectAllTestDataSets);
@@ -74,9 +91,13 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
     );
   }
 
-  const handleOpenMapper = () => {
-    // Pre-select currently mapped data sets
+  const handleOpenMapper = async () => {
+    // Fetch all test data sets when opening the dialog
     try {
+      await dispatch(fetchTestDataSets());
+      await dispatch(fetchTestCaseDataMappings());
+      
+      // Pre-select currently mapped data sets
       const currentMappings = mappedTestDataSets.map(set => set.id);
       setSelectedDataSets(currentMappings);
       setIsMapperDialogOpen(true);
@@ -127,6 +148,13 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
         }
       }));
 
+      // Refresh the mapped test data sets after saving
+      dispatch(fetchTestDataSetsForTestCase(testCaseId))
+        .unwrap()
+        .then((dataSets) => {
+          setMappedTestDataSets(dataSets);
+        });
+
       setIsMapperDialogOpen(false);
       toast({
         title: "Mappings saved",
@@ -149,6 +177,14 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
       const mapping = allMappings.find(m => m.testCaseId === testCaseId && m.testDataSetId === dataSetId);
       if (mapping) {
         await dispatch(removeTestCaseDataMappingAsync(mapping.id)).unwrap();
+        
+        // Refresh the mapped test data sets after unmapping
+        dispatch(fetchTestDataSetsForTestCase(testCaseId))
+          .unwrap()
+          .then((dataSets) => {
+            setMappedTestDataSets(dataSets);
+          });
+          
         toast({
           title: "Mapping removed",
           description: "The test data mapping has been removed successfully.",
@@ -164,6 +200,20 @@ export const TestDataMapper = ({ testCaseId, testCaseTitle }: TestDataMapperProp
       });
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h4 className="text-sm font-medium">Test Data</h4>
+        </div>
+        <div className="text-center py-4 text-gray-500">
+          Loading test data mappings...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

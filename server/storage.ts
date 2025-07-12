@@ -145,6 +145,7 @@ export interface IStorage {
   // Test Case Data Mapping methods (tenant-aware)
   getAllTestCaseDataMappings(tenantId: string): Promise<TestCaseDataMapping[]>;
   getTestCaseDataMappingsByTestCase(testCaseId: string, tenantId: string): Promise<TestCaseDataMapping[]>;
+  getTestDataSetsForTestCase(testCaseId: string, tenantId: string): Promise<TestDataSet[]>;
   createTestCaseDataMapping(mapping: InsertTestCaseDataMapping, tenantId: string): Promise<TestCaseDataMapping>;
   deleteTestCaseDataMapping(id: string, tenantId: string): Promise<boolean>;
 }
@@ -914,6 +915,35 @@ export class DatabaseStorage implements IStorage {
 
   async getTestCaseDataMappingsByTestCase(testCaseId: string, tenantId: string): Promise<TestCaseDataMapping[]> {
     return await db.select().from(testCaseDataMappings).where(and(eq(testCaseDataMappings.testCaseId, testCaseId), eq(testCaseDataMappings.tenantId, tenantId)));
+  }
+
+  // NEW METHOD: Get test data sets mapped to a specific test case (optimized)
+  async getTestDataSetsForTestCase(testCaseId: string, tenantId: string): Promise<TestDataSet[]> {
+    // Join mappings with test data sets to get only mapped data sets in one query
+    const result = await db
+      .select({
+        id: testDataSets.id,
+        name: testDataSets.name,
+        description: testDataSets.description,
+        productId: testDataSets.productId,
+        moduleId: testDataSets.moduleId,
+        data: testDataSets.data,
+        tenantId: testDataSets.tenantId,
+        createdBy: testDataSets.createdBy,
+        createdDate: testDataSets.createdDate,
+        lastModified: testDataSets.lastModified
+      })
+      .from(testCaseDataMappings)
+      .innerJoin(testDataSets, eq(testCaseDataMappings.testDataSetId, testDataSets.id))
+      .where(
+        and(
+          eq(testCaseDataMappings.testCaseId, testCaseId),
+          eq(testCaseDataMappings.tenantId, tenantId),
+          eq(testDataSets.tenantId, tenantId)
+        )
+      );
+    
+    return result;
   }
 
   async createTestCaseDataMapping(mapping: InsertTestCaseDataMapping, tenantId: string): Promise<TestCaseDataMapping> {
