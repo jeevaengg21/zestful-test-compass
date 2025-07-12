@@ -223,13 +223,6 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
             <span className="font-medium">Product:</span> {getProductName(testDataSet.productId)}
           </div>
           <div>
-            <span className="font-medium">Status:</span>{" "}
-            <Badge className={testDataSet.isActive 
-              ? "bg-green-100 text-green-800" 
-              : "bg-gray-100 text-gray-800"
-            }>
-              {testDataSet.isActive ? "Active" : "Inactive"}
-            </Badge>
           </div>
           <div>
             <span className="font-medium">Created by:</span> {testDataSet.createdBy}

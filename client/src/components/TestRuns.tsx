@@ -99,11 +99,6 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
     return user ? user.fullName : "Unknown User";
   };
 
-  const getTestPlanName = (testPlanId: string) => {
-    const plan = testPlans.find(p => p.id === testPlanId);
-    return plan?.name || "Unknown Plan";
-  };
-
   const filteredRuns = testRuns.filter(run => {
     switch (activeTab) {
       case "active":
@@ -341,7 +336,7 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
                       <div className="text-sm text-gray-500">{run.description}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{getTestPlanName(run.testPlanId)}</TableCell>
+                  <TableCell>{run.testPlanName || "Unknown Plan"}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(run.status)}>
                       <div className="flex items-center space-x-1">

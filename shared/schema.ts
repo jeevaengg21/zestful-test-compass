@@ -528,7 +528,9 @@ export type TestSuite = typeof testSuites.$inferSelect;
 export type InsertTestPlan = z.infer<typeof insertTestPlanSchema>;
 export type TestPlan = typeof testPlans.$inferSelect;
 export type InsertTestRun = z.infer<typeof insertTestRunSchema>;
-export type TestRun = typeof testRuns.$inferSelect;
+export type TestRun = typeof testRuns.$inferSelect & { 
+  testPlanName?: string 
+};
 export type InsertTestCaseExecution = z.infer<typeof insertTestCaseExecutionSchema>;
 export type TestCaseExecution = typeof testCaseExecutions.$inferSelect;
 export type InsertDefect = z.infer<typeof insertDefectSchema>;

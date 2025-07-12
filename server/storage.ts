@@ -624,7 +624,17 @@ export class DatabaseStorage implements IStorage {
 
   // Test Run methods (tenant-aware)
   async getAllTestRuns(tenantId: string): Promise<TestRun[]> {
-    return await db.select().from(testRuns).where(eq(testRuns.tenantId, tenantId));
+    // Use a join to fetch test runs with their associated test plan names
+    const result = await db
+      .select({
+        ...testRuns,
+        testPlanName: testPlans.name  // Include the test plan name in the result
+      })
+      .from(testRuns)
+      .leftJoin(testPlans, eq(testRuns.testPlanId, testPlans.id))
+      .where(eq(testRuns.tenantId, tenantId));
+    
+    return result;
   }
 
   async getTestRunsByPlan(testPlanId: string, tenantId: string): Promise<TestRun[]> {

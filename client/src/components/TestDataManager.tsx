@@ -280,8 +280,7 @@ export const TestDataManager = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Product</TableHead>
                         <TableHead>Items</TableHead>
-                        <TableHead>Usage</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Usage</TableHead>                        
                         <TableHead>Created By</TableHead>
                         <TableHead>Last Modified</TableHead>
                         <TableHead>Actions</TableHead>
@@ -321,14 +320,7 @@ export const TestDataManager = () => {
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <Badge className={testDataSet.isActive !== undefined && testDataSet.isActive 
-                                  ? "bg-green-100 text-green-800" 
-                                  : "bg-gray-100 text-gray-800"
-                                }>
-                                  {testDataSet.isActive !== undefined ? (testDataSet.isActive ? "Active" : "Inactive") : "Status Unknown"}
-                                </Badge>
-                              </TableCell>
+                             
                               <TableCell className="text-gray-900">
                                 {testDataSet.createdBy || 'Unknown'}
                               </TableCell>

@@ -27,8 +27,7 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
     name: "",
     description: "",
     productId: "",
-    moduleId: "",
-    isActive: true
+    moduleId: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,8 +46,7 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
         name: existingTestDataSet.name,
         description: existingTestDataSet.description,
         productId: existingTestDataSet.productId,
-        moduleId: existingTestDataSet.moduleId || "",
-        isActive: existingTestDataSet.isActive,
+        moduleId: existingTestDataSet.moduleId || ""
       });
     }
   }, [existingTestDataSet]);
@@ -69,8 +67,7 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
               name: formData.name,
               description: formData.description,
               productId: formData.productId,
-              moduleId: formData.moduleId || undefined,
-              isActive: formData.isActive
+              moduleId: formData.moduleId || undefined
             }
           })).unwrap();
           
@@ -90,7 +87,6 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
             productId: formData.productId,
             moduleId: formData.moduleId || undefined,
             data: [], // Use data property instead of items
-            isActive: formData.isActive
           })).unwrap();
           
           if (isMountedRef.current) {
@@ -177,14 +173,7 @@ export const TestDataForm = ({ testDataSetId, onSuccess, onCancel }: TestDataFor
         </div>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="isActive"
-          checked={formData.isActive}
-          onCheckedChange={(checked) => handleInputChange("isActive", checked)}
-        />
-        <Label htmlFor="isActive">Active</Label>
-      </div>
+
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button variant="outline" onClick={onCancel}>
