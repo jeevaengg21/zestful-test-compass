@@ -349,6 +349,9 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       notes: executionNotes || undefined
     };
     
+    // Optimistic update: immediately update local Redux state for instant UI feedback
+    dispatch(updateTestCaseExecution({ id: executionId, updates }));
+    
     // Use the async thunk for updating the execution in the database
     dispatch(updateTestCaseExecutionAsync({ id: executionId, updates }))
       .unwrap()
@@ -383,6 +386,9 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
       .catch(error => {
         console.error("Failed to update test case execution:", error);
         toast.error(`Failed to update test: ${error.message || 'Unknown error'}`);
+        
+        // Revert optimistic update on error by refetching the current state
+        dispatch(fetchTestCaseExecutions(testRunId));
       });
   };
 
