@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,8 +20,11 @@ import {
   Bug
 } from "lucide-react";
 import { TestCaseExecution } from "@/store/slices/testRunSlice";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { selectAllTestSuites } from "@/store/selectors";
+import { addTestSuite } from "@/store/slices/testSlice";
+import { apiRequest } from "@/lib/queryClient";
+import { useEffect, useMemo } from "react";
 
 interface TestCaseExecutionTableProps {
   executions: TestCaseExecution[];
@@ -34,6 +36,7 @@ interface TestCaseExecutionTableProps {
   onDefectClick: (index: number) => void;
   onPageChange: (page: number) => void;
   tableRef: React.RefObject<HTMLDivElement>;
+  testRunSuiteIds?: string[]; // Add this prop to know which test suites to fetch
 }
 
 export function TestCaseExecutionTable({
@@ -45,9 +48,47 @@ export function TestCaseExecutionTable({
   onExecutionClick,
   onDefectClick,
   onPageChange,
-  tableRef
+  tableRef,
+  testRunSuiteIds = []
 }: TestCaseExecutionTableProps) {
+  const dispatch = useAppDispatch();
   const allTestSuites = useAppSelector(selectAllTestSuites);
+  
+  // Extract unique test suite IDs that we need to fetch based on test cases
+  const neededSuiteIds = useMemo(() => {
+    const uniqueTestCaseIds = [...new Set(executions.map(exec => exec.testCaseId))];
+    // We'll determine which suites we need by checking which test cases belong to which suites
+    // For now, use the testRunSuiteIds if provided
+    return testRunSuiteIds;
+  }, [executions, testRunSuiteIds]);
+
+  // Fetch only the specific test suites needed for this table
+  useEffect(() => {
+    const fetchNeededTestSuites = async () => {
+      if (neededSuiteIds.length === 0) return;
+      
+      console.log("TestCaseExecutionTable: Fetching specific test suites:", neededSuiteIds);
+      
+      for (const suiteId of neededSuiteIds) {
+        try {
+          // Check if we already have this test suite
+          const existingSuite = allTestSuites.find(suite => suite.id === suiteId);
+          if (!existingSuite) {
+            console.log(`Fetching test suite details for ID: ${suiteId}`);
+            const suiteDetails = await apiRequest(`/api/test-suites/${suiteId}`);
+            if (suiteDetails) {
+              console.log(`Successfully fetched test suite: ${suiteDetails.name}`);
+              dispatch(addTestSuite(suiteDetails));
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching test suite ${suiteId}:`, error);
+        }
+      }
+    };
+
+    fetchNeededTestSuites();
+  }, [neededSuiteIds, dispatch]);
   
   const totalItems = executions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);

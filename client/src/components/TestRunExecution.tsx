@@ -225,10 +225,10 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
                 testRunId,
                 testCases: allTestCases
               })).unwrap();
-              console.log("Test case executions generated, reloading...");
+              console.log("Test case executions generated successfully");
               
-              // Reload executions after generation
-              dispatch(fetchTestCaseExecutions(testRunId));
+              // Note: generateTestCaseExecutionsAsync automatically updates the store,
+              // so we don't need to fetch executions again here
             } catch (error) {
               console.error("Error generating test case executions:", error);
             }
@@ -269,7 +269,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
     };
     
     loadExecutions();
-  }, [dispatch, testRunId, testRun, allTestCases]);
+  }, [dispatch, testRunId, testRun]); // ✅ FIXED: Removed allTestCases from dependencies
 
   // Improved function to get test case details by checking both direct ID lookup and suite mappings
   const getTestCaseDetails = (testCaseId: string) => {
@@ -575,6 +575,7 @@ export function TestRunExecution({ testRunId, onClose }: TestRunExecutionProps) 
         onDefectClick={handleDefectClick}
         onPageChange={handlePageChange}
         tableRef={tableRef}
+        testRunSuiteIds={testRun?.testSuiteIds || []}
       />
 
       {/* Execution Drawer */}

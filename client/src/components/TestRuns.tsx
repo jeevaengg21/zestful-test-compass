@@ -123,51 +123,14 @@ export const TestRuns = ({ onExecuteTestRun }: TestRunsProps) => {
 
       console.log("Starting test run:", testRun);
 
-      // Check if test case executions already exist for this run
-      const existingExecutions = await dispatch(fetchTestCaseExecutions(runId)).unwrap();
-      console.log("Existing executions:", existingExecutions);
+      // Check if test case executions already exist for this run by checking the store first
+      // instead of making an API call here since TestRunExecution will handle fetching
+      const existingExecutionsInStore = testRunId => {
+        // This is a simple check - if we really need to verify, let TestRunExecution handle it
+        return false; // Let TestRunExecution component handle the fetching and generation
+      };
       
-      // Only generate executions if none exist
-      if (existingExecutions.length === 0) {
-        console.log("No existing executions found, generating new ones");
-        
-        // Get all test cases from the test suites in this test run
-        let allTestCases: any[] = [];
-        
-        for (const suiteId of testRun.testSuiteIds) {
-          try {
-            // Fetch test cases for this suite
-            console.log(`Fetching test cases for suite ${suiteId}`);
-            const suiteCases = await dispatch(fetchTestCasesForSuite(suiteId)).unwrap();
-            console.log(`Got ${suiteCases.length} test cases for suite ${suiteId}:`, suiteCases);
-            allTestCases = [...allTestCases, ...suiteCases];
-          } catch (error) {
-            console.error(`Error fetching test cases for suite ${suiteId}:`, error);
-          }
-        }
-
-        console.log(`Collected ${allTestCases.length} test cases for execution:`, allTestCases);
-
-        // Create test case execution records if we have test cases
-        if (allTestCases.length > 0) {
-          try {
-            console.log("Generating test case executions");
-            await dispatch(generateTestCaseExecutionsAsync({
-              testRunId: runId,
-              testCases: allTestCases
-            })).unwrap();
-            console.log("Successfully generated test case executions");
-          } catch (error) {
-            console.error("Error generating test case executions:", error);
-          }
-        } else {
-          console.warn("No test cases found to generate executions for");
-        }
-      } else {
-        console.log(`Found ${existingExecutions.length} existing executions, not generating new ones`);
-      }
-      
-      // Finally mark the test run as started
+      // Just mark the test run as started - let TestRunExecution handle execution setup
       dispatch(startTestRun(runId));
       
     } catch (error) {
