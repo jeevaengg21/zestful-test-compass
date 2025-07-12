@@ -18,6 +18,7 @@ import {
   EyeOff
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useUserData } from "@/hooks/useUserData";
 
 // Define the TestDataItem interface locally
 interface TestDataItem {
@@ -53,6 +54,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
   const testCasesUsing = useAppSelector((state) => selectTestCasesUsingTestDataSet(state, testDataSetId));
   const products = useAppSelector(selectAllProducts);
   const { toast } = useToast();
+  const {getUserName} = useUserData();
 
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TestDataItem | null>(null);
@@ -225,7 +227,7 @@ export const TestDataViewer = ({ testDataSetId, onEdit, onClose }: TestDataViewe
           <div>
           </div>
           <div>
-            <span className="font-medium">Created by:</span> {testDataSet.createdBy}
+            <span className="font-medium">Created by:</span> {testDataSet.createdBy ? getUserName(testDataSet.createdBy) : "Unknown"}
           </div>
           <div>
             <span className="font-medium">Last modified:</span> {testDataSet.lastModified ? new Date(testDataSet.lastModified).toLocaleString() : 'N/A'}

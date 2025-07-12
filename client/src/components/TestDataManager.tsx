@@ -11,6 +11,7 @@ import { selectAllTestDataSets, selectAllProducts, selectTestCasesUsingTestDataS
 import { TestDataForm } from "./TestDataForm";
 import { TestDataViewer } from "./TestDataViewer";
 import { useToast } from "@/components/ui/use-toast";
+import { useUserData } from "@/hooks/useUserData";
 import { Loader2 } from "lucide-react";
 import { 
   Plus, 
@@ -29,6 +30,7 @@ const debugLog = (message: string, data?: any) => {
 export const TestDataManager = () => {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const { getUserName } = useUserData(); // Add getUserName from useUserData hook
   
   // Add debug logging for state from redux
   debugLog('Component rendering');
@@ -322,7 +324,8 @@ export const TestDataManager = () => {
                               </TableCell>
                              
                               <TableCell className="text-gray-900">
-                                {testDataSet.createdBy || 'Unknown'}
+                                {/* Use getUserName function to display user name instead of ID */}
+                                {testDataSet.createdBy ? getUserName(testDataSet.createdBy) : 'Unknown'}
                               </TableCell>
                               <TableCell className="text-gray-500">
                                 {testDataSet.lastModified ? new Date(testDataSet.lastModified).toLocaleString() : 'N/A'}
