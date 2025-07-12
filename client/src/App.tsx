@@ -14,6 +14,7 @@ import type { AppDispatch } from "@/store/store";
 import { fetchProducts } from "@/store/slices/productSlice";
 import { fetchModules } from "@/store/slices/moduleSlice";
 import { fetchUsers } from "@/store/slices/userSlice";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -60,15 +61,18 @@ function AuthenticatedApp() {
                 </p>
               )}
             </div>
-            <button
-              onClick={() => {
-                localStorage.removeItem("token");
-                window.location.reload();
-              }}
-              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <button
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  window.location.reload();
+                }}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       </header>
